@@ -1,2 +1,2 @@
 # BGCurve
-Bezier curve editor for Unity 5
+Bezier curve editor for Unity 5.3
