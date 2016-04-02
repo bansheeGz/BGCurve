@@ -17,6 +17,8 @@ namespace BansheeGz.BGSpline.Editor
 
         public override void DrawCurve()
         {
+            var settings = BGPrivateField.GetSettings(curve);
+
             var color = Handles.color;
             Handles.color = settings.LineColor;
             base.DrawCurve();
@@ -25,6 +27,7 @@ namespace BansheeGz.BGSpline.Editor
 
         public override void DrawSphere(Vector3 pos, float sphereRadius)
         {
+            var settings = BGPrivateField.GetSettings(curve);
             var color = Handles.color;
             Handles.color = settings.SphereColor;
             Handles.SphereCap(0, pos, Quaternion.identity, sphereRadius*2);

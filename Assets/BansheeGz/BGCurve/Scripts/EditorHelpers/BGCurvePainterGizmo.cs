@@ -10,9 +10,8 @@ namespace BansheeGz.BGSpline.EditorHelpers
     //draws a curve in editor
     public class BGCurvePainterGizmo
     {
-        private BGCurve curve;
-        private BGCurveBaseMath curveBaseMath;
-        protected BGCurveSettings settings;
+        protected BGCurve curve;
+        protected BGCurveBaseMath curveBaseMath;
 
         public BGCurvePainterGizmo(BGCurve curve):this(curve,new BGCurveBaseMath(curve, false))
         {
@@ -22,12 +21,12 @@ namespace BansheeGz.BGSpline.EditorHelpers
         {
             this.curve = curve;
             curveBaseMath = math;
-            settings = BGPrivateField.GetSettings(curve);
         }
 
 
         public virtual void DrawCurve()
         {
+            var settings = BGPrivateField.GetSettings(curve);
             var color = Gizmos.color;
             Gizmos.color = settings.LineColor;
 

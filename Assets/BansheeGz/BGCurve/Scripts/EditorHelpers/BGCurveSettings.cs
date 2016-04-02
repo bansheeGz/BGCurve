@@ -45,9 +45,11 @@ namespace BansheeGz.BGSpline.EditorHelpers
         //===============================================================  Show Curve
         [SerializeField] [Tooltip("Show curve in the scene")] private bool showCurve = true;
 
-        [SerializeField] [Tooltip("Show points handlers in the scene")] private bool showHandles = true;
+        [SerializeField] [Tooltip("Show points handles in the scene")]
+        private bool showHandles = true;
 
-        [SerializeField] [Tooltip("Points handles type\r\n 1)FreeMove- standard Unity freemove handlers\r\n 2)Standard-standard handlers\r\n 3)Configurable- configurable handlers")] private
+        [SerializeField][Tooltip("Points handles type\r\n 1)FreeMove- standard Unity freemove handles\r\n 2)Standard-standard handles\r\n 3)Configurable- configurable handles")]
+        private
             HandlesTypeEnum
             handlesType = HandlesTypeEnum.Configurable;
 
@@ -63,8 +65,8 @@ namespace BansheeGz.BGSpline.EditorHelpers
         //===============================================================  Control Handles
         [SerializeField] [Tooltip("Show points control handles in the scene")] private bool showControlHandles = true;
 
-        [SerializeField] [Tooltip("Points control handles type\r\n 1)FreeMove- standard Unity freemove handlers\r\n 2)Standard-standard handlers\r\n 3)Configurable- configurable handlers")] private
-            HandlesTypeEnum controlHandlesType = HandlesTypeEnum.Configurable;
+        [SerializeField][Tooltip("Points control handles type\r\n 1)FreeMove- standard Unity freemove handles\r\n 2)Standard-standard handles\r\n 3)Configurable- configurable handles")]
+        private HandlesTypeEnum controlHandlesType = HandlesTypeEnum.Configurable;
 
         [SerializeField] private BGHandlesSettings controlHandlesSettings = new BGHandlesSettings {AxisScale = .7f, PlanesScale = .7f, Alpha = .7f};
 

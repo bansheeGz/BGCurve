@@ -237,7 +237,7 @@ namespace BansheeGz.BGSpline.Editor
                         EditorGUILayout.PropertyField(handlesSettingsProperty);
                         if (settings.HandlesSettings.Disabled)
                         {
-                            EditorGUILayout.HelpBox("All handlers are disabled.", MessageType.Warning);
+                            EditorGUILayout.HelpBox("All handles are disabled.", MessageType.Warning);
                         }
                         BGEditorUtility.EndIndent(1);
                     }
@@ -262,7 +262,7 @@ namespace BansheeGz.BGSpline.Editor
                         EditorGUILayout.PropertyField(controlHandlesSettingsProperty);
                         if (settings.ControlHandlesSettings.Disabled)
                         {
-                            EditorGUILayout.HelpBox("All handlers are disabled.", MessageType.Warning);
+                            EditorGUILayout.HelpBox("All handles are disabled.", MessageType.Warning);
                         }
                         BGEditorUtility.EndIndent(1);
                     }

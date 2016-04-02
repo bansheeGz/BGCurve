@@ -94,7 +94,7 @@ namespace BansheeGz.BGSpline.Editor
         }
 
 
-        // ==============================================  Custom handlers
+        // ==============================================  Custom handles
 
         public static Vector3 ControlHandleCustom(int number, Vector3 position, Quaternion rotation, BGHandlesSettings handlesSettings)
         {
