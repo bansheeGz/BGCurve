@@ -83,6 +83,12 @@ namespace BansheeGz.BGSpline.Editor
             }
         }
 
+        //loads a texture2d
+        public static Texture2D LoadTexture2D(string name, string path = "Assets/BansheeGz/BGCurve/Icons/", string ext = ".png")
+        {
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path + name + ext);
+        }
+
         // ==============================================  Buttons with texture
         // texture is not getting scaled!
         public static bool ButtonWithIcon(int width, int height, Texture2D icon, string tooltip)

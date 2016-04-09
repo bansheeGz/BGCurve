@@ -52,7 +52,7 @@ namespace BansheeGz.BGSpline.Editor
             //load header texture
             if (headerTexture == null)
             {
-                headerTexture = (Texture2D) Resources.Load("BGCurveLogo123");
+                headerTexture = BGEditorUtility.LoadTexture2D("BGCurveLogo123");
             }
 
             // editors
@@ -85,6 +85,7 @@ namespace BansheeGz.BGSpline.Editor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+            var oldValueClosed = curve.Closed;
 
             // =========== Header
             DrawHeader();
@@ -99,6 +100,12 @@ namespace BansheeGz.BGSpline.Editor
 
             serializedObject.ApplyModifiedProperties();
             EditorUtility.SetDirty(target);
+
+            if (oldValueClosed != curve.Closed)
+            {
+                curve.FireChange(new BGCurveChangedArgs(curve, BGCurveChangedArgs.ChangeTypeEnum.Points));
+            }
+
         }
 
         protected virtual void DrawHeader()

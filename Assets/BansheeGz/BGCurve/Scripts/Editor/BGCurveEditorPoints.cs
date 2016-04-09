@@ -38,8 +38,8 @@ namespace BansheeGz.BGSpline.Editor
             curve = editor.Curve;
 
             //textures
-            header2D = (Texture2D) Resources.Load("BGPoints123");
-            convertAll2D = (Texture2D)Resources.Load("BGConvertAll123");
+            header2D = BGEditorUtility.LoadTexture2D("BGPoints123");
+            convertAll2D = BGEditorUtility.LoadTexture2D("BGConvertAll123");
 
             //selection
             editorSelection = new BGCurveEditorPointsSelection(curve, this);
@@ -112,12 +112,7 @@ namespace BansheeGz.BGSpline.Editor
                                         "\r\nCtrl+Shift+LeftClick in scene view to add a point at distance, specified in the settings. No snapping", MessageType.Info);
             }
 
-            var oldValueClosed = closedProperty.boolValue;
             EditorGUILayout.PropertyField(closedProperty);
-            if (oldValueClosed != closedProperty.boolValue)
-            {
-                curve.FireChange(new BGCurveChangedArgs(curve, BGCurveChangedArgs.ChangeTypeEnum.Points));
-            }
             
 
             lockView = EditorGUILayout.Toggle(new GUIContent("Lock view", "Disable selection of other objects in the scene"), lockView);

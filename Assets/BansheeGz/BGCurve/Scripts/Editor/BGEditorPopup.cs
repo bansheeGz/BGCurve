@@ -19,7 +19,7 @@ namespace BansheeGz.BGSpline.Editor
         public BGEditorPopup()
         {
             style.normal.textColor = Color.white;
-            style.normal.background = (Texture2D) Resources.Load("BGBlack123");
+            style.normal.background = BGEditorUtility.LoadTexture2D("BGBlack123");
             style.alignment = TextAnchor.MiddleCenter;
         }
 

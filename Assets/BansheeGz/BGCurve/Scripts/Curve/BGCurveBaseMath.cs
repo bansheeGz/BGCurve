@@ -245,6 +245,8 @@ namespace BansheeGz.BGSpline.Curve
                         {
                             if (prevSection != null)
                             {
+                                tangent = Vector3.Lerp(tangent, prevSection.Points[prevSection.Points.Length - 1].Tangent, .5f);
+                                sectionInfo.Points[i - 1].Tangent = tangent;
                                 prevSection.Points[prevSection.Points.Length - 1].Tangent = tangent;
                             }
                         }

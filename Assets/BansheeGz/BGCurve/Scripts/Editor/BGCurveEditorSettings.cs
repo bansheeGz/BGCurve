@@ -96,7 +96,7 @@ namespace BansheeGz.BGSpline.Editor
             sphereRadiusProperty = settings.FindPropertyRelative("sphereRadius");
             sphereColorProperty = settings.FindPropertyRelative("sphereColor");
 
-            header2D = (Texture2D) Resources.Load("BGSettings123");
+            header2D = BGEditorUtility.LoadTexture2D("BGSettings123");
         }
 
         public void OnInspectorGUI()

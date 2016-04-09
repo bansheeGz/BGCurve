@@ -41,13 +41,13 @@ namespace BansheeGz.BGSpline.Editor
             this.curve = curve;
             this.editor = editor;
 
-            tickNoTexture = (Texture2D) Resources.Load("BGTickNo123");
-            tickYesTexture = (Texture2D) Resources.Load("BGTickYes123");
-            whiteTexture = (Texture2D) Resources.Load("BGWhite123");
-            deleteTexture = (Texture2D) Resources.Load("BGDelete123");
-            selectAllTexture = (Texture2D)Resources.Load("BGSelectAll123");
-            deselectAllTexture = (Texture2D)Resources.Load("BGDeSelectAll123");
-            convertAll2D = (Texture2D)Resources.Load("BGConvertAll123");
+            tickNoTexture = BGEditorUtility.LoadTexture2D("BGTickNo123"); 
+            tickYesTexture = BGEditorUtility.LoadTexture2D("BGTickYes123");
+            whiteTexture = BGEditorUtility.LoadTexture2D("BGWhite123"); 
+            deleteTexture = BGEditorUtility.LoadTexture2D("BGDelete123"); 
+            selectAllTexture = BGEditorUtility.LoadTexture2D("BGSelectAll123");
+            deselectAllTexture = BGEditorUtility.LoadTexture2D("BGDeSelectAll123");
+            convertAll2D = BGEditorUtility.LoadTexture2D("BGConvertAll123"); 
 
         }
 

@@ -19,10 +19,10 @@ namespace BansheeGz.BGSpline.Editor
         {
             this.editorSelection = editorSelection;
             //textures
-            deleteTexture = (Texture2D) Resources.Load("BGDelete123");
-            addBeforeTexture = (Texture2D) Resources.Load("BGAddBefore123");
-            moveUpTexture = (Texture2D) Resources.Load("BGMoveUp123");
-            moveDownTexture = (Texture2D) Resources.Load("BGMoveDown123");
+            deleteTexture = BGEditorUtility.LoadTexture2D("BGDelete123");
+            addBeforeTexture = BGEditorUtility.LoadTexture2D("BGAddBefore123");
+            moveUpTexture = BGEditorUtility.LoadTexture2D("BGMoveUp123");
+            moveDownTexture = BGEditorUtility.LoadTexture2D("BGMoveDown123");
 
             math = new BGCurveBaseMath(curve, false, 30);
         }
