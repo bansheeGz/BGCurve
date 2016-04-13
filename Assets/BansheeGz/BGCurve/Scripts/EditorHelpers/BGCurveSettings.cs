@@ -45,6 +45,8 @@ namespace BansheeGz.BGSpline.EditorHelpers
         //===============================================================  Show Curve
         [SerializeField] [Tooltip("Show curve in the scene")] private bool showCurve = true;
 
+        [SerializeField][Tooltip("Show curve in the scene even if it's not selected")] private bool showEvenNotSelected= false;
+
         [SerializeField] [Tooltip("Show points handles in the scene")]
         private bool showHandles = true;
 
@@ -235,6 +237,11 @@ namespace BansheeGz.BGSpline.EditorHelpers
         public bool ShowPointMenu
         {
             get { return showPointMenu; }
+        }
+
+        public bool ShowEvenNotSelected
+        {
+            get { return showEvenNotSelected; }
         }
 
         #endregion

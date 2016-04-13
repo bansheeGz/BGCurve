@@ -18,6 +18,7 @@ namespace BansheeGz.BGSpline.Editor
 
         //curve
         private readonly BGEditorUtility.BoolAnimatedProperty showCurveProperty;
+        private readonly SerializedProperty showEvenNotSelectedProperty;
         private readonly SerializedProperty showHandlesProperty;
         private readonly SerializedProperty handlesTypeProperty;
         private readonly SerializedProperty handlesSettingsProperty;
@@ -70,6 +71,7 @@ namespace BansheeGz.BGSpline.Editor
 
             //curve
             showCurveProperty = new BGEditorUtility.BoolAnimatedProperty(editor, settings, "showCurve");
+            showEvenNotSelectedProperty = settings.FindPropertyRelative("showEvenNotSelected");
             showHandlesProperty = settings.FindPropertyRelative("showHandles");
             handlesTypeProperty = settings.FindPropertyRelative("handlesType");
             handlesSettingsProperty = settings.FindPropertyRelative("handlesSettings");
@@ -227,6 +229,7 @@ namespace BansheeGz.BGSpline.Editor
             //curve
             BGEditorUtility.FadeGroup(showCurveProperty, () =>
             {
+                EditorGUILayout.PropertyField(showEvenNotSelectedProperty);
                 EditorGUILayout.PropertyField(showHandlesProperty);
                 BGEditorUtility.Vertical("Box", () =>
                 {

@@ -176,6 +176,7 @@ namespace BansheeGz.BGSpline.Editor
 
                     if (BGEditorUtility.ButtonWithIcon(16, 16, deleteTexture, "Delete selected points"))
                     {
+                        if (points.Count == 0) return;
                         if (EditorUtility.DisplayDialog("Delete points confirmation", "Are you sure you want to remove " + points.Count + " points?", "Delete", "Cancel"))
                         {
                             Undo.RecordObject(curve, "Delete " + points.Count + " Points");

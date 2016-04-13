@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using BansheeGz.BGSpline.EditorHelpers;
 using UnityEngine;
@@ -90,9 +89,21 @@ namespace BansheeGz.BGSpline.Curve
         [SerializeField] private BGCurveSettings settings = new BGCurveSettings();
 
 
+        private void OnDrawGizmos()
+        {
+            if (!settings.ShowEvenNotSelected || UnityEditor.Selection.Contains(gameObject)) return;
+
+            OnDrawGizmosSelected();
+        }
+
         private void OnDrawGizmosSelected()
         {
             if (points.Length < 2 || !settings.ShowCurve || settings.VRay) return;
+            Draw();
+        }
+
+        private void Draw()
+        {
             if (painter == null)
             {
                 painter = GetPainter();
