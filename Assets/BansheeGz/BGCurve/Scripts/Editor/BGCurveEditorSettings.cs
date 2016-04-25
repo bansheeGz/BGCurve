@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using BansheeGz.BGSpline.Curve;
 using BansheeGz.BGSpline.EditorHelpers;
 using UnityEditor;
@@ -8,6 +9,8 @@ namespace BansheeGz.BGSpline.Editor
 {
     public class BGCurveEditorSettings : BGCurveEditorTab
     {
+
+        private readonly SerializedProperty hideHandlesPropery;
 
         //points
         private readonly SerializedProperty newPointDistanceProperty;
@@ -60,6 +63,7 @@ namespace BansheeGz.BGSpline.Editor
 
             var settings = serializedObject.FindProperty("settings");
 
+            hideHandlesPropery = settings.FindPropertyRelative("hideHandles");
 
             //points
             newPointDistanceProperty = settings.FindPropertyRelative("newPointDistance");
@@ -135,10 +139,7 @@ namespace BansheeGz.BGSpline.Editor
                                 BGEditorUtility.Horizontal(() =>
                                 {
                                     var options = new List<GUIContent> { new GUIContent("") };
-                                    foreach (var setting in all)
-                                    {
-                                        options.Add(new GUIContent(setting));
-                                    }
+                                    options.AddRange(all.Select(setting => new GUIContent(setting)));
                                     var selected = EditorGUILayout.Popup(new GUIContent("Load", "Load a specified setting"), 0, options.ToArray());
                                     if (selected > 0)
                                     {
@@ -213,6 +214,8 @@ namespace BansheeGz.BGSpline.Editor
                     });
                 });
             }
+
+            EditorGUILayout.PropertyField(hideHandlesPropery);
 
             showPointsOptions = EditorGUILayout.Foldout(showPointsOptions, "Points options");
             if (showPointsOptions)
@@ -298,6 +301,20 @@ namespace BansheeGz.BGSpline.Editor
 
         public void OnSceneGUI()
         {
+        }
+
+        public void OnEnable()
+        {
+            Tools.hidden = BGPrivateField.GetSettings(curve).HideHandles;
+        }
+
+        public void OnBeforeApply()
+        {
+        }
+
+        public void OnApply()
+        {
+            Tools.hidden = BGPrivateField.GetSettings(curve).HideHandles;
         }
     }
 }

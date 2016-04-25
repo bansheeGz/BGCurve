@@ -30,8 +30,6 @@ namespace BansheeGz.BGSpline.Editor
 
         internal void OnInspectorGUI(BGCurvePoint point, int index, BGCurveSettings settings)
         {
-            var curve = point.Curve;
-
             BGEditorUtility.Horizontal("Box", () =>
             {
                 editorSelection.InspectorSelectionRect(point);
@@ -69,7 +67,6 @@ namespace BansheeGz.BGSpline.Editor
                                 {
                                     BGEditorUtility.Vector3Field("Point " + index, "Point's position in world space", point.PositionWorld, vector3 =>
                                     {
-                                        Undo.RecordObject(curve, "Move Point");
                                         point.PositionWorld = vector3;
                                     });
                                     PointButtons(point, index, settings);
@@ -80,7 +77,6 @@ namespace BansheeGz.BGSpline.Editor
                             {
                                 BGEditorUtility.Vector3Field("Pos", "Point's position in world space", point.PositionWorld, vector3 =>
                                 {
-                                    Undo.RecordObject(curve, "Move Point");
                                     point.PositionWorld = vector3;
                                 });
                             }
@@ -94,14 +90,12 @@ namespace BansheeGz.BGSpline.Editor
                         // 1st
                         BGEditorUtility.Vector3Field("Control 1", "Point 1st control position (local)", point.ControlFirstLocal, vector3 =>
                         {
-                            Undo.RecordObject(curve, "Move Control1 position");
                             point.ControlFirstLocal = vector3;
                         });
 
                         // 2nd
                         BGEditorUtility.Vector3Field("Control 2", "Point 2nd control position (local)", point.ControlSecondLocal, vector3 =>
                         {
-                            Undo.RecordObject(curve, "Move Control2 position");
                             point.ControlSecondLocal = vector3;
                         });
                     }
@@ -120,8 +114,6 @@ namespace BansheeGz.BGSpline.Editor
             //================== Add before
             if (BGEditorUtility.ButtonWithIcon(16, 16, addBeforeTexture, "Insert a point before this point"))
             {
-                Undo.RecordObject(curve, "Insert a point");
-
                 Vector3 newPos;
                 if (index == 0)
                 {
@@ -133,7 +125,6 @@ namespace BansheeGz.BGSpline.Editor
                 }
 
                 curve.AddPoint(curve.CreatePointFromWorldPosition(newPos, settings.ControlType), index);
-                EditorUtility.SetDirty(curve);
             }
 
             GUILayout.Space(2);
@@ -144,9 +135,7 @@ namespace BansheeGz.BGSpline.Editor
             {
                 if (BGEditorUtility.ButtonWithIcon(16, 16, moveUpTexture, "Move the point up"))
                 {
-                    Undo.RecordObject(curve, "Swap Points");
                     curve.Swap(index - 1, index);
-                    EditorUtility.SetDirty(curve);
                 }
             }
             GUILayout.Space(2);
@@ -156,9 +145,7 @@ namespace BansheeGz.BGSpline.Editor
             {
                 if (BGEditorUtility.ButtonWithIcon(16, 16, moveDownTexture, "Move the point down"))
                 {
-                    Undo.RecordObject(curve, "Swap Points");
                     curve.Swap(index, index + 1);
-                    EditorUtility.SetDirty(curve);
                 }
             }
             GUILayout.Space(2);
@@ -167,10 +154,8 @@ namespace BansheeGz.BGSpline.Editor
             //=========================== Delete
             if (BGEditorUtility.ButtonWithIcon(16, 16, deleteTexture, "Delete the point"))
             {
-                Undo.RecordObject(curve, "Delete Point");
                 curve.Delete(index);
                 editorSelection.Remove(point);
-                EditorUtility.SetDirty(curve);
             }
         }
 
@@ -202,12 +187,10 @@ namespace BansheeGz.BGSpline.Editor
                     var newPositionSecond = editor.Handle(GetUniqueNumber(index) - 2, settings.ControlHandlesType, handleSecondWorld, rotation, settings.ControlHandlesSettings);
                     if (BGEditorUtility.AnyChange(handleFirstWorld, newPositionFirst))
                     {
-                        Undo.RecordObject(curve, "Move first handle");
                         point.ControlFirstWorld = newPositionFirst;
                     }
                     if (BGEditorUtility.AnyChange(handleSecondWorld, newPositionSecond))
                     {
-                        Undo.RecordObject(curve, "Move second handle");
                         point.ControlSecondWorld = newPositionSecond;
                     }
 

@@ -179,7 +179,6 @@ namespace BansheeGz.BGSpline.Editor
                         if (points.Count == 0) return;
                         if (EditorUtility.DisplayDialog("Delete points confirmation", "Are you sure you want to remove " + points.Count + " points?", "Delete", "Cancel"))
                         {
-                            Undo.RecordObject(curve, "Delete " + points.Count + " Points");
                             foreach (var point in points)
                             {
                                 curve.Delete(point);
@@ -243,7 +242,6 @@ namespace BansheeGz.BGSpline.Editor
                                 averagePositionSelected,
                                 newAverage =>
                                 {
-                                    Undo.RecordObject(curve, "Move " + points.Count + " Points");
                                     var delta = newAverage - averagePositionSelected;
                                     foreach (var point in points)
                                     {
@@ -255,7 +253,6 @@ namespace BansheeGz.BGSpline.Editor
                                 averagePositionSelected,
                                 newPosition =>
                                 {
-                                    Undo.RecordObject(curve, "Move " + points.Count + " Points");
                                     if (BGEditorUtility.AnyChange(averagePositionSelected.x, newPosition.x))
                                     {
                                         SetX(newPosition.x);
@@ -289,7 +286,6 @@ namespace BansheeGz.BGSpline.Editor
                                     averageControl1Sum/count,
                                     newPosition =>
                                     {
-                                        Undo.RecordObject(curve, "Move " + count + " Controls");
                                         foreach (var point in points)
                                         {
                                             if (point.ControlType == BGCurvePoint.ControlTypeEnum.Absent) continue;
@@ -301,7 +297,6 @@ namespace BansheeGz.BGSpline.Editor
                                     averageControl2Sum/count,
                                     newPosition =>
                                     {
-                                        Undo.RecordObject(curve, "Move " + count + " Controls");
                                         foreach (var point in points)
                                         {
                                             if (point.ControlType == BGCurvePoint.ControlTypeEnum.Absent) continue;

@@ -18,6 +18,18 @@ namespace BansheeGz.BGSpline.Curve
             BezierIndependant
         }
 
+        //helper enum for fields
+        public enum FieldEnum
+        {
+            PositionWorld,
+            PositionLocal,
+            ControlFirstWorld,
+            ControlFirstLocal,
+            ControlSecondWorld,
+            ControlSecondLocal
+        }
+
+
         //control type
         [SerializeField] private ControlTypeEnum controlType;
 
@@ -46,6 +58,10 @@ namespace BansheeGz.BGSpline.Curve
             get { return positionLocal; }
             set
             {
+                curve.FireBeforeChange("point's position change");
+
+                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) value = curve.Apply2D(value);
+
                 positionLocal = value;
                 curve.FireChange(new BGCurveChangedArgs(Curve, this, BGCurveChangedArgs.ChangeTypeEnum.Point));
             }
@@ -54,10 +70,14 @@ namespace BansheeGz.BGSpline.Curve
         /// <summary>World absolute position</summary>
         public Vector3 PositionWorld
         {
-            get { return curve.transform.TransformPoint(positionLocal); }
+            get { return curve.ToWorld(ref positionLocal); }
             set
             {
-                positionLocal = curve.transform.InverseTransformPoint(value);
+                curve.FireBeforeChange("point's position change");
+                positionLocal = curve.ToLocal(ref value);
+
+                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) positionLocal = curve.Apply2D(positionLocal);
+
                 curve.FireChange(new BGCurveChangedArgs(Curve, this, BGCurveChangedArgs.ChangeTypeEnum.Point));
             }
         }
@@ -70,6 +90,10 @@ namespace BansheeGz.BGSpline.Curve
             get { return controlFirstLocal; }
             set
             {
+                curve.FireBeforeChange("point's control change");
+
+                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) value = curve.Apply2D(value);
+
                 if (controlType == ControlTypeEnum.BezierSymmetrical)
                 {
                     controlSecondLocal = -value;
@@ -82,10 +106,19 @@ namespace BansheeGz.BGSpline.Curve
         /// <summary>World position for 1st control</summary>
         public Vector3 ControlFirstWorld
         {
-            get { return curve.transform.TransformPoint(positionLocal + controlFirstLocal); }
+            get
+            {
+                var localPoint = positionLocal + controlFirstLocal;
+                return curve.ToWorld(ref localPoint);
+            }
             set
             {
-                controlFirstLocal = value - PositionWorld;
+                curve.FireBeforeChange("point's control change");
+
+                controlFirstLocal = curve.ToLocal(ref value) - PositionLocal;
+
+                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) controlFirstLocal = curve.Apply2D(controlFirstLocal);
+
                 if (controlType == ControlTypeEnum.BezierSymmetrical)
                 {
                     controlSecondLocal = -controlFirstLocal;
@@ -102,6 +135,10 @@ namespace BansheeGz.BGSpline.Curve
             get { return controlSecondLocal; }
             set
             {
+                curve.FireBeforeChange("point's control change");
+
+                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) value = curve.Apply2D(value);
+
                 if (controlType == ControlTypeEnum.BezierSymmetrical)
                 {
                     controlFirstLocal = -value;
@@ -114,10 +151,20 @@ namespace BansheeGz.BGSpline.Curve
         /// <summary>World position for 2nd control</summary>
         public Vector3 ControlSecondWorld
         {
-            get { return curve.transform.TransformPoint(positionLocal + ControlSecondLocal); }
+            get
+            {
+                var localPoint = positionLocal + ControlSecondLocal;
+                return curve.ToWorld(ref localPoint);
+            }
             set
             {
-                controlSecondLocal = value - PositionWorld; 
+                curve.FireBeforeChange("point's control change");
+
+                controlSecondLocal = curve.ToLocal(ref value) - PositionLocal;
+
+
+                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) controlSecondLocal = curve.Apply2D(controlSecondLocal);
+
                 if (controlType == ControlTypeEnum.BezierSymmetrical)
                 {
                     controlFirstLocal = -controlSecondLocal;
@@ -136,6 +183,7 @@ namespace BansheeGz.BGSpline.Curve
             {
                 if (controlType == value) return;
 
+                curve.FireBeforeChange("point's control type change");
                 controlType = value;
                 if (controlType == ControlTypeEnum.BezierSymmetrical)
                 {
@@ -170,6 +218,40 @@ namespace BansheeGz.BGSpline.Curve
             this.controlType = controlType;
             this.controlFirstLocal = controlFirstLocal;
             this.controlSecondLocal = controlSecondLocal;
+        }
+
+
+        // =============================================== Public functions
+        public Vector3 Get(FieldEnum field)
+        {
+            Vector3 result;
+            switch (field)
+            {
+                    //position
+                   case FieldEnum.PositionWorld:
+                    result = PositionWorld;
+                    break;
+                   case FieldEnum.PositionLocal:
+                    result = positionLocal;
+                    break;
+
+                    //first control
+                   case FieldEnum.ControlFirstWorld:
+                    result = ControlFirstWorld;
+                    break;
+                   case FieldEnum.ControlFirstLocal:
+                    result = controlFirstLocal;
+                    break;
+
+                   //second control
+                   case FieldEnum.ControlSecondWorld:
+                    result = ControlSecondWorld;
+                    break;
+                default:
+                    result = controlSecondLocal;
+                    break;
+            }
+            return result;
         }
     }
 }

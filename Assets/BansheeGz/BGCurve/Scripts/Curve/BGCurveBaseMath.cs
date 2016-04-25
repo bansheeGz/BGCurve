@@ -10,13 +10,22 @@ namespace BansheeGz.BGSpline.Curve
     /// </summary>
     public class BGCurveBaseMath
     {
-        private BGCurve curve;
+        internal enum TargetFieldEnum
+        {
+            PositionWorld,
+            PositionLocal,
+            TangentWorld,
+            TangentLocal
+        }
+
+        private readonly BGCurve curve;
 
         //number of sections for each curve's part
-        private int sections;
+        private readonly int sections;
 
         //cached data for length calculations
         private SectionInfo[] cachedSectionInfos;
+
         //curve's length
         private float cachedLength;
 
@@ -56,12 +65,14 @@ namespace BansheeGz.BGSpline.Curve
         /// It does not guarantee the result segments will be the same length by using even segments for t
         /// </summary>
         /// <param name="t">Ratio between (0,1)</param>
-        public virtual Vector3 CalcPositionByT(BGCurvePoint @from, BGCurvePoint to, float t)
+        /// <param name="useLocal">Use local coordinates instead of public</param>
+        public virtual Vector3 CalcPositionByT(BGCurvePoint @from, BGCurvePoint to, float t, bool useLocal = false)
         {
             t = Mathf.Clamp01(t);
 
-            var fromPos = from.PositionWorld;
-            var toPos = to.PositionWorld;
+            var positionField = useLocal ? BGCurvePoint.FieldEnum.PositionLocal : BGCurvePoint.FieldEnum.PositionWorld;
+            var fromPos = from.Get(positionField);
+            var toPos = to.Get(positionField);
 
             Vector3 result;
             if (from.ControlType == BGCurvePoint.ControlTypeEnum.Absent && to.ControlType == BGCurvePoint.ControlTypeEnum.Absent)
@@ -71,8 +82,8 @@ namespace BansheeGz.BGSpline.Curve
             }
             else
             {
-                var fromPosHandle = from.ControlSecondWorld;
-                var toPosHandle = to.ControlFirstWorld;
+                var fromPosHandle = useLocal ? from.Get(BGCurvePoint.FieldEnum.ControlSecondLocal) + fromPos : from.Get(BGCurvePoint.FieldEnum.ControlSecondWorld);
+                var toPosHandle = useLocal ? to.Get(BGCurvePoint.FieldEnum.ControlFirstLocal) + toPos : to.Get(BGCurvePoint.FieldEnum.ControlFirstWorld);
 
                 // tr= t reverse
                 var tr = 1 - t;
@@ -102,14 +113,16 @@ namespace BansheeGz.BGSpline.Curve
         /// calculates a tangent between 2 points using linear interpolation. 
         /// </summary>
         /// <param name="t">Ratio between (0,1)</param>
-        public virtual Vector3 CalcTangentByT(BGCurvePoint @from, BGCurvePoint to, float t)
+        /// <param name="useLocal">Use local coordinates instead of public</param>
+        public virtual Vector3 CalcTangentByT(BGCurvePoint @from, BGCurvePoint to, float t, bool useLocal = false)
         {
             if (Curve.PointsCount < 2) return Vector3.zero;
 
             t = Mathf.Clamp01(t);
 
-            var fromPos = from.PositionWorld;
-            var toPos = to.PositionWorld;
+            var positionField = useLocal ? BGCurvePoint.FieldEnum.PositionLocal : BGCurvePoint.FieldEnum.PositionWorld;
+            var fromPos = from.Get(positionField);
+            var toPos = to.Get(positionField);
 
             Vector3 result;
             if (from.ControlType == BGCurvePoint.ControlTypeEnum.Absent && to.ControlType == BGCurvePoint.ControlTypeEnum.Absent)
@@ -119,8 +132,8 @@ namespace BansheeGz.BGSpline.Curve
             }
             else
             {
-                var fromPosHandle = from.ControlSecondWorld;
-                var toPosHandle = to.ControlFirstWorld;
+                var fromPosHandle = useLocal ? from.Get(BGCurvePoint.FieldEnum.ControlSecondLocal) + fromPos : from.Get(BGCurvePoint.FieldEnum.ControlSecondWorld);
+                var toPosHandle = useLocal ? to.Get(BGCurvePoint.FieldEnum.ControlFirstLocal) + toPos : to.Get(BGCurvePoint.FieldEnum.ControlFirstWorld);
 
                 // tr= t reverse
                 var tr = 1 - t;
@@ -150,36 +163,40 @@ namespace BansheeGz.BGSpline.Curve
         /// Get approximate curve's point world position using distance ratio. 
         /// </summary>
         /// <param name="distanceRatio">Ratio between (0,1)</param>
-        public virtual Vector3 CalcPositionByDistanceRatio(float distanceRatio)
+        /// <param name="useLocal">Use local coordinates instead of world</param>
+        public virtual Vector3 CalcPositionByDistanceRatio(float distanceRatio, bool useLocal = false)
         {
-            return CalcPositionByDistance(GetDistance()*Mathf.Clamp01(distanceRatio));
+            return CalcPositionByDistance(GetDistance()*Mathf.Clamp01(distanceRatio), useLocal);
         }
 
         /// <summary>
         /// Get approximate curve's point world position using distance. 
         /// </summary>
         /// <param name="distance">distance from curve's start between (0, GetDistance())</param>
-        public virtual Vector3 CalcPositionByDistance(float distance)
+        /// <param name="useLocal">Use local coordinates instead of world</param>
+        public virtual Vector3 CalcPositionByDistance(float distance, bool useLocal = false)
         {
-            return BinarySearchByDistance(Mathf.Clamp(distance, 0, GetDistance()));
+            return BinarySearchByDistance(Mathf.Clamp(distance, 0, GetDistance()), useLocal ? TargetFieldEnum.PositionLocal : TargetFieldEnum.PositionWorld);
         }
 
         /// <summary>
         /// Get approximate curve's tangent using distance ratio. 
         /// </summary>
         /// <param name="distanceRatio">Ratio between (0,1)</param>
-        public virtual Vector3 CalcTangentByDistanceRatio(float distanceRatio)
+        /// <param name="useLocal">Use local coordinates instead of world</param>
+        public virtual Vector3 CalcTangentByDistanceRatio(float distanceRatio, bool useLocal = false)
         {
-            return CalcTangentByDistance(GetDistance()*Mathf.Clamp01(distanceRatio));
+            return CalcTangentByDistance(GetDistance()*Mathf.Clamp01(distanceRatio), useLocal);
         }
 
         /// <summary>
         /// Get approximate curve's tangent using distance. 
         /// </summary>
         /// <param name="distance">distance from curve's start between (0, GetDistance())</param>
-        public virtual Vector3 CalcTangentByDistance(float distance)
+        /// <param name="useLocal">Use local coordinates instead of world</param>
+        public virtual Vector3 CalcTangentByDistance(float distance, bool useLocal = false)
         {
-            return BinarySearchByDistance(Mathf.Clamp(distance, 0, GetDistance()), true);
+            return BinarySearchByDistance(Mathf.Clamp(distance, 0, GetDistance()), useLocal ? TargetFieldEnum.TangentLocal : TargetFieldEnum.TangentWorld);
         }
 
         /// <summary>Get curve's approximate distance</summary>
@@ -213,6 +230,13 @@ namespace BansheeGz.BGSpline.Curve
             if (curve.Closed)
             {
                 cachedSectionInfos[cachedSectionInfos.Length - 1] = CalculateSectionInfo(cachedSectionInfos[cachedSectionInfos.Length - 2], curve.Points[pointsCount - 1], curve.Points[0]);
+
+                //adjust tangents
+                var lastSection = cachedSectionInfos[cachedSectionInfos.Length - 1];
+                var lastPoint = lastSection.Points[lastSection.Points.Length - 1];
+                var firstPoint = cachedSectionInfos[0].Points[0];
+                lastPoint.Tangent = firstPoint.Tangent = firstPoint.LerpTo(TargetFieldEnum.TangentWorld, lastPoint, .5f);
+                lastPoint.TangentLocal = firstPoint.TangentLocal = firstPoint.LerpTo(TargetFieldEnum.TangentLocal, lastPoint, .5f);
             }
 
             cachedLength = cachedSectionInfos[cachedSectionInfos.Length - 1].DistanceFromEndToOrigin;
@@ -231,35 +255,62 @@ namespace BansheeGz.BGSpline.Curve
             for (var i = 0; i <= sections; i++)
             {
                 var t = i/(float) sections;
-                var pointInfo = new SectionPointInfo {Position = CalcPositionByT(@from, to, t)};
+                var pointInfo = new SectionPointInfo {Position = CalcPositionByT(@from, to, t), PositionLocal = CalcPositionByT(@from, to, t, true)};
 
                 if (UsePointPositionToCalcTangent)
                 {
                     if (i > 0)
                     {
-                        var tangent = (pointInfo.Position - sectionInfo.Points[i - 1].Position).normalized;
+                        var tangentWorld = (pointInfo.Position - sectionInfo.Points[i - 1].Position).normalized;
+                        var tangentLocal = (pointInfo.PositionLocal - sectionInfo.Points[i - 1].PositionLocal).normalized;
 
-                        sectionInfo.Points[i - 1].Tangent = tangent;
+                        sectionInfo.Points[i - 1].Tangent = tangentWorld;
+                        sectionInfo.Points[i - 1].TangentLocal = tangentLocal;
 
                         if (i == 1)
                         {
                             if (prevSection != null)
                             {
-                                tangent = Vector3.Lerp(tangent, prevSection.Points[prevSection.Points.Length - 1].Tangent, .5f);
-                                sectionInfo.Points[i - 1].Tangent = tangent;
-                                prevSection.Points[prevSection.Points.Length - 1].Tangent = tangent;
+                                //world
+                                tangentWorld = Vector3.Lerp(tangentWorld, prevSection.Points[prevSection.Points.Length - 1].Tangent, .5f);
+                                sectionInfo.Points[0].Tangent = tangentWorld;
+                                prevSection.Points[prevSection.Points.Length - 1].Tangent = tangentWorld;
+
+                                //local (copy paste todo)
+                                tangentLocal = Vector3.Lerp(tangentLocal, prevSection.Points[prevSection.Points.Length - 1].TangentLocal, .5f);
+                                sectionInfo.Points[0].TangentLocal = tangentLocal;
+                                prevSection.Points[prevSection.Points.Length - 1].TangentLocal = tangentLocal;
                             }
                         }
                         else if (i == sections)
                         {
                             //we will adjust it later (if there is another section after this one , otherwise- no more data for more precise calculation)
-                            pointInfo.Tangent = tangent;
+                            pointInfo.Tangent = tangentWorld;
+                            pointInfo.TangentLocal = tangentLocal;
                         }
                     }
                 }
                 else
                 {
                     pointInfo.Tangent = CalcTangentByT(from, to, t);
+                    pointInfo.TangentLocal = CalcTangentByT(from, to, t, true);
+
+                    //adjust tangents at points
+                    if (i == 0)
+                    {
+                        if (prevSection != null)
+                        {
+                            //world
+                            var tangent = Vector3.Lerp(pointInfo.Tangent, prevSection.Points[prevSection.Points.Length - 1].Tangent, .5f);
+                            pointInfo.Tangent = tangent;
+                            prevSection.Points[prevSection.Points.Length - 1].Tangent = tangent;
+
+                            //local (copy paste @todo)
+                            var tangentLocal = Vector3.Lerp(pointInfo.TangentLocal, prevSection.Points[prevSection.Points.Length - 1].TangentLocal, .5f);
+                            pointInfo.TangentLocal = tangentLocal;
+                            prevSection.Points[prevSection.Points.Length - 1].TangentLocal = tangentLocal;
+                        }
+                    }
                 }
                 if (i != 0)
                 {
@@ -273,8 +324,8 @@ namespace BansheeGz.BGSpline.Curve
         }
 
 
-        //search cached data and returns point's position at distance from curve's start
-        private Vector3 BinarySearchByDistance(float distance, bool searchForTangent = false)
+        //search cached data and returns point's position or tangent at given distance from curve's start
+        private Vector3 BinarySearchByDistance(float distance, TargetFieldEnum mode)
         {
             if (Curve.PointsCount < 2) return Vector3.zero;
 
@@ -313,9 +364,7 @@ namespace BansheeGz.BGSpline.Curve
             if (targetSection.Points.Length == 2)
             {
                 //linear
-                return searchForTangent
-                    ? Vector3.Lerp(targetSection.Points[0].Tangent, targetSection.Points[1].Tangent, sectionDistance/targetSection.Distance)
-                    : Vector3.Lerp(targetSection.Points[0].Position, targetSection.Points[1].Position, sectionDistance/targetSection.Distance);
+                return targetSection.Points[0].LerpTo(mode, targetSection.Points[1], sectionDistance/targetSection.Distance);
             }
 
             // non linear- let's do another binary search within section
@@ -347,16 +396,10 @@ namespace BansheeGz.BGSpline.Curve
 
             var targetPoint = targetSection.Points[targetIndex];
 
-            if (targetIndex == targetSection.Points.Length - 1)
-            {
-                return searchForTangent ? targetPoint.Tangent : targetPoint.Position;
-            }
+            if (targetIndex == targetSection.Points.Length - 1) return targetPoint.GetVector(mode);
 
-
-            var ratio = (sectionDistance - targetPoint.DistanceToSectionStart)/Vector3.Distance(targetPoint.Position, targetSection.Points[targetIndex + 1].Position);
-            return searchForTangent
-                ? Vector3.Lerp(targetPoint.Tangent, targetSection.Points[targetIndex + 1].Tangent, ratio)
-                : Vector3.Lerp(targetPoint.Position, targetSection.Points[targetIndex + 1].Position, ratio);
+            return targetPoint.LerpTo(mode, targetSection.Points[targetIndex + 1],
+                (sectionDistance - targetPoint.DistanceToSectionStart)/Vector3.Distance(targetPoint.Position, targetSection.Points[targetIndex + 1].Position));
         }
 
         #endregion
@@ -393,18 +436,51 @@ namespace BansheeGz.BGSpline.Curve
 
         public class SectionPointInfo
         {
-            //point's position
+            //point's world position
             public Vector3 Position;
+
+            //point's local position
+            public Vector3 PositionLocal;
 
             //distance from the start of the section
             public float DistanceToSectionStart;
 
-            //point's tangent
+            //point's world tangent
             public Vector3 Tangent;
+
+            //point's world tangent
+            public Vector3 TangentLocal;
+
+            internal Vector3 GetVector(TargetFieldEnum mode)
+            {
+                Vector3 result;
+                switch (mode)
+                {
+                    case TargetFieldEnum.PositionWorld:
+                        result = Position;
+                        break;
+                    case TargetFieldEnum.PositionLocal:
+                        result = PositionLocal;
+                        break;
+                    case TargetFieldEnum.TangentWorld:
+                        result = Tangent;
+                        break;
+                    default:
+                        result = TangentLocal;
+                        break;
+                }
+                return result;
+            }
+
+            internal Vector3 LerpTo(TargetFieldEnum mode, SectionPointInfo to, float ratio)
+            {
+                return Vector3.Lerp(GetVector(mode), to.GetVector(mode), ratio);
+            }
+
 
             public override string ToString()
             {
-                return "Point at (" + Position + ")";
+                return "Point at (" + Position + "), (" + PositionLocal + ")";
             }
         }
 

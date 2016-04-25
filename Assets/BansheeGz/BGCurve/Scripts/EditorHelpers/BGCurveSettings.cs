@@ -20,6 +20,11 @@ namespace BansheeGz.BGSpline.EditorHelpers
 
         #region Fields
 
+        [SerializeField]
+        [Tooltip("Hide the object's handles")]
+        private bool hideHandles;
+
+
         //===============================================================  Points options
         [SerializeField]
         [Tooltip("Distance from the camera, at which new points are created")]
@@ -90,7 +95,7 @@ namespace BansheeGz.BGSpline.EditorHelpers
         //===============================================================  Spheres at points positions
         [SerializeField] [Tooltip("Show spheres at points locations in the scene")] private bool showSpheres = true;
 
-        [SerializeField] [Range(.1f, 1)] [Tooltip("Point's sphere radius in the scene")] private float sphereRadius = .1f;
+        [SerializeField] [Range(.01f, 1)] [Tooltip("Point's sphere radius in the scene")] private float sphereRadius = .1f;
 
         [SerializeField] [Tooltip("Point's sphere color in the scene")] private Color sphereColor = Color.red;
 
@@ -242,6 +247,11 @@ namespace BansheeGz.BGSpline.EditorHelpers
         public bool ShowEvenNotSelected
         {
             get { return showEvenNotSelected; }
+        }
+
+        public bool HideHandles
+        {
+            get { return hideHandles; }
         }
 
         #endregion

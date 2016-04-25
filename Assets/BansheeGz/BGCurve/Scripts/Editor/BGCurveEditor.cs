@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using BansheeGz.BGSpline.Curve;
 using BansheeGz.BGSpline.EditorHelpers;
 using UnityEditor;
@@ -58,14 +59,13 @@ namespace BansheeGz.BGSpline.Editor
             // editors
             editors = GetEditors();
 
-            var list = new List<Texture2D>();
+            headers = editors.Select(editor => editor.GetHeader()).ToArray();
+
+
             foreach (var editor in editors)
             {
-                list.Add(editor.GetHeader());
+                editor.OnEnable();
             }
-            headers = list.ToArray();
-
-
 
             //do it every frame 
             EditorApplication.update -= EditorPopup.Check;
@@ -79,13 +79,14 @@ namespace BansheeGz.BGSpline.Editor
 
         private void OnDisable()
         {
+            Tools.hidden = false;
+
             EditorApplication.update -= EditorPopup.Check;
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            var oldValueClosed = curve.Closed;
 
             // =========== Header
             DrawHeader();
@@ -97,15 +98,17 @@ namespace BansheeGz.BGSpline.Editor
 
             if (!GUI.changed) return; // if no change- return
 
-
-            serializedObject.ApplyModifiedProperties();
-            EditorUtility.SetDirty(target);
-
-            if (oldValueClosed != curve.Closed)
+            foreach (var editor in editors)
             {
-                curve.FireChange(new BGCurveChangedArgs(curve, BGCurveChangedArgs.ChangeTypeEnum.Points));
+                editor.OnBeforeApply();
             }
+            serializedObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(Curve);
 
+            foreach (var editor in editors)
+            {
+                editor.OnApply();
+            }
         }
 
         protected virtual void DrawHeader()
@@ -134,7 +137,7 @@ namespace BansheeGz.BGSpline.Editor
             }
         }
 
-        [MenuItem("GameObject/Create Other/BG Curve")]
+        [MenuItem("GameObject/Create Other/BansheeGz/BG Curve")]
         public static void CreateDecorator(MenuCommand command)
         {
             var curveObject = new GameObject("BGCurve");

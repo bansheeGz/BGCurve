@@ -6,11 +6,22 @@ using UnityEngine;
 namespace BansheeGz.BGSpline.Curve
 {
     /// <summary>Basic class for curve points data</summary>
+    [HelpURL("http://www.bansheegz.com/BGCurve/")]
     [ExecuteInEditMode]
     [DisallowMultipleComponent]
     [Serializable]
     public class BGCurve : MonoBehaviour
     {
+        public enum Mode2DEnum
+        {
+            Off,
+            XY,
+            XZ,
+            YZ
+        }
+
+        public delegate void IterationCallback(BGCurvePoint point, int index, int count);
+
         #region Fields & Events & Props
 
         // ======================================= Events
@@ -18,7 +29,13 @@ namespace BansheeGz.BGSpline.Curve
         /// <summary>Any curve's change. This will be fired only if TraceChanges is set to true</summary>
         public event EventHandler<BGCurveChangedArgs> Changed;
 
+        /// <summary>Before any change. This will be fired only if TraceChanges is set to true</summary>
+        public event EventHandler BeforeChange;
+
         // ======================================= Fields
+
+        [Tooltip("2d Mode for a curve. In 2d mode, only 2 coordinates matter, the third will always be 0 (including controls). Handles in Editor will also be switched to 2d mode")] 
+        [SerializeField] private Mode2DEnum mode2D = Mode2DEnum.Off;
 
         //id curve is closed (e.g. if last and first point are connected)
         [Tooltip("If curve is closed")] [SerializeField] private bool closed;
@@ -56,11 +73,65 @@ namespace BansheeGz.BGSpline.Curve
             set
             {
                 if (value == closed) return;
+                FireBeforeChange("closed is changed");
                 closed = value;
                 FireChange(new BGCurveChangedArgs(this, BGCurveChangedArgs.ChangeTypeEnum.Points));
             }
         }
 
+        /// <summary>In 2d mode only 2 coordinates matter, the 3rd one will always be 0 (including control)</summary>
+        public Mode2DEnum Mode2D
+        {
+            get { return mode2D; }
+            set
+            {
+                if (mode2D == value) return;
+
+                Apply2D(value);
+            }
+        }
+
+        public void Apply2D(Mode2DEnum value)
+        {
+            FireBeforeChange("2d mode changed");
+            mode2D = value;
+
+            if (mode2D != Mode2DEnum.Off && PointsCount > 0)
+            {
+                Transaction(() =>
+                {
+                    foreach (var point in points)
+                    {
+                        Apply2D(point);
+                    }
+                });
+            }
+            else
+            {
+                FireChange(new BGCurveChangedArgs(this, BGCurveChangedArgs.ChangeTypeEnum.Points));
+            }
+        }
+
+        /// <summary>change point's coordinate to comply to 2d mode</summary>
+        public virtual void Apply2D(BGCurvePoint point)
+        {
+            point.PositionLocal = point.PositionLocal;
+            point.ControlFirstLocal = point.ControlFirstLocal;
+            point.ControlSecondLocal = point.ControlSecondLocal;
+
+        }
+
+        /// <summary>change vector coordinates to comply to 2d mode</summary>
+        public virtual Vector3 Apply2D(Vector3 point)
+        {
+            switch (mode2D)
+            {
+                case Mode2DEnum.XY: return new Vector3(point.x,point.y, 0);
+                case Mode2DEnum.XZ: return new Vector3(point.x, 0, point.z);
+                case Mode2DEnum.YZ: return new Vector3(0, point.y, point.z);
+            }
+            return point;
+        }
 
         /// <summary>
         /// Should the curve detect its own changes, including position, rotation, scale or any points changes and fire Changed event if any change happens. 
@@ -70,10 +141,7 @@ namespace BansheeGz.BGSpline.Curve
         public bool TraceChanges
         {
             get { return traceChanges; }
-            set
-            {
-                traceChanges = value;
-            }
+            set { traceChanges = value; }
         }
 
         public bool SupressEvents { get; set; }
@@ -120,7 +188,6 @@ namespace BansheeGz.BGSpline.Curve
 
         #endregion
 
-
         // ============================================== Public functions (only required ones- no math. to use math use BGCurveBaseMath or your own extension with BGCurveBaseMath as an example)
 
         #region Public Functions
@@ -128,13 +195,13 @@ namespace BansheeGz.BGSpline.Curve
         /// <summary>Curve's point creation</summary>
         public BGCurvePoint CreatePointFromWorldPosition(Vector3 worldPos, BGCurvePoint.ControlTypeEnum controlType)
         {
-            return new BGCurvePoint(this, transform.InverseTransformPoint(worldPos), controlType);
+            return new BGCurvePoint(this, ToLocal(ref worldPos), controlType);
         }
 
         /// <summary>Curve's point creation</summary>
         public BGCurvePoint CreatePointFromWorldPosition(Vector3 worldPos, BGCurvePoint.ControlTypeEnum controlType, Vector3 control1WorldPos, Vector3 control2WorldPos)
         {
-            return new BGCurvePoint(this, transform.InverseTransformPoint(worldPos), controlType, control1WorldPos - worldPos, control2WorldPos - worldPos);
+            return new BGCurvePoint(this, ToLocal(ref worldPos), controlType, control1WorldPos - worldPos, control2WorldPos - worldPos);
         }
 
         /// <summary>Curve's point creation</summary>
@@ -154,6 +221,7 @@ namespace BansheeGz.BGSpline.Curve
         /// <summary>Remove all points</summary>
         public void Clear()
         {
+            FireBeforeChange("clear all points");
             points = new BGCurvePoint[0];
             FireChange(new BGCurveChangedArgs(this, BGCurveChangedArgs.ChangeTypeEnum.Points));
         }
@@ -172,6 +240,7 @@ namespace BansheeGz.BGSpline.Curve
                 print("Unable to add a point. Invalid index: " + index);
                 return;
             }
+            FireBeforeChange("insert a point");
 
             points = Insert(points, index, point);
 
@@ -200,6 +269,8 @@ namespace BansheeGz.BGSpline.Curve
                 return;
             }
 
+            FireBeforeChange("delete a point");
+
             points = Remove(points, index);
 
             FireChange(new BGCurveChangedArgs(this, BGCurveChangedArgs.ChangeTypeEnum.Points));
@@ -213,10 +284,12 @@ namespace BansheeGz.BGSpline.Curve
                 print("Unable to remove a point. Invalid indexes: " + index1 + ", " + index2);
                 return;
             }
+            FireBeforeChange("swap points");
 
             var point = points[index2];
             points[index2] = points[index1];
             points[index1] = point;
+
             FireChange(new BGCurveChangedArgs(this, BGCurveChangedArgs.ChangeTypeEnum.Points));
         }
 
@@ -266,12 +339,29 @@ namespace BansheeGz.BGSpline.Curve
         }
 
         //------------------------------ event handling
+        public void FireBeforeChange(string operation)
+        {
+            if (SupressEvents) return;
+
+            if (isInTransaction) return;
+
+#if UNITY_EDITOR
+            UnityEditor.Undo.RecordObject(this, operation);
+#endif
+            if (traceChanges && BeforeChange != null)
+            {
+                BeforeChange(this, null);
+            }
+        }
+
         /// <summary>
         /// If traceChanges is set to true, it fires Changed event, or mark the event should be fired later if it's currently in transaction
         /// </summary>
         public void FireChange(BGCurveChangedArgs change)
         {
             if (SupressEvents) return;
+
+            if (!traceChanges || Changed == null) return;
 
             if (isInTransaction)
             {
@@ -281,12 +371,13 @@ namespace BansheeGz.BGSpline.Curve
                 }
                 return;
             }
-            if (traceChanges && Changed != null)
-            {
-                Changed(this, change);
-            }
+
+            Changed(this, change);
         }
 
+        /// <summary>
+        /// Unity callback
+        /// </summary>
         protected virtual void Update()
         {
             if (!traceChanges) return;
@@ -297,7 +388,33 @@ namespace BansheeGz.BGSpline.Curve
                 transform.hasChanged = false;
             }
         }
+        /// <summary>
+        /// world pos to local
+        /// </summary>
+        public Vector3 ToLocal(ref Vector3 worldPoint)
+        {
+            return transform.InverseTransformPoint(worldPoint);
+        }
 
+        /// <summary>
+        /// local pos to world
+        /// </summary>
+        public Vector3 ToWorld(ref Vector3 localPoint)
+        {
+            return transform.TransformPoint(localPoint);
+        }
+
+        /// <summary>
+        /// execute Action for each point. Params are Point,index,length.
+        /// </summary>
+        public void ForEach(IterationCallback iterationCallback)
+        {
+            var length = Points.Length;
+            for (var i = 0; i < length; i++)
+            {
+                iterationCallback(Points[i], i, length);
+            }
+        }
 
         #endregion
 
@@ -318,7 +435,6 @@ namespace BansheeGz.BGSpline.Curve
             {
                 //copy after index
                 Array.Copy(oldArray, index, newArray, index + 1, oldArray.Length - index);
-
             }
 
             newArray[index] = newElement;
@@ -341,7 +457,6 @@ namespace BansheeGz.BGSpline.Curve
             }
             return newArray;
         }
-
 
         #endregion
     }

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Linq;
+using UnityEngine;
 using BansheeGz.BGSpline.Curve;
 using BansheeGz.BGSpline.EditorHelpers;
 using UnityEditor;
@@ -14,8 +15,10 @@ namespace BansheeGz.BGSpline.Editor
         // ====================================== Fields
         private readonly SerializedProperty closedProperty;
         private readonly SerializedProperty controlTypeProperty;
+        private readonly SerializedProperty mode2DProperty;
 
-        private BGCurve curve;
+        private readonly BGCurve curve;
+
         //selected points
         private readonly BGCurveEditorPointsSelection editorSelection;
         //point
@@ -28,9 +31,11 @@ namespace BansheeGz.BGSpline.Editor
 
         private BGCurveSettings settings;
 
-        private BGCurveEditor editor;
+        private readonly BGCurveEditor editor;
 
         private bool cancelEvent;
+        private bool closeChanged;
+        private bool mode2DChanged;
 
         public BGCurveEditorPoints(BGCurveEditor editor, SerializedObject curveObject)
         {
@@ -49,10 +54,11 @@ namespace BansheeGz.BGSpline.Editor
 
             //closed or not
             closedProperty = curveObject.FindProperty("closed");
+            //2d mode
+            mode2DProperty = curveObject.FindProperty("mode2D");
 
             //settings
-            var settings = curveObject.FindProperty("settings");
-            controlTypeProperty = settings.FindPropertyRelative("controlType");
+            controlTypeProperty = curveObject.FindProperty("settings").FindPropertyRelative("controlType");
         }
 
         public Texture2D GetHeader()
@@ -99,6 +105,7 @@ namespace BansheeGz.BGSpline.Editor
 
             if (editorSelection.Changed)
             {
+//                SceneView.RepaintAll();
                 EditorUtility.SetDirty(curve);
             }
         }
@@ -106,6 +113,12 @@ namespace BansheeGz.BGSpline.Editor
 
         private void InspectorTopSection()
         {
+            lockView = EditorGUILayout.Toggle(new GUIContent("Lock view", "Disable selection of other objects in the scene"), lockView);
+            if (lockView)
+            {
+                EditorGUILayout.HelpBox("You can not chose another objects in the scene, except points", MessageType.Warning);
+            }
+
             if (curve.PointsCount == 0)
             {
                 EditorGUILayout.HelpBox("Ctrl+LeftClick in scene view to add a point. There should be a mesh to snap a point to" +
@@ -113,26 +126,17 @@ namespace BansheeGz.BGSpline.Editor
             }
 
             EditorGUILayout.PropertyField(closedProperty);
+            EditorGUILayout.PropertyField(mode2DProperty);
             
-
-            lockView = EditorGUILayout.Toggle(new GUIContent("Lock view", "Disable selection of other objects in the scene"), lockView);
-            if (lockView)
-            {
-                EditorGUILayout.HelpBox("You can not chose another objects in the scene, except points", MessageType.Warning);
-            }
-
             BGEditorUtility.Horizontal(() =>
             {
                 EditorGUILayout.PropertyField(controlTypeProperty);
 
                 if(BGEditorUtility.ButtonWithIcon(44,16,convertAll2D,"Convert control types for all existing points "))
                 {
-                    foreach (var point in curve.Points)
+                    foreach (var point in curve.Points.Where(point => point.ControlType != settings.ControlType))
                     {
-                        if (point.ControlType != settings.ControlType)
-                        {
-                            point.ControlType = settings.ControlType;
-                        }
+                        point.ControlType = settings.ControlType;
                     }
                 }
             });
@@ -172,8 +176,6 @@ namespace BansheeGz.BGSpline.Editor
                         //no snapping
                         cancelEvent = true;
                         GUIUtility.hotControl = GUIUtility.GetControlID(FocusType.Passive);
-                        Undo.RecordObject(curve, "Add Point");
-
 
                         var ray = HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition);
                         var position = ray.GetPoint(settings.NewPointDistance);
@@ -186,7 +188,6 @@ namespace BansheeGz.BGSpline.Editor
                         RaycastHit hit;
                         if (Physics.Raycast(ray, out hit))
                         {
-                            Undo.RecordObject(curve, "Add Point");
                             curve.AddPoint(curve.CreatePointFromWorldPosition(hit.point, settings.ControlType));
 
                             currentEvent.Use();
@@ -211,6 +212,59 @@ namespace BansheeGz.BGSpline.Editor
                 cancelEvent = false;
                 GUIUtility.hotControl = 0;
             }
+        }
+
+        public void OnEnable()
+        {
+        }
+
+        public void OnBeforeApply()
+        {
+            closeChanged = false; 
+            if (editor.Curve.Closed != closedProperty.boolValue)
+            {
+                closeChanged = true; 
+                curve.FireBeforeChange("closed changed");
+            }
+
+            mode2DChanged = false;
+            if ((int) editor.Curve.Mode2D != mode2DProperty.enumValueIndex)
+            {
+                mode2DChanged = true;
+                curve.FireBeforeChange("2d mode changed");
+            }
+        }
+
+        public void OnApply()
+        {
+            if (closeChanged) curve.FireChange(new BGCurveChangedArgs(curve, BGCurveChangedArgs.ChangeTypeEnum.Points));
+            
+            if (mode2DChanged)
+            {
+                if (curve.Mode2D != BGCurve.Mode2DEnum.Off)
+                {
+                    //apply settings
+                    Apply2D(settings.HandlesSettings);
+                    Apply2D(settings.ControlHandlesSettings);
+                }
+
+                //force points recalc
+                curve.Apply2D(curve.Mode2D);
+
+                curve.FireChange(new BGCurveChangedArgs(curve, BGCurveChangedArgs.ChangeTypeEnum.Points));
+            }
+        }
+
+        private void Apply2D(BGHandlesSettings handlesSettings)
+        {
+            handlesSettings.RemoveX = curve.Mode2D == BGCurve.Mode2DEnum.YZ;
+            handlesSettings.RemoveY = curve.Mode2D == BGCurve.Mode2DEnum.XZ;
+            handlesSettings.RemoveZ = curve.Mode2D == BGCurve.Mode2DEnum.XY;
+
+            handlesSettings.RemoveXY = curve.Mode2D == BGCurve.Mode2DEnum.XZ || curve.Mode2D == BGCurve.Mode2DEnum.YZ;
+            handlesSettings.RemoveXZ = curve.Mode2D == BGCurve.Mode2DEnum.XY || curve.Mode2D == BGCurve.Mode2DEnum.YZ;
+            handlesSettings.RemoveYZ = curve.Mode2D == BGCurve.Mode2DEnum.XZ || curve.Mode2D == BGCurve.Mode2DEnum.XY;
+
         }
 
 
