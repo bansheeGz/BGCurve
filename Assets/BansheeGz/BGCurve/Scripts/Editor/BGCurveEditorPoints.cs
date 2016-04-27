@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using UnityEngine;
 using BansheeGz.BGSpline.Curve;
-using BansheeGz.BGSpline.EditorHelpers;
 using UnityEditor;
 
 namespace BansheeGz.BGSpline.Editor
@@ -81,13 +80,7 @@ namespace BansheeGz.BGSpline.Editor
 
             if (curve.PointsCount > 0)
             {
-                BGEditorUtility.Vertical("Box", () =>
-                {
-                    for (var i = 0; i < curve.PointsCount; i++)
-                    {
-                        editorPoint.OnInspectorGUI(curve.Points[i], i,  settings);
-                    }
-                });
+                BGEditorUtility.Vertical("Box", () => curve.ForEach((point, index, count) => editorPoint.OnInspectorGUI(point, index, settings)));
 
                 // ======================================== Selections operations
                 editorSelection.InspectorSelectionOperations();
@@ -105,7 +98,6 @@ namespace BansheeGz.BGSpline.Editor
 
             if (editorSelection.Changed)
             {
-//                SceneView.RepaintAll();
                 EditorUtility.SetDirty(curve);
             }
         }
@@ -149,19 +141,13 @@ namespace BansheeGz.BGSpline.Editor
 
             var rotation = Tools.pivotRotation == PivotRotation.Global ? Quaternion.identity : curve.transform.rotation;
 
-            if (settings.ShowCurve && settings.VRay)
+            if (curve.PointsCount != 0 && settings.VRay)
             {
-                if (painter == null)
-                {
-                    painter = editor.NewPainter();
-                }
+                painter=painter??editor.NewPainter();
                 painter.DrawCurve();
             }
 
-            for (var i = 0; i < curve.PointsCount; i++)
-            {
-                editorPoint.OnSceneGUI(this, curve.Points[i], i, settings, rotation);
-            }
+            curve.ForEach((point, index, count) => editorPoint.OnSceneGUI(this, point, index, settings, rotation));
 
             editorSelection.Scene(rotation);
 
@@ -255,7 +241,7 @@ namespace BansheeGz.BGSpline.Editor
             }
         }
 
-        private void Apply2D(BGHandlesSettings handlesSettings)
+        private void Apply2D(BGCurveSettings.SettingsForHandles handlesSettings)
         {
             handlesSettings.RemoveX = curve.Mode2D == BGCurve.Mode2DEnum.YZ;
             handlesSettings.RemoveY = curve.Mode2D == BGCurve.Mode2DEnum.XZ;
@@ -268,7 +254,7 @@ namespace BansheeGz.BGSpline.Editor
         }
 
 
-        internal Vector3 Handle(int number, BGCurveSettings.HandlesTypeEnum type, Vector3 position, Quaternion rotation, BGHandlesSettings handlesSettings)
+        internal Vector3 Handle(int number, BGCurveSettings.HandlesTypeEnum type, Vector3 position, Quaternion rotation, BGCurveSettings.SettingsForHandles handlesSettings)
         {
             switch (type)
             {
@@ -289,6 +275,11 @@ namespace BansheeGz.BGSpline.Editor
         internal Vector3 GetLabelPosition(Vector3 positionWorld)
         {
             return settings.ShowSpheres ? positionWorld + Vector3.up*settings.SphereRadius : positionWorld + Vector3.up*0.2f;
+        }
+
+        public void OnDestroy()
+        {
+            
         }
     }
 }

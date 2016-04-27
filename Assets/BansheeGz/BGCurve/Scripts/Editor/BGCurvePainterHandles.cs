@@ -1,5 +1,4 @@
 ﻿using BansheeGz.BGSpline.Curve;
-using BansheeGz.BGSpline.EditorHelpers;
 using UnityEditor;
 using UnityEngine;
 
@@ -19,19 +18,14 @@ namespace BansheeGz.BGSpline.Editor
         {
             var settings = BGPrivateField.GetSettings(curve);
 
-            var color = Handles.color;
-            Handles.color = settings.LineColor;
-            base.DrawCurve();
-            Handles.color = color;
+            BGEditorUtility.SwapHandlesColor(settings.LineColor, () => base.DrawCurve());
         }
 
         public override void DrawSphere(Vector3 pos, float sphereRadius)
         {
             var settings = BGPrivateField.GetSettings(curve);
-            var color = Handles.color;
-            Handles.color = settings.SphereColor;
-            Handles.SphereCap(0, pos, Quaternion.identity, sphereRadius*2);
-            Handles.color = color;
+
+            BGEditorUtility.SwapHandlesColor(settings.SphereColor, () => Handles.SphereCap(0, pos, Quaternion.identity, sphereRadius*2));
         }
 
         public override void DrawLine(Vector3 from, Vector3 to)

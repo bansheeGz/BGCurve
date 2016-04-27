@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using BansheeGz.BGSpline.Curve;
-using BansheeGz.BGSpline.EditorHelpers;
 using UnityEditor;
 using UnityEngine;
 
@@ -190,13 +189,11 @@ namespace BansheeGz.BGSpline.Editor
                     GUILayout.Space(4);
                     if (BGEditorUtility.ButtonWithIcon(35, 16, selectAllTexture, "Select all points"))
                     {
-                        changed = changed || points.Count != curve.Points.Length;
+                        changed = changed || points.Count != curve.PointsCount;
 
                         points.Clear();
-                        foreach (var point1 in curve.Points)
-                        {
-                            points.Add(point1);
-                        }
+                        
+                        foreach (var point1 in curve.Points) points.Add(point1);
                     }
 
                     GUILayout.Space(4);

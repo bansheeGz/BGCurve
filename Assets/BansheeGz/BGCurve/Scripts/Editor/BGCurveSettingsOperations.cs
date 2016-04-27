@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using BansheeGz.BGSpline.Curve;
 using UnityEngine;
-using BansheeGz.BGSpline.EditorHelpers;
 using UnityEditor;
 
 namespace BansheeGz.BGSpline.Editor

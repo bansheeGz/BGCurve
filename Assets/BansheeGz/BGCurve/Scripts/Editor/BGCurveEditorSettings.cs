@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using BansheeGz.BGSpline.Curve;
-using BansheeGz.BGSpline.EditorHelpers;
 using UnityEditor;
 using UnityEngine;
 
@@ -21,7 +20,7 @@ namespace BansheeGz.BGSpline.Editor
 
         //curve
         private readonly BGEditorUtility.BoolAnimatedProperty showCurveProperty;
-        private readonly SerializedProperty showEvenNotSelectedProperty;
+        private readonly SerializedProperty showCurveModeProperty;
         private readonly SerializedProperty showHandlesProperty;
         private readonly SerializedProperty handlesTypeProperty;
         private readonly SerializedProperty handlesSettingsProperty;
@@ -75,7 +74,7 @@ namespace BansheeGz.BGSpline.Editor
 
             //curve
             showCurveProperty = new BGEditorUtility.BoolAnimatedProperty(editor, settings, "showCurve");
-            showEvenNotSelectedProperty = settings.FindPropertyRelative("showEvenNotSelected");
+            showCurveModeProperty = settings.FindPropertyRelative("showCurveMode");
             showHandlesProperty = settings.FindPropertyRelative("showHandles");
             handlesTypeProperty = settings.FindPropertyRelative("handlesType");
             handlesSettingsProperty = settings.FindPropertyRelative("handlesSettings");
@@ -140,7 +139,7 @@ namespace BansheeGz.BGSpline.Editor
                                 {
                                     var options = new List<GUIContent> { new GUIContent("") };
                                     options.AddRange(all.Select(setting => new GUIContent(setting)));
-                                    var selected = EditorGUILayout.Popup(new GUIContent("Load", "Load a specified setting"), 0, options.ToArray());
+                                    var selected = EditorGUILayout.Popup(new GUIContent("Load", "Load a specified settings for current object"), 0, options.ToArray());
                                     if (selected > 0)
                                     {
                                         var newSettings = BGCurveSettingsOperations.Load(options[selected].text);
@@ -155,7 +154,7 @@ namespace BansheeGz.BGSpline.Editor
                                             lastOperation = "Unable to load a settings " + options[selected].text;
                                         }
                                     }
-                                    if (GUILayout.Button(new GUIContent("Reload", "Reload settings from disk")))
+                                    if (GUILayout.Button(new GUIContent("Reload", "Reload settings from disk. This operation does not change settings for the curent object.")))
                                     {
                                         BGCurveSettingsOperations.Reload(BGCurveSettingsOperations.GetPath());
                                         lastOperation = "Settings was reloaded from disk";
@@ -232,7 +231,7 @@ namespace BansheeGz.BGSpline.Editor
             //curve
             BGEditorUtility.FadeGroup(showCurveProperty, () =>
             {
-                EditorGUILayout.PropertyField(showEvenNotSelectedProperty);
+                EditorGUILayout.PropertyField(showCurveModeProperty);
                 EditorGUILayout.PropertyField(showHandlesProperty);
                 BGEditorUtility.Vertical("Box", () =>
                 {
@@ -251,6 +250,10 @@ namespace BansheeGz.BGSpline.Editor
 
                 EditorGUILayout.PropertyField(sectionsProperty);
                 EditorGUILayout.PropertyField(vRayProperty);
+                if (vRayProperty.boolValue && showCurveModeProperty.enumValueIndex!=0)
+                {
+                    EditorGUILayout.HelpBox("VRay will work only if object is selected.", MessageType.Warning);
+                }
                 EditorGUILayout.PropertyField(lineColorProperty);
             });
 
@@ -315,6 +318,11 @@ namespace BansheeGz.BGSpline.Editor
         public void OnApply()
         {
             Tools.hidden = BGPrivateField.GetSettings(curve).HideHandles;
+        }
+
+        public void OnDestroy()
+        {
+            
         }
     }
 }

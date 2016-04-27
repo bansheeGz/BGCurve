@@ -1,6 +1,6 @@
 ﻿using System;
+using BansheeGz.BGSpline.Curve;
 using UnityEngine;
-using BansheeGz.BGSpline.EditorHelpers;
 using UnityEditor;
 using UnityEditor.AnimatedValues;
 
@@ -10,6 +10,17 @@ namespace BansheeGz.BGSpline.Editor
     {
         private const float Tolerance = 0.00001f;
         private static DragSession dragSession = new DragSession();
+
+
+        // ==============================================  OnSceneGui utils
+
+        public static void SwapHandlesColor(Color color, Action action)
+        {
+            var oldColor = Handles.color;
+            Handles.color = color;
+            action();
+            Handles.color = oldColor;
+        }
 
 
         // ==============================================  OnInspectorGui utils
@@ -102,7 +113,7 @@ namespace BansheeGz.BGSpline.Editor
 
         // ==============================================  Custom handles
 
-        public static Vector3 ControlHandleCustom(int number, Vector3 position, Quaternion rotation, BGHandlesSettings handlesSettings)
+        public static Vector3 ControlHandleCustom(int number, Vector3 position, Quaternion rotation, BGCurveSettings.SettingsForHandles handlesSettings)
         {
             var handleSize = HandleUtility.GetHandleSize(position);
             var axisSize = handleSize*handlesSettings.AxisScale;
@@ -163,7 +174,7 @@ namespace BansheeGz.BGSpline.Editor
 
             //adjustments
             var cameraPos = Camera.current.transform.position;
-            var min = float.MaxValue;
+            var min = Single.MaxValue;
 
 
             var minIndex = -1;
@@ -253,7 +264,7 @@ namespace BansheeGz.BGSpline.Editor
                     needtoRecalculate = true;
                 }
 
-                if (needtoRecalculate || GUIUtility.hotControl == 0 || !string.Equals(GUI.GetNameOfFocusedControl(), name) || !string.Equals(lastActiveName,name))
+                if (needtoRecalculate || GUIUtility.hotControl == 0 || !String.Equals(GUI.GetNameOfFocusedControl(), name) || !String.Equals(lastActiveName,name))
                 {
                     return -1;
                 }
@@ -262,7 +273,7 @@ namespace BansheeGz.BGSpline.Editor
 
             public void NextMin(int minIndex, string name)
             {
-                if (!string.Equals(GUI.GetNameOfFocusedControl(), name) || GUIUtility.hotControl == 0)
+                if (!String.Equals(GUI.GetNameOfFocusedControl(), name) || GUIUtility.hotControl == 0)
                 {
                     return;
                 }

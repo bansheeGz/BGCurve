@@ -1,11 +1,8 @@
 ﻿using BansheeGz.BGSpline.Curve;
 using UnityEngine;
 
-namespace BansheeGz.BGSpline.EditorHelpers
+namespace BansheeGz.BGSpline.Editor
 {
-
-#if UNITY_EDITOR
-    // ========================== This class is supposed to work in Editor ONLY
 
     //draws a curve in editor
     public class BGCurvePainterGizmo
@@ -31,24 +28,16 @@ namespace BansheeGz.BGSpline.EditorHelpers
             Gizmos.color = settings.LineColor;
 
             //========================================  Draw line
-            for (var i = 0; i < curve.Points.Length - 1; i++)
-            {
-                DrawSection(curve.Points[i], curve.Points[i + 1], settings.Sections);
-            }
+            for (var i = 0; i < curve.PointsCount - 1; i++) DrawSection(curve[i], curve[i + 1], settings.Sections);
 
-            if (curve.Closed)
-            {
-                DrawSection(curve.Points[curve.Points.Length - 1], curve.Points[0], settings.Sections);
-            }
+            if (curve.Closed) DrawSection(curve[curve.PointsCount - 1], curve[0], settings.Sections);
 
             //========================================  Draw spheres
             if (settings.ShowSpheres)
             {
                 Gizmos.color = settings.SphereColor;
-                foreach (var point in curve.Points)
-                {
-                    DrawSphere(point.PositionWorld, settings.SphereRadius);
-                }
+
+                foreach (var point in curve.Points) DrawSphere(point.PositionWorld, settings.SphereRadius);
             }
 
             Gizmos.color = color;
@@ -75,5 +64,4 @@ namespace BansheeGz.BGSpline.EditorHelpers
             Gizmos.DrawLine(from, to);
         }
     }
-#endif
 }

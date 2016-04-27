@@ -1,11 +1,11 @@
-﻿using UnityEngine;
-using BansheeGz.BGSpline.EditorHelpers;
+﻿using BansheeGz.BGSpline.Curve;
+using UnityEngine;
 using UnityEditor;
 
 namespace BansheeGz.BGSpline.Editor
 {
 
-    [CustomPropertyDrawer(typeof (BGHandlesSettings))]
+    [CustomPropertyDrawer(typeof (BGCurveSettings.SettingsForHandles))]
     public class BGHandlesSettingsDrawer : PropertyDrawer
     {
         private const int Space = 5;

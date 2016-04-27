@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using BansheeGz.BGSpline.EditorHelpers;
 using UnityEngine;
 
 namespace BansheeGz.BGSpline.Curve
@@ -24,18 +23,23 @@ namespace BansheeGz.BGSpline.Curve
 
         #region Fields & Events & Props
 
+
+#if UNITY_EDITOR
+        // ============================================== !!! This is editor ONLY field
+        [SerializeField] private BGCurveSettings settings = new BGCurveSettings();
+#endif
+
         // ======================================= Events
 
         /// <summary>Any curve's change. This will be fired only if TraceChanges is set to true</summary>
         public event EventHandler<BGCurveChangedArgs> Changed;
 
         /// <summary>Before any change. This will be fired only if TraceChanges is set to true</summary>
-        public event EventHandler BeforeChange;
+        public event EventHandler<BGCurveChangedArgs.BeforeChange> BeforeChange;
 
         // ======================================= Fields
 
-        [Tooltip("2d Mode for a curve. In 2d mode, only 2 coordinates matter, the third will always be 0 (including controls). Handles in Editor will also be switched to 2d mode")] 
-        [SerializeField] private Mode2DEnum mode2D = Mode2DEnum.Off;
+        [Tooltip("2d Mode for a curve. In 2d mode, only 2 coordinates matter, the third will always be 0 (including controls). Handles in Editor will also be switched to 2d mode")] [SerializeField] private Mode2DEnum mode2D = Mode2DEnum.Off;
 
         //id curve is closed (e.g. if last and first point are connected)
         [Tooltip("If curve is closed")] [SerializeField] private bool closed;
@@ -118,7 +122,6 @@ namespace BansheeGz.BGSpline.Curve
             point.PositionLocal = point.PositionLocal;
             point.ControlFirstLocal = point.ControlFirstLocal;
             point.ControlSecondLocal = point.ControlSecondLocal;
-
         }
 
         /// <summary>change vector coordinates to comply to 2d mode</summary>
@@ -126,9 +129,12 @@ namespace BansheeGz.BGSpline.Curve
         {
             switch (mode2D)
             {
-                case Mode2DEnum.XY: return new Vector3(point.x,point.y, 0);
-                case Mode2DEnum.XZ: return new Vector3(point.x, 0, point.z);
-                case Mode2DEnum.YZ: return new Vector3(0, point.y, point.z);
+                case Mode2DEnum.XY:
+                    return new Vector3(point.x, point.y, 0);
+                case Mode2DEnum.XZ:
+                    return new Vector3(point.x, 0, point.z);
+                case Mode2DEnum.YZ:
+                    return new Vector3(0, point.y, point.z);
             }
             return point;
         }
@@ -148,46 +154,6 @@ namespace BansheeGz.BGSpline.Curve
 
         #endregion
 
-        #region Unity Editor 
-
-        // ============================================== !!! This region is supposed to work in editor ONLY
-
-#if UNITY_EDITOR
-        private BGCurvePainterGizmo painter;
-        [SerializeField] private BGCurveSettings settings = new BGCurveSettings();
-
-
-        private void OnDrawGizmos()
-        {
-            if (!settings.ShowEvenNotSelected || UnityEditor.Selection.Contains(gameObject)) return;
-
-            OnDrawGizmosSelected();
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            if (points.Length < 2 || !settings.ShowCurve || settings.VRay) return;
-            Draw();
-        }
-
-        private void Draw()
-        {
-            if (painter == null)
-            {
-                painter = GetPainter();
-            }
-
-            painter.DrawCurve();
-        }
-
-        protected virtual BGCurvePainterGizmo GetPainter()
-        {
-            return new BGCurvePainterGizmo(this);
-        }
-#endif
-
-        #endregion
-
         // ============================================== Public functions (only required ones- no math. to use math use BGCurveBaseMath or your own extension with BGCurveBaseMath as an example)
 
         #region Public Functions
@@ -195,13 +161,13 @@ namespace BansheeGz.BGSpline.Curve
         /// <summary>Curve's point creation</summary>
         public BGCurvePoint CreatePointFromWorldPosition(Vector3 worldPos, BGCurvePoint.ControlTypeEnum controlType)
         {
-            return new BGCurvePoint(this, ToLocal(ref worldPos), controlType);
+            return new BGCurvePoint(this, ToLocal(worldPos), controlType);
         }
 
         /// <summary>Curve's point creation</summary>
         public BGCurvePoint CreatePointFromWorldPosition(Vector3 worldPos, BGCurvePoint.ControlTypeEnum controlType, Vector3 control1WorldPos, Vector3 control2WorldPos)
         {
-            return new BGCurvePoint(this, ToLocal(ref worldPos), controlType, control1WorldPos - worldPos, control2WorldPos - worldPos);
+            return new BGCurvePoint(this, ToLocal(worldPos), controlType, control1WorldPos - worldPos, control2WorldPos - worldPos);
         }
 
         /// <summary>Curve's point creation</summary>
@@ -302,33 +268,39 @@ namespace BansheeGz.BGSpline.Curve
         /// </summary>
         public void Transaction(Action action)
         {
-            TransactionStart();
+            FireBeforeChange("Changes in transaction");
+            isInTransaction = true;
+            changeList = new List<BGCurveChangedArgs>();
             try
             {
                 action();
             }
             finally
             {
-                TransactionCommit();
+                isInTransaction = false;
+                if (changeList != null && changeList.Count > 0)
+                {
+                    FireChange(new BGCurveChangedArgs(this, changeList.ToArray()));
+                }
+                changeList = null;
             }
         }
 
-        /// <summary>
-        /// Starts a batch operation. TransactionCommit should be invoked to finish a transaction and fire an Changed event (if any)
-        /// During batch operation events firing will be suppressed, and event will be fired only after TransactionCommit is invoked.
-        /// it is for event handling ONLY.
-        /// </summary>
+        [Obsolete("Use Transaction(Action) instead")]
+        // Starts a batch operation. TransactionCommit should be invoked to finish a transaction and fire an Changed event (if any)
+        // During batch operation events firing will be suppressed, and event will be fired only after TransactionCommit is invoked.
+        // it is for event handling ONLY.
         public void TransactionStart()
         {
+            FireBeforeChange("Changes in transaction");
             isInTransaction = true;
             changeList = new List<BGCurveChangedArgs>();
         }
 
-        /// <summary>
-        /// Ends a batch operation. TransactionStart should be called prior to this method.
-        /// During batch operation events firing will be suppressed, and event will be fired only after TransactionCommit is invoked.
-        /// it is for event handling ONLY.
-        /// </summary>
+        [Obsolete("Use Transaction(Action) instead")]
+        // Ends a batch operation. TransactionStart should be called prior to this method.
+        // During batch operation events firing will be suppressed, and event will be fired only after TransactionCommit is invoked.
+        // it is for event handling ONLY.
         public void TransactionCommit()
         {
             isInTransaction = false;
@@ -345,13 +317,7 @@ namespace BansheeGz.BGSpline.Curve
 
             if (isInTransaction) return;
 
-#if UNITY_EDITOR
-            UnityEditor.Undo.RecordObject(this, operation);
-#endif
-            if (traceChanges && BeforeChange != null)
-            {
-                BeforeChange(this, null);
-            }
+            if (traceChanges && BeforeChange != null) BeforeChange(this, new BGCurveChangedArgs.BeforeChange(operation));
         }
 
         /// <summary>
@@ -365,10 +331,7 @@ namespace BansheeGz.BGSpline.Curve
 
             if (isInTransaction)
             {
-                if (!changeList.Contains(change))
-                {
-                    changeList.Add(change);
-                }
+                if (!changeList.Contains(change)) changeList.Add(change);
                 return;
             }
 
@@ -388,10 +351,11 @@ namespace BansheeGz.BGSpline.Curve
                 transform.hasChanged = false;
             }
         }
+
         /// <summary>
         /// world pos to local
         /// </summary>
-        public Vector3 ToLocal(ref Vector3 worldPoint)
+        public Vector3 ToLocal(Vector3 worldPoint)
         {
             return transform.InverseTransformPoint(worldPoint);
         }
@@ -399,7 +363,7 @@ namespace BansheeGz.BGSpline.Curve
         /// <summary>
         /// local pos to world
         /// </summary>
-        public Vector3 ToWorld(ref Vector3 localPoint)
+        public Vector3 ToWorld(Vector3 localPoint)
         {
             return transform.TransformPoint(localPoint);
         }
@@ -409,11 +373,14 @@ namespace BansheeGz.BGSpline.Curve
         /// </summary>
         public void ForEach(IterationCallback iterationCallback)
         {
-            var length = Points.Length;
-            for (var i = 0; i < length; i++)
-            {
-                iterationCallback(Points[i], i, length);
-            }
+            var length = PointsCount;
+            for (var i = 0; i < length; i++) iterationCallback(Points[i], i, length);
+        }
+
+        public BGCurvePoint this[int i]
+        {
+            get { return points[i]; }
+            set { points[i] = value; }
         }
 
         #endregion
@@ -425,17 +392,13 @@ namespace BansheeGz.BGSpline.Curve
         // copy arrays and add a new element
         protected static T[] Insert<T>(T[] oldArray, int index, T newElement)
         {
-            T[] newArray = new T[oldArray.Length + 1];
-            if (index > 0)
-            {
-                //copy before index
-                Array.Copy(oldArray, newArray, index);
-            }
-            if (index < oldArray.Length)
-            {
-                //copy after index
-                Array.Copy(oldArray, index, newArray, index + 1, oldArray.Length - index);
-            }
+            var newArray = new T[oldArray.Length + 1];
+
+            //copy before index
+            if (index > 0) Array.Copy(oldArray, newArray, index);
+
+            //copy after index
+            if (index < oldArray.Length) Array.Copy(oldArray, index, newArray, index + 1, oldArray.Length - index);
 
             newArray[index] = newElement;
 
@@ -446,15 +409,10 @@ namespace BansheeGz.BGSpline.Curve
         protected static T[] Remove<T>(T[] oldArray, int index)
         {
             var newArray = new T[oldArray.Length - 1];
-            if (index > 0)
-            {
-                Array.Copy(oldArray, newArray, index);
-            }
+            if (index > 0) Array.Copy(oldArray, newArray, index);
 
-            if (index < oldArray.Length - 1)
-            {
-                Array.Copy(oldArray, index + 1, newArray, index, oldArray.Length - 1 - index);
-            }
+            if (index < oldArray.Length - 1) Array.Copy(oldArray, index + 1, newArray, index, oldArray.Length - 1 - index);
+
             return newArray;
         }
 

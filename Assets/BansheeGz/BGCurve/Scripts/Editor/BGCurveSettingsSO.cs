@@ -1,15 +1,12 @@
 ﻿using System;
+using BansheeGz.BGSpline.Curve;
 using UnityEngine;
 
-namespace BansheeGz.BGSpline.EditorHelpers
+namespace BansheeGz.BGSpline.Editor
 {
-    // ========================== This class is supposed to work in Editor ONLY
-#if UNITY_EDITOR
-
     [Serializable]
     public class BGCurveSettingsSO : ScriptableObject
     {
         public BGCurveSettings Settings;
     }
-#endif
 }

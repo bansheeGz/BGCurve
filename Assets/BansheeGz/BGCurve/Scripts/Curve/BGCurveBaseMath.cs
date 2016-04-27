@@ -224,12 +224,12 @@ namespace BansheeGz.BGSpline.Curve
             cachedSectionInfos = new SectionInfo[curve.Closed ? pointsCount : pointsCount - 1];
             for (var i = 0; i < pointsCount - 1; i++)
             {
-                cachedSectionInfos[i] = CalculateSectionInfo(i == 0 ? null : cachedSectionInfos[i - 1], curve.Points[i], curve.Points[i + 1]);
+                cachedSectionInfos[i] = CalculateSectionInfo(i == 0 ? null : cachedSectionInfos[i - 1], curve[i], curve[i + 1]);
             }
 
             if (curve.Closed)
             {
-                cachedSectionInfos[cachedSectionInfos.Length - 1] = CalculateSectionInfo(cachedSectionInfos[cachedSectionInfos.Length - 2], curve.Points[pointsCount - 1], curve.Points[0]);
+                cachedSectionInfos[cachedSectionInfos.Length - 1] = CalculateSectionInfo(cachedSectionInfos[cachedSectionInfos.Length - 2], curve[pointsCount - 1], curve[0]);
 
                 //adjust tangents
                 var lastSection = cachedSectionInfos[cachedSectionInfos.Length - 1];

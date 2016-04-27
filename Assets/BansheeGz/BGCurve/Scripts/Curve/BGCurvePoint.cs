@@ -70,11 +70,11 @@ namespace BansheeGz.BGSpline.Curve
         /// <summary>World absolute position</summary>
         public Vector3 PositionWorld
         {
-            get { return curve.ToWorld(ref positionLocal); }
+            get { return curve.ToWorld(positionLocal); }
             set
             {
                 curve.FireBeforeChange("point's position change");
-                positionLocal = curve.ToLocal(ref value);
+                positionLocal = curve.ToLocal(value);
 
                 if (curve.Mode2D != BGCurve.Mode2DEnum.Off) positionLocal = curve.Apply2D(positionLocal);
 
@@ -108,14 +108,13 @@ namespace BansheeGz.BGSpline.Curve
         {
             get
             {
-                var localPoint = positionLocal + controlFirstLocal;
-                return curve.ToWorld(ref localPoint);
+                return curve.ToWorld(positionLocal + controlFirstLocal);
             }
             set
             {
                 curve.FireBeforeChange("point's control change");
 
-                controlFirstLocal = curve.ToLocal(ref value) - PositionLocal;
+                controlFirstLocal = curve.ToLocal(value) - PositionLocal;
 
                 if (curve.Mode2D != BGCurve.Mode2DEnum.Off) controlFirstLocal = curve.Apply2D(controlFirstLocal);
 
@@ -154,13 +153,13 @@ namespace BansheeGz.BGSpline.Curve
             get
             {
                 var localPoint = positionLocal + ControlSecondLocal;
-                return curve.ToWorld(ref localPoint);
+                return curve.ToWorld(localPoint);
             }
             set
             {
                 curve.FireBeforeChange("point's control change");
 
-                controlSecondLocal = curve.ToLocal(ref value) - PositionLocal;
+                controlSecondLocal = curve.ToLocal(value) - PositionLocal;
 
 
                 if (curve.Mode2D != BGCurve.Mode2DEnum.Off) controlSecondLocal = curve.Apply2D(controlSecondLocal);

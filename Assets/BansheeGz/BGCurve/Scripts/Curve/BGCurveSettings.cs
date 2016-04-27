@@ -1,13 +1,15 @@
 ﻿using System;
 using UnityEngine;
-using BansheeGz.BGSpline.Curve;
 
-namespace BansheeGz.BGSpline.EditorHelpers
+namespace BansheeGz.BGSpline.Curve
 {
 #if UNITY_EDITOR
     // ========================== This class is supposed to work in Editor ONLY
 
-// editor related props
+    /// <summary>
+    /// Warning!! This class is for Editor ONLY
+    /// It contains curve settings 
+    /// </summary>
     [Serializable]
     public class BGCurveSettings
     {
@@ -16,6 +18,13 @@ namespace BansheeGz.BGSpline.EditorHelpers
             Configurable,
             Standard,
             FreeMove
+        }
+
+        public enum ShowCurveModeEnum
+        {
+            CurveSelected,
+            CurveOrParentSelected,
+            Always
         }
 
         #region Fields
@@ -50,7 +59,8 @@ namespace BansheeGz.BGSpline.EditorHelpers
         //===============================================================  Show Curve
         [SerializeField] [Tooltip("Show curve in the scene")] private bool showCurve = true;
 
-        [SerializeField][Tooltip("Show curve in the scene even if it's not selected")] private bool showEvenNotSelected= false;
+        [SerializeField]
+        [Tooltip("Show curve mode")] private ShowCurveModeEnum showCurveMode = ShowCurveModeEnum.CurveOrParentSelected;
 
         [SerializeField] [Tooltip("Show points handles in the scene")]
         private bool showHandles = true;
@@ -60,7 +70,7 @@ namespace BansheeGz.BGSpline.EditorHelpers
             HandlesTypeEnum
             handlesType = HandlesTypeEnum.Configurable;
 
-        [SerializeField] private BGHandlesSettings handlesSettings = new BGHandlesSettings();
+        [SerializeField] private SettingsForHandles handlesSettings = new SettingsForHandles();
 
         [SerializeField] [Range(1, 50)] [Tooltip("Number of sections between two curves points.\r\n It's used for displaying in editor only")] private int sections = 20;
 
@@ -75,7 +85,7 @@ namespace BansheeGz.BGSpline.EditorHelpers
         [SerializeField][Tooltip("Points control handles type\r\n 1)FreeMove- standard Unity freemove handles\r\n 2)Standard-standard handles\r\n 3)Configurable- configurable handles")]
         private HandlesTypeEnum controlHandlesType = HandlesTypeEnum.Configurable;
 
-        [SerializeField] private BGHandlesSettings controlHandlesSettings = new BGHandlesSettings {AxisScale = .7f, PlanesScale = .7f, Alpha = .7f};
+        [SerializeField] private SettingsForHandles controlHandlesSettings = new SettingsForHandles {AxisScale = .7f, PlanesScale = .7f, Alpha = .7f};
 
         [SerializeField] [Tooltip("Points control handles color")] private Color controlHandlesColor = Color.cyan;
 
@@ -198,12 +208,12 @@ namespace BansheeGz.BGSpline.EditorHelpers
         }
 
 
-        public BGHandlesSettings ControlHandlesSettings
+        public SettingsForHandles ControlHandlesSettings
         {
             get { return controlHandlesSettings; }
         }
 
-        public BGHandlesSettings HandlesSettings
+        public SettingsForHandles HandlesSettings
         {
             get { return handlesSettings; }
         }
@@ -244,9 +254,9 @@ namespace BansheeGz.BGSpline.EditorHelpers
             get { return showPointMenu; }
         }
 
-        public bool ShowEvenNotSelected
+        public ShowCurveModeEnum ShowCurveMode
         {
-            get { return showEvenNotSelected; }
+            get { return showCurveMode; }
         }
 
         public bool HideHandles
@@ -255,6 +265,34 @@ namespace BansheeGz.BGSpline.EditorHelpers
         }
 
         #endregion
+
+        [Serializable]
+        public class SettingsForHandles
+        {
+            public bool RemoveX;
+            public bool RemoveY;
+            public bool RemoveZ;
+
+            public bool RemoveXZ;
+            public bool RemoveXY;
+            public bool RemoveYZ;
+
+            [Range(.5f, 1.5f)]
+            public float AxisScale = 1;
+
+            [Range(.5f, 1.5f)]
+            public float PlanesScale = 1;
+
+            [Range(.5f, 1f)]
+            public float Alpha = 1;
+
+
+            public bool Disabled
+            {
+                get { return RemoveX && RemoveY && RemoveZ && RemoveXY && RemoveXZ && RemoveYZ; }
+            }
+        }
+
     }
 #endif
 }

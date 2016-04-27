@@ -1,5 +1,4 @@
 ﻿using BansheeGz.BGSpline.Curve;
-using BansheeGz.BGSpline.EditorHelpers;
 using UnityEditor;
 using UnityEngine;
 
@@ -121,7 +120,7 @@ namespace BansheeGz.BGSpline.Editor
                 }
                 else
                 {
-                    newPos = math.CalcPositionByT(curve.Points[index - 1], curve.Points[index], .5f);
+                    newPos = math.CalcPositionByT(curve[index - 1], curve[index], .5f);
                 }
 
                 curve.AddPoint(curve.CreatePointFromWorldPosition(newPos, settings.ControlType), index);
@@ -162,8 +161,6 @@ namespace BansheeGz.BGSpline.Editor
 
         public void OnSceneGUI(BGCurveEditorPoints editor, BGCurvePoint point, int index, BGCurveSettings settings, Quaternion rotation)
         {
-            var curve = point.Curve;
-
             var positionWorld = point.PositionWorld;
             var normalLabelStyle = new GUIStyle("Label") {normal = new GUIStyleState {textColor = settings.LabelColor}};
 
@@ -172,29 +169,27 @@ namespace BansheeGz.BGSpline.Editor
                 // ============================================== Controls Handles
                 if (point.ControlType != BGCurvePoint.ControlTypeEnum.Absent)
                 {
-                    var handlesColor = Handles.color;
-                    Handles.color = settings.ControlHandlesColor;
-
-                    var handleFirstWorld = point.ControlFirstWorld;
-                    var handleSecondWorld = point.ControlSecondWorld;
-
-
-                    Handles.DrawLine(positionWorld, handleFirstWorld);
-                    Handles.DrawLine(positionWorld, handleSecondWorld);
-
-                    // control handles different types
-                    var newPositionFirst = editor.Handle(GetUniqueNumber(index) - 1, settings.ControlHandlesType, handleFirstWorld, rotation, settings.ControlHandlesSettings);
-                    var newPositionSecond = editor.Handle(GetUniqueNumber(index) - 2, settings.ControlHandlesType, handleSecondWorld, rotation, settings.ControlHandlesSettings);
-                    if (BGEditorUtility.AnyChange(handleFirstWorld, newPositionFirst))
+                    BGEditorUtility.SwapHandlesColor(settings.ControlHandlesColor, () =>
                     {
-                        point.ControlFirstWorld = newPositionFirst;
-                    }
-                    if (BGEditorUtility.AnyChange(handleSecondWorld, newPositionSecond))
-                    {
-                        point.ControlSecondWorld = newPositionSecond;
-                    }
+                        var handleFirstWorld = point.ControlFirstWorld;
+                        var handleSecondWorld = point.ControlSecondWorld;
 
-                    Handles.color = handlesColor;
+
+                        Handles.DrawLine(positionWorld, handleFirstWorld);
+                        Handles.DrawLine(positionWorld, handleSecondWorld);
+
+                        // control handles different types
+                        var newPositionFirst = editor.Handle(GetUniqueNumber(index) - 1, settings.ControlHandlesType, handleFirstWorld, rotation, settings.ControlHandlesSettings);
+                        var newPositionSecond = editor.Handle(GetUniqueNumber(index) - 2, settings.ControlHandlesType, handleSecondWorld, rotation, settings.ControlHandlesSettings);
+                        if (BGEditorUtility.AnyChange(handleFirstWorld, newPositionFirst))
+                        {
+                            point.ControlFirstWorld = newPositionFirst;
+                        }
+                        if (BGEditorUtility.AnyChange(handleSecondWorld, newPositionSecond))
+                        {
+                            point.ControlSecondWorld = newPositionSecond;
+                        }
+                    });
 
                     if (settings.ShowLabels)
                     {

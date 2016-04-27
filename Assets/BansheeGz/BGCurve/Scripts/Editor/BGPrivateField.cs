@@ -2,11 +2,8 @@
 using System.Reflection;
 using BansheeGz.BGSpline.Curve;
 
-namespace BansheeGz.BGSpline.EditorHelpers
+namespace BansheeGz.BGSpline.Editor
 {
-        // ========================== This class is supposed to work in Editor ONLY
-#if UNITY_EDITOR
-
     public static  class BGPrivateField
     {
 
@@ -47,5 +44,4 @@ namespace BansheeGz.BGSpline.EditorHelpers
         }
 
     }
-#endif
 }

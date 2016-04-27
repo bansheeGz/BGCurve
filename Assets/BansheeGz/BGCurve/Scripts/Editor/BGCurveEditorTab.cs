@@ -22,5 +22,7 @@ namespace BansheeGz.BGSpline.Editor
 
         //after applying the changes
         void OnApply();
+
+        void OnDestroy();
     }
 }

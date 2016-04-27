@@ -91,5 +91,15 @@ namespace BansheeGz.BGSpline.Curve
                 return hashCode;
             }
         }
+
+        public class BeforeChange : EventArgs
+        {
+            public string Operation;
+
+            public BeforeChange(string operation)
+            {
+                Operation = operation;
+            }
+        }
     }
 }
