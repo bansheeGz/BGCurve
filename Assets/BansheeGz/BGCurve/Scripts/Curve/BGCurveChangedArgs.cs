@@ -2,9 +2,9 @@
 
 namespace BansheeGz.BGSpline.Curve
 {
-
     /// <summary>
-    /// curve's change information
+    /// Curve's change information. It's used only if Use curve.UseEventsArgs=true
+    /// 
     /// Multiple- muliple changes
     /// CurveTransform- curve transform changed
     /// Points- point(s) was added or removed or swapped, or 'closed' attribute changed
@@ -21,7 +21,8 @@ namespace BansheeGz.BGSpline.Curve
             Points,
             Point,
             PointControl,
-            PointControlType
+            PointControlType,
+            Fields,
         }
 
         private readonly ChangeTypeEnum changeType;

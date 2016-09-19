@@ -3,12 +3,13 @@ using BansheeGz.BGSpline.Curve;
 
 namespace BansheeGz.BGSpline.Example
 {
-    // test class for example only
+    // This is old obsolete example class, left for compatibility only.
+    // DO NOT USE IT AS AN EXAMPLE PLEASE
+    // Use Cc components (BGCurveBaseMath -> BGCcMath, LineRenderer -> BGCcVisualizationLineRenderer)
     [RequireComponent(typeof (BGCurve))]
     [RequireComponent(typeof (LineRenderer))]
     public class BGTestCurveDynamic : MonoBehaviour
     {
-
         private const int TimeToMoveUp = 3;
 
         public GameObject ObjectToMove;
@@ -25,12 +26,12 @@ namespace BansheeGz.BGSpline.Example
         private void Start()
         {
             curve = GetComponent<BGCurve>();
-            curve.TraceChanges = true;
+//            curve.TraceChanges = true;
 
             lineRenderer = GetComponent<LineRenderer>();
 
-            //setting TraceChanges to true forces BGCurveBaseMath to recalculate all caches once per frame (it is a relatively costly operation)
-            curveBaseMath = new BGCurveBaseMath(curve, true);
+//            curveBaseMath = new BGCurveBaseMath(curve, true);
+            curveBaseMath = new BGCurveBaseMath(curve);
             started = Time.time;
 
             ResetLineRenderer();

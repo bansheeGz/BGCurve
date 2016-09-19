@@ -3,7 +3,9 @@ using BansheeGz.BGSpline.Curve;
 
 namespace BansheeGz.BGSpline.Example
 {
-    // test class for example only
+    // This is old obsolete example class, left for compatibility only.
+    // DO NOT USE IT AS AN EXAMPLE PLEASE
+    // Use Cc components (BGCurveBaseMath -> BGCcMath, LineRenderer -> BGCcVisualizationLineRenderer)
     [RequireComponent(typeof (BGCurve))]
     [RequireComponent(typeof (LineRenderer))]
     public class BGTestCurveStatic : MonoBehaviour
@@ -26,7 +28,8 @@ namespace BansheeGz.BGSpline.Example
             curve = GetComponent<BGCurve>();
             lineRenderer = GetComponent<LineRenderer>();
 
-            curveBaseMath = new BGCurveBaseMath(curve, false, 30);
+//            curveBaseMath = new BGCurveBaseMath(curve, false, 30);
+            curveBaseMath = new BGCurveBaseMath(curve);
             started = Time.time;
 
             ResetLineRenderer();
