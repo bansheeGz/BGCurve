@@ -294,7 +294,7 @@ namespace BansheeGz.BGSpline.Editor
 
         // ==============================================  Textures
         //loads a texture2d
-        public static Texture2D LoadTexture2D(Image image, string path = DefaultIconPath, string ext = ".png")
+        public static Texture2D LoadTexture2D(Image image, string path = DefaultIconPath, string ext = ".png", bool critical = true)
         {
             if (String.Equals(path, DefaultIconPath)) path = currentIconPath;
 
@@ -305,10 +305,13 @@ namespace BansheeGz.BGSpline.Editor
             var newPath = FindByName(Image.BGDelete123.ToString());
             if (newPath == null)
             {
-                // no luck
-                Debug.LogException(new UnityException(
-                    "Can not find BGCurve Editors icons folder. The icons folder, located by default at '" + DefaultIconPath +
-                    "', should be included in your assets, otherwise the package will not work correctly in Editor."));
+                if (critical)
+                {
+                    // no luck
+                    Debug.LogException(new UnityException(
+                        "Can not find BGCurve Editors icons folder. The icons folder, located by default at '" + DefaultIconPath +
+                        "', should be included in your assets, otherwise the package will not work correctly in Editor."));
+                }
                 return null;
             }
 

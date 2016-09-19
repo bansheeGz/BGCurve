@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace BansheeGz.BGSpline.Curve
 {
-    /// <summary>  Basic math operations for curves (Distance, Position, Tangent). It caches some data for quick access and recalculate it if curve changes. </summary>
+    /// <summary>  Basic math operations for curves (Distance, Position, Tangent, Closest point ). It caches some data for quick access and recalculate it if curve changes. </summary>
     public class BGCurveBaseMath : IDisposable
     {
         #region events

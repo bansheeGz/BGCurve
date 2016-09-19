@@ -22,14 +22,17 @@ namespace BansheeGz.BGSpline.Editor
 
         static BGStartUp()
         {
-            CurveIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyIcon123);
-            CurveWarningIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyWarningIcon123);
-            CurveErrorIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyErrorIcon123);
+            CurveIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyIcon123, critical:false);
+            if (CurveIcon!=null)
+            {
+                CurveWarningIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyWarningIcon123);
+                CurveErrorIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyErrorIcon123);
 
-            CurveSelectedIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchySelectedIcon123);
-            CurveWarningSelectedIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyWarningSelectedIcon123);
-            CurveErrorSelectedIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyErrorSelectedIcon123);
-            EditorApplication.hierarchyWindowItemOnGUI += ShowIcon;
+                CurveSelectedIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchySelectedIcon123);
+                CurveWarningSelectedIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyWarningSelectedIcon123);
+                CurveErrorSelectedIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyErrorSelectedIcon123);
+                EditorApplication.hierarchyWindowItemOnGUI += ShowIcon;
+            }
         }
 
         //thanks to laurentlavigne
