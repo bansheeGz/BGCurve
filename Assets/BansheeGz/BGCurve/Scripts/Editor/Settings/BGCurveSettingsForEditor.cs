@@ -8,34 +8,53 @@ namespace BansheeGz.BGSpline.Editor
 {
     public static class BGCurveSettingsForEditor
     {
+        public enum CoordinateSpaceEnum
+        {
+            Local = 0,
+            LocalTransformed = 1,
+            World = 2,
+        }
+
+
         //Keys
+        private const string InspectorPointsCoordinatesKey = "BansheeGZ.BGCurve.inspectorPointsCoordinates";
+        private const string InspectorControlsCoordinatesKey = "BansheeGZ.BGCurve.inspectorControlsCoordinates";
+
         private const string DisableRectangularSelectionKey = "BansheeGZ.BGCurve.disableRectangularSelection";
         private const string DisableSceneViewPointMenuKey = "BansheeGZ.BGCurve.disableSceneViewPointMenu";
         private const string DisableSceneViewSelectionMenuKey = "BansheeGZ.BGCurve.disableSceneViewSelectionMenu";
         private const string DisableInspectorPointMenuKey = "BansheeGZ.BGCurve.disableInspectorPointMenu";
+        private const string CcInspectorHandlesOffKey = "BansheeGZ.BGCurve.inspectorHandlesOff";
 
         private const string LockViewKey = "BansheeGZ.BGCurve.lockView";
         private const string CurrentTabKey = "BansheeGZ.BGCurve.currentTab";
 
+        //colors
         private const string HandleColorForAddAndSnap3DKey = "BansheeGZ.BGCurve.handleColorForAddAndSnap3D";
         private const string HandleColorForAddAndSnap2DKey = "BansheeGZ.BGCurve.handleColorForAddAndSnap2D";
         private const string ColorForRectangularSelectionKey = "BansheeGZ.BGCurve.colorForRectangularSelection";
+        private const string ColorForLabelBackgroundKey = "BansheeGZ.BGCurve.colorForLabelBackground";
 
         //Default values
         private static readonly Color32 HandleColorForAddAndSnap3DDefault = new Color32(46, 143, 168, 20);
         private static readonly Color32 HandleColorForAddAndSnap2DDefault = new Color32(255, 255, 255, 10);
         private static readonly Color32 ColorForRectangularSelectionDefault = new Color32(46, 143, 168, 25);
+        private static readonly Color32 ColorForLabelBackgroundDefault = new Color32(255, 255, 255, 25);
 
+        private static CoordinateSpaceEnum inspectorPointCoordinateSpace;
+        private static CoordinateSpaceEnum inspectorControlCoordinateSpace;
 
         private static bool disableRectangularSelection;
         private static bool disableSceneViewPointMenu;
         private static bool disableSceneViewSelectionMenu;
         private static bool disableInspectorPointMenu;
         private static bool lockView;
+        private static bool ccInspectorHandlesOff;
 
         private static Color32 handleColorForAddAndSnap3D;
         private static Color32 handleColorForAddAndSnap2D;
         private static Color32 colorForRectangularSelection;
+        private static Color32 colorForLabelBackground;
 
         private static int currentTab;
 
@@ -43,6 +62,38 @@ namespace BansheeGz.BGSpline.Editor
         {
             get { return currentTab; }
             set { SaveInt(ref currentTab, value, CurrentTabKey); }
+        }
+
+        public static CoordinateSpaceEnum InspectorPointCoordinateSpace
+        {
+            get { return inspectorPointCoordinateSpace; }
+            set
+            {
+                if (value == inspectorPointCoordinateSpace) return;
+
+                var val = (int) inspectorPointCoordinateSpace;
+                SaveInt(ref val, (int) value, InspectorPointsCoordinatesKey);
+                inspectorPointCoordinateSpace = value;
+            }
+        }
+
+        public static CoordinateSpaceEnum InspectorControlCoordinateSpace
+        {
+            get { return inspectorControlCoordinateSpace; }
+            set
+            {
+                if (value == inspectorControlCoordinateSpace) return;
+
+                var val = (int) inspectorControlCoordinateSpace;
+                SaveInt(ref val, (int) value, InspectorControlsCoordinatesKey);
+                inspectorControlCoordinateSpace = value;
+            }
+        }
+
+        public static bool CcInspectorHandlesOff
+        {
+            get { return ccInspectorHandlesOff; }
+            set { SaveBool(ref ccInspectorHandlesOff, value, CcInspectorHandlesOffKey); }
         }
 
         public static bool LockView
@@ -95,6 +146,12 @@ namespace BansheeGz.BGSpline.Editor
             set { SaveColor(ref colorForRectangularSelection, value, ColorForRectangularSelectionKey); }
         }
 
+        public static Color32 ColorForLabelBackground
+        {
+            get { return colorForLabelBackground; }
+            set { SaveColor(ref colorForLabelBackground, value, ColorForLabelBackgroundKey); }
+        }
+
         static BGCurveSettingsForEditor()
         {
             Init();
@@ -124,6 +181,9 @@ namespace BansheeGz.BGSpline.Editor
 
         private static void Init()
         {
+            inspectorPointCoordinateSpace = (CoordinateSpaceEnum) EditorPrefs.GetInt(InspectorPointsCoordinatesKey, (int) CoordinateSpaceEnum.World);
+            inspectorControlCoordinateSpace = (CoordinateSpaceEnum) EditorPrefs.GetInt(InspectorControlsCoordinatesKey);
+
             disableRectangularSelection = EditorPrefs.GetBool(DisableRectangularSelectionKey);
             disableSceneViewPointMenu = EditorPrefs.GetBool(DisableSceneViewPointMenuKey);
             disableSceneViewSelectionMenu = EditorPrefs.GetBool(DisableSceneViewSelectionMenuKey);
@@ -136,16 +196,17 @@ namespace BansheeGz.BGSpline.Editor
             handleColorForAddAndSnap3D = StringToColor(EditorPrefs.GetString(HandleColorForAddAndSnap3DKey), HandleColorForAddAndSnap3DDefault);
             handleColorForAddAndSnap2D = StringToColor(EditorPrefs.GetString(HandleColorForAddAndSnap2DKey), HandleColorForAddAndSnap2DDefault);
             colorForRectangularSelection = StringToColor(EditorPrefs.GetString(ColorForRectangularSelectionKey), ColorForRectangularSelectionDefault);
+            colorForLabelBackground = StringToColor(EditorPrefs.GetString(ColorForLabelBackgroundKey), ColorForLabelBackgroundDefault);
         }
 
         //resets to default
         public static void Reset()
         {
-            var constants = (typeof (BGCurveSettingsForEditor)).GetFields(
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy)
+            var constants = typeof(BGCurveSettingsForEditor).GetFields(
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy)
                 .Where(c => c.IsLiteral && !c.IsInitOnly && c.Name.EndsWith("Key")).ToList();
 
-            foreach (var constant in constants) EditorPrefs.DeleteKey(constant.Name);
+            foreach (var constant in constants) EditorPrefs.DeleteKey((string) constant.GetValue(null));
 
             Init();
         }

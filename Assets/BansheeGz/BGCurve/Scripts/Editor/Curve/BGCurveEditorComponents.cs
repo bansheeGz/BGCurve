@@ -25,6 +25,8 @@ namespace BansheeGz.BGSpline.Editor
         private Texture2D whiteTexture;
         private Texture2D onTexture;
         private Texture2D offTexture;
+        private Texture2D handlesOnTexture;
+        private Texture2D handlesOffTexture;
 
         private readonly Tree tree;
         private BGCc[] components;
@@ -56,6 +58,8 @@ namespace BansheeGz.BGSpline.Editor
             BGEditorUtility.Assign(ref deleteTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGDelete123));
             BGEditorUtility.Assign(ref onTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGOn123));
             BGEditorUtility.Assign(ref offTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGOff123));
+            BGEditorUtility.Assign(ref handlesOnTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHandlesOn123));
+            BGEditorUtility.Assign(ref handlesOffTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHandlesOff123));
 
 
             components = Curve.GetComponents<BGCc>();
@@ -80,6 +84,14 @@ namespace BansheeGz.BGSpline.Editor
 
                 GUILayout.FlexibleSpace();
 
+                // turn on/off handles
+                if (BGEditorUtility.ButtonWithIcon(BGCurveSettingsForEditor.CcInspectorHandlesOff ? handlesOffTexture : handlesOnTexture, "Turn on/off handles settings in Inspector"))
+                {
+                    BGCurveSettingsForEditor.CcInspectorHandlesOff = !BGCurveSettingsForEditor.CcInspectorHandlesOff;
+                }
+                EditorGUILayout.Separator();
+
+                // turn on/off colored tree
                 if (BGEditorUtility.ButtonWithIcon(customEditorsOn ? onTexture : offTexture, "Use custom UI for components (colored tree) and hide standard unity editors for components"))
                 {
                     customEditorsOn = !customEditorsOn;
@@ -89,33 +101,27 @@ namespace BansheeGz.BGSpline.Editor
 
                 if (length > 0)
                 {
-                    if (BGEditorUtility.ButtonWithIcon(collapseTexture, "Collapse all components"))
-                    {
-                        tree.ExpandCollapseAll(true);
-                    }
+                    // collapse/expand
+                    if (BGEditorUtility.ButtonWithIcon(collapseTexture, "Collapse all components")) tree.ExpandCollapseAll(true);
                     EditorGUILayout.Separator();
-
-                    if (BGEditorUtility.ButtonWithIcon(expandTexture, "Expand all components"))
-                    {
-                        tree.ExpandCollapseAll(false);
-                    }
+                    if (BGEditorUtility.ButtonWithIcon(expandTexture, "Expand all components")) tree.ExpandCollapseAll(false);
                     EditorGUILayout.Separator();
 
 
-                    if (BGEditorUtility.ButtonWithIcon(deleteTexture, "Delete all components") &&
-                        BGEditorUtility.Confirm("Delete", "Are you sure you want to delete " + length + " component(s)?", "Delete"))
-                    {
-                        tree.Delete();
-                    }
+                    // delete all Ccs
+                    if (BGEditorUtility.ButtonWithIcon(deleteTexture, "Delete all components")
+                        && BGEditorUtility.Confirm("Delete", "Are you sure you want to delete " + length + " component(s)?", "Delete")) tree.Delete();
                     EditorGUILayout.Separator();
                 }
 
-                if (BGEditorUtility.ButtonWithIcon(addTexture, "Add new component"))
-                    BGCcAddWindow.Open(Curve, type => AddComponent(Curve, type));
+                //add new Cc
+                if (BGEditorUtility.ButtonWithIcon(addTexture, "Add new component")) BGCcAddWindow.Open(Curve, type => AddComponent(Curve, type));
             });
+
 
             if (length > 0)
             {
+                // warnings/errors
                 if (hasWarning || hasError)
                 {
                     for (var i = 0; i < components.Length; i++)
@@ -131,11 +137,9 @@ namespace BansheeGz.BGSpline.Editor
                         if (!string.IsNullOrEmpty(warning)) BGEditorUtility.HelpBox("Component warning [" + name + "]: " + warning, MessageType.Warning);
                     }
                 }
-                else
-                {
-                    BGEditorUtility.HelpBox("No warnings or errors", MessageType.Info);
-                }
+                else BGEditorUtility.HelpBox("No warnings or errors", MessageType.Info);
 
+                // tree GUI
                 tree.OnInspectorGui();
             }
             else
@@ -170,7 +174,7 @@ namespace BansheeGz.BGSpline.Editor
             tree.OnDestroy();
         }
 
-        public override void OnSceneGui()
+        public override void OnSceneGui(Plane[] frustum)
         {
             if (!customEditorsOn) return;
 
@@ -180,12 +184,13 @@ namespace BansheeGz.BGSpline.Editor
         public override string GetStickerMessage(ref MessageType type)
         {
             var length = Curve.GetComponents<BGCc>().Length;
-            if (length == 0) return null;
+            if (length != 0)
+            {
+                bool hasError = false, hasWarning = false;
+                ComponentsStatus(Curve, ref hasError, ref hasWarning);
+                type = hasError ? MessageType.Error : hasWarning ? MessageType.Warning : MessageType.None;
+            }
 
-            bool hasError = false, hasWarning = false;
-            ComponentsStatus(Curve, ref hasError, ref hasWarning);
-
-            type = hasError ? MessageType.Error : hasWarning ? MessageType.Warning : MessageType.None;
             return type != MessageType.None ? "!!" : "" + length;
         }
 
@@ -377,17 +382,11 @@ namespace BansheeGz.BGSpline.Editor
                         root.OnInspectorGui();
                     }
                 }
-                catch (ExitException e)
+                catch (BGEditorUtility.ExitException)
                 {
-                    e.HelpLink = e.HelpLink;
                     Refresh();
                     GUIUtility.ExitGUI();
                 }
-            }
-
-            public class ExitException : Exception
-            {
-                //get me outta of here
             }
 
             // ================================================================================ Tree Node
@@ -553,12 +552,41 @@ namespace BansheeGz.BGSpline.Editor
                             if (BGEditorUtility.ButtonWithIcon(changeNameTexture, "Change the name")) BGCcChangeNameWindow.Open(Cc);
                             EditorGUILayout.Separator();
 
-                            //add child
+                            //add a child
                             if (BGEditorUtility.ButtonWithIcon(addTexture, "Add a component, which is dependant on this component"))
                                 BGCcAddWindow.Open(MyTree.Curve, type =>
                                 {
-                                    var bgCc = AddComponent(MyTree.Curve, type);
-                                    bgCc.SetParent(Cc);
+                                    //cache some data
+                                    var gameObject = Cc.Curve.gameObject;
+                                    var oldComponents = gameObject.GetComponents<BGCc>();
+                                    var currentCcType = Cc.GetType();
+
+                                    //add
+                                    var addedCc = AddComponent(MyTree.Curve, type);
+
+                                    //we need to process all the way up to the Cc and link Ccs to right (newly created) parents
+                                    var parentClass = addedCc.GetParentClass();
+                                    var recursionLimit = 16;
+                                    var cc = addedCc;
+                                    while (parentClass!=null && recursionLimit-- > 0)
+                                    {
+                                        if (currentCcType == parentClass)
+                                        {
+                                            //we reached the current Cc
+                                            cc.SetParent(Cc);
+                                            break;
+                                        }
+
+                                        //going up
+                                        var possibleParents = gameObject.GetComponents(parentClass);
+                                        var parent = possibleParents.Where(possibleParent => !oldComponents.Contains(possibleParent)).Cast<BGCc>().FirstOrDefault();
+
+                                        if (parent == null) break;
+
+                                        cc.SetParent(parent);
+                                        cc = parent;
+                                        parentClass = cc.GetParentClass();
+                                    }
                                 }, Cc.GetType());
                             EditorGUILayout.Separator();
 
@@ -577,7 +605,7 @@ namespace BansheeGz.BGSpline.Editor
                             EditorUtility.SetDirty(MyTree.Curve.gameObject);
 
                             //not sure how to make proper exit
-                            throw new ExitException();
+                            throw new BGEditorUtility.ExitException();
                         });
                     });
                 }

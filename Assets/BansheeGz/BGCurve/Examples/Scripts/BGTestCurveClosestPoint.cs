@@ -1,13 +1,12 @@
 ﻿using System;
 using UnityEngine;
-using System.Collections;
-using System.Timers;
 using BansheeGz.BGSpline.Components;
 using BansheeGz.BGSpline.Curve;
 using Random = UnityEngine.Random;
 
 namespace BansheeGz.BGSpline.Example
 {
+    //check math's CalcPositionByClosestPoint method.  (this test can be  automated with CheckResults set to true)
     public class BGTestCurveClosestPoint : MonoBehaviour
     {
         [Tooltip("Line renderer material")] public Material LineRendererMaterial;
@@ -65,9 +64,14 @@ namespace BansheeGz.BGSpline.Example
             gameObject.AddComponent<BGCcVisualizationLineRenderer>();
             var lineRenderer = gameObject.GetComponent<LineRenderer>();
             lineRenderer.sharedMaterial = LineRendererMaterial;
-            lineRenderer.SetWidth(.03f, .03f);
             var color = new Color(.2f, .2f, .2f, 1f);
+#if UNITY_5_5
+            lineRenderer.startWidth = lineRenderer.endWidth = .03f;
+            lineRenderer.startColor = lineRenderer.endColor = color;
+#else
+            lineRenderer.SetWidth(.03f, .03f);
             lineRenderer.SetColors(color, color);
+#endif
             math.SectionParts = NumberOfSplits;
 
             //create curve's points
@@ -117,7 +121,7 @@ namespace BansheeGz.BGSpline.Example
         private void OnGUI()
         {
             if (style == null) style = new GUIStyle(GUI.skin.label) {fontSize = 20};
-            GUI.Label(new Rect(0, 60, 600, 30), "BGTestCurveClosestPoint: turn on Gizmos to see Debug lines", style);
+            GUI.Label(new Rect(0, 30, 600, 30), "Turn on Gizmos to see Debug lines", style);
         }
 
 
@@ -228,7 +232,7 @@ namespace BansheeGz.BGSpline.Example
         private static Vector3 CalcPositionByClosestPoint(BGCcMath math, Vector3 targetPoint, out float distance)
         {
             var sections = math.Math.SectionInfos;
-            var sectionsCount = sections.Length;
+            var sectionsCount = sections.Count;
             var result = sections[0][0].Position;
             var minDistance = Vector3.SqrMagnitude(sections[0][0].Position - targetPoint);
             distance = 0;
@@ -238,7 +242,7 @@ namespace BansheeGz.BGSpline.Example
 
 
                 var points = currentSection.Points;
-                var pointsCount = points.Length;
+                var pointsCount = points.Count;
                 for (var j = 1; j < pointsCount; j++)
                 {
                     var point = points[j];

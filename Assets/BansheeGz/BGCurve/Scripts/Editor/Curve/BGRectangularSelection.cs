@@ -16,7 +16,7 @@ namespace BansheeGz.BGSpline.Editor
 
         private readonly BGCurve curve;
         private readonly BGCurveEditorPointsSelection selection;
-        private readonly BGCurveEditorPoints editor;
+        private readonly BGCurveEditor editor;
 
         private Vector2 start;
         private bool selectionWasMade;
@@ -24,7 +24,7 @@ namespace BansheeGz.BGSpline.Editor
 
         private Color backColor = BGCurveSettingsForEditor.ColorForRectangularSelection;
 
-        public BGRectangularSelection(BGCurveEditorPoints editor, BGCurveEditorPointsSelection selection)
+        public BGRectangularSelection(BGCurveEditor editor, BGCurveEditorPointsSelection selection)
         {
             this.editor = editor;
             this.selection = selection;
@@ -76,9 +76,8 @@ namespace BansheeGz.BGSpline.Editor
             if (selection.HasSelected())
             {
                 selection.Clear();
-                EditorUtility.SetDirty(curve);
+                SceneView.RepaintAll();
             }
-            else BGCurveEditor.OverlayMessage.Display("The Scene view is locked.\r\n Set 'Lock View' (in the BGCurve Editor) to false to unlock.");
         }
 
         public void Process(Event currentEvent)
@@ -102,13 +101,14 @@ namespace BansheeGz.BGSpline.Editor
             Ui(rect);
 
             SceneView.RepaintAll();
+            editor.Repaint();
         }
 
         private void UpdatePoints(Rect rect)
         {
             var sceneViewHeight = BGEditorUtility.GetSceneViewHeight();
 
-            var math = editor.Editor.Math;
+            var math = editor.Math;
 
             curve.ForEach((point, index, count) =>
             {
@@ -120,7 +120,6 @@ namespace BansheeGz.BGSpline.Editor
             if (!selection.Changed) return;
 
             selection.Reset();
-            EditorUtility.SetDirty(curve);
         }
 
 

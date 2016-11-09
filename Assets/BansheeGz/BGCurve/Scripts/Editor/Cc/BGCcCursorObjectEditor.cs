@@ -1,5 +1,4 @@
-﻿using BansheeGz.BGSpline.Editor;
-using UnityEditor;
+﻿using UnityEditor;
 
 namespace BansheeGz.BGSpline.Editor
 {

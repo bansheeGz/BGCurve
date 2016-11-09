@@ -33,7 +33,7 @@ namespace BansheeGz.BGSpline.Editor
             Handles.DrawLine(position, controlWorld);
         }
 
-        protected static void DrawSection(BGCurvePoint from, BGCurvePoint to, int parts)
+        protected static void DrawSection(BGCurvePointI from, BGCurvePointI to, int parts)
         {
             BGEditorUtility.Split(@from, to, parts, (fromPos, toPos) => Handles.DrawDottedLine(fromPos, toPos, 2));
         }
@@ -76,7 +76,6 @@ namespace BansheeGz.BGSpline.Editor
         {
             if (!Comply(currentEvent)) return false;
 
-            var ray = HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition);
 
             Vector3 intersectionPosition;
             Plane plane;
@@ -88,14 +87,15 @@ namespace BansheeGz.BGSpline.Editor
                 var curve = overlay.Editor.Curve;
                 var settings = overlay.Editor.Settings;
 
-                Cast(currentEvent, ray, out intersectionPosition, out message, out plane);
+                Cast(currentEvent, HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition), out intersectionPosition, out message, out plane);
 
                 if (message != null) BGCurveEditor.OverlayMessage.Display(message);
                 else
                 {
                     position = intersectionPosition;
-                    curve.AddPoint(BGNewPointPositionManager.CreatePoint(intersectionPosition, curve, settings.ControlType, settings.Sections, true));
-                    EditorUtility.SetDirty(curve);
+                    BGCurveEditor.AddPoint(curve, 
+                        BGNewPointPositionManager.CreatePoint(intersectionPosition, curve, settings.ControlType, settings.Sections, true),
+                        curve.PointsCount);
                 }
                 overlay.EventCanceller = new BGEditorUtility.EventCanceller();
                 return true;
@@ -104,6 +104,7 @@ namespace BansheeGz.BGSpline.Editor
 
             if (!(currentEvent.type == EventType.Repaint && currentEvent.control || currentEvent.type == EventType.MouseMove && currentEvent.control)) return false;
 
+            var ray = HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition);
             Cast(currentEvent, ray, out intersectionPosition, out message, out plane);
 
             position = intersectionPosition;

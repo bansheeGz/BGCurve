@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using BansheeGz.BGSpline.Curve;
@@ -7,7 +8,7 @@ using UnityEditor;
 namespace BansheeGz.BGSpline.Editor
 {
     //idea.. do points paging
-    [CustomEditor(typeof (BGCurve))]
+    [CustomEditor(typeof(BGCurve))]
     public class BGCurveEditor : UnityEditor.Editor
     {
         private const int ToolBarHeight = 20;
@@ -41,11 +42,21 @@ namespace BansheeGz.BGSpline.Editor
         public static bool lastPlayMode;
 
         private BGTransformMonitor transformMonitor;
+
+        //selected points
+        private BGCurveEditorPointsSelection editorSelection;
+        private int undoGroup = -1;
+
         protected void OnEnable()
         {
             Curve = (BGCurve) target;
+
+            //wth
+            if (Curve == null) return;
+
             CurrentCurve = Curve;
-            transformMonitor = new BGTransformMonitor(Curve);
+            transformMonitor = BGTransformMonitor.GetMonitor(Curve);
+
 
             var settings = BGPrivateField.GetSettings(Curve);
 
@@ -53,11 +64,7 @@ namespace BansheeGz.BGSpline.Editor
             //painter and math
             if (curve2Painter.ContainsKey(Curve))
             {
-                var painterGizmo = curve2Painter[Curve];
-                if (painterGizmo.Math != null)
-                {
-                    painterGizmo.Math.Dispose();
-                }
+                curve2Painter[Curve].Dispose();
                 curve2Painter.Remove(Curve);
             }
 
@@ -72,7 +79,7 @@ namespace BansheeGz.BGSpline.Editor
             if (!Application.isPlaying)
             {
                 //they are not persistent 
-                Curve.EventMode = BGCurve.EventModeEnum.Immediate;
+                Curve.ImmediateChangeEvents = true;
                 Curve.BeforeChange += BeforeCurveChange;
                 Curve.Changed += CurveChanged;
             }
@@ -94,12 +101,17 @@ namespace BansheeGz.BGSpline.Editor
             stickerTextureWarning = BGEditorUtility.Texture1X1(new Color32(255, 206, 92, 255));
             stickerTextureActive = BGEditorUtility.Texture1X1(new Color32(44, 160, 90, 255));
 
+            //selection
+            editorSelection = new BGCurveEditorPointsSelection(Curve, this);
+
             // editors
-            editors = GetEditors();
+            editors = new BGCurveEditorTab[]
+            {
+                new BGCurveEditorPoints(this, serializedObject, editorSelection), new BGCurveEditorComponents(this, serializedObject),
+                new BGCurveEditorFields(this, serializedObject, editorSelection), new BGCurveEditorSettings(this, serializedObject)
+            };
 
             headers = editors.Select(editor => editor.Header2D).ToArray();
-
-
             foreach (var editor in editors) editor.OnEnable();
 
             //do it every frame 
@@ -132,31 +144,96 @@ namespace BansheeGz.BGSpline.Editor
 
         private void CurveChanged(object sender, BGCurveChangedArgs e)
         {
-            if (Curve != null) EditorUtility.SetDirty(Curve);
+            if (Curve == null) return;
+
+            if (undoGroup > 0) Undo.CollapseUndoOperations(undoGroup);
+            undoGroup = -1;
+            EditorUtility.SetDirty(Curve);
+
+            if (Curve.FieldsCount > 0) foreach (var field in Curve.Fields) EditorUtility.SetDirty(field);
+
+            var pointsMode = Curve.PointsMode;
+            if (Curve.PointsCount > 0 && pointsMode != BGCurve.PointsModeEnum.Inlined)
+            {
+                switch (pointsMode)
+                {
+                    case BGCurve.PointsModeEnum.Components:
+                        foreach (var point in Curve.Points) EditorUtility.SetDirty((BGCurvePointComponent) point);
+                        break;
+                    case BGCurve.PointsModeEnum.GameObjectsNoTransform:
+                    case BGCurve.PointsModeEnum.GameObjectsTransform:
+                        foreach (var point in Curve.Points)
+                        {
+                            var curvePointGo = (BGCurvePointGO) point;
+                            EditorUtility.SetDirty(curvePointGo);
+                            EditorUtility.SetDirty(curvePointGo.gameObject);
+                        }
+                        break;
+                }
+            }
+
+            foreach (var editor in editors) editor.OnCurveChanged(e);
+
+            transformMonitor.CheckForChange();
         }
 
         private void BeforeCurveChange(object sender, BGCurveChangedArgs.BeforeChange e)
         {
-            Undo.RecordObject(Curve, e != null ? e.Operation : "Curve change");
-        }
+//            Undo.IncrementCurrentGroup();
+            undoGroup = Undo.GetCurrentGroup();
 
-        protected virtual BGCurveEditorTab[] GetEditors()
-        {
-            return new BGCurveEditorTab[]
+            var operation = e != null && e.Operation != null ? e.Operation : "Curve change";
+
+            Undo.RecordObject(Curve, operation);
+
+
+            if (Curve.FieldsCount > 0) foreach (var field in Curve.Fields) Undo.RecordObject(field, operation);
+
+            var pointsMode = Curve.PointsMode;
+            if (Curve.PointsCount > 0)
             {
-                new BGCurveEditorPoints(this, serializedObject), new BGCurveEditorComponents(this, serializedObject),
-                new BGCurveEditorFields(this, serializedObject), new BGCurveEditorSettings(this, serializedObject)
-            };
+                var points = Curve.Points;
+                foreach (var point in points) if (point.PointTransform != null) Undo.RecordObject(point.PointTransform, operation);
+
+                if (pointsMode != BGCurve.PointsModeEnum.Inlined)
+                {
+                    switch (pointsMode)
+                    {
+                        case BGCurve.PointsModeEnum.Components:
+                            foreach (var point in points) Undo.RecordObject((BGCurvePointComponent) point, operation);
+                            break;
+                        case BGCurve.PointsModeEnum.GameObjectsNoTransform:
+                        case BGCurve.PointsModeEnum.GameObjectsTransform:
+                            foreach (var point in points)
+                            {
+                                var pointGo = (BGCurvePointGO) point;
+                                Undo.RecordObject(pointGo, operation);
+                                if (pointsMode == BGCurve.PointsModeEnum.GameObjectsTransform) Undo.RecordObject(pointGo.transform, operation);
+                            }
+                            break;
+                    }
+                }
+            }
         }
 
-        private void OnDisable()
+        public void OnDisable()
         {
-            EditorApplication.update -= OverlayMessage.Check;
+            try
+            {
+                EditorApplication.update -= OverlayMessage.Check;
+            }
+            catch (ArgumentException)
+            {
+                return;
+            }
 
-            foreach (var editor in editors) editor.OnDisable();
+            if (editors != null) foreach (var editor in editors) if (editor != null) editor.OnDisable();
+
+            if (transformMonitor != null) transformMonitor.Release();
 
             Dispose();
         }
+
 
         private void Dispose()
         {
@@ -170,14 +247,23 @@ namespace BansheeGz.BGSpline.Editor
 
         private void InternalOnUndoRedo()
         {
+            transformMonitor.CheckForChange();
+
+            BGPrivateField.Invoke(Curve, BGCurve.MethodUpdateFieldsValuesIndexes);
+
+            if (BGCurve.IsGoMode(Curve.PointsMode)) BGPrivateField.Invoke(Curve, BGCurve.MethodSetPointsNames);
+
             foreach (var editor in editors) editor.OnUndoRedo();
 
-            Curve.FireChange(null, true);
+            if (Math != null) Math.Recalculate();
+
+            Repaint();
+            SceneView.RepaintAll();
         }
 
-        private void OnDestroy()
+        public void OnDestroy()
         {
-            foreach (var editor in editors) editor.OnDestroy();
+            if (editors != null) foreach (var editor in editors) if (editor != null) editor.OnDestroy();
 
             Curve.BeforeChange -= BeforeCurveChange;
             Curve.Changed -= CurveChanged;
@@ -205,7 +291,7 @@ namespace BansheeGz.BGSpline.Editor
             BGEditorUtility.Horizontal(() =>
             {
                 var temp = BGCurveSettingsForEditor.LockView;
-                BGCurveSettingsForEditor.LockView = BGEditorUtility.ButtonOnOff(ref temp, "Lock view", "Disable selection of other objects in the scene", LockViewActiveColor,
+                BGCurveSettingsForEditor.LockView = BGEditorUtility.ButtonOnOff(ref temp, "Lock view", "Disable selection of any object in the scene, except points", LockViewActiveColor,
                     new GUIContent("Turn Off", "Click to turn this mode off"),
                     new GUIContent("Turn On", "Click to turn this mode on"));
 
@@ -213,28 +299,23 @@ namespace BansheeGz.BGSpline.Editor
             });
 
             //warning
-            BGEditorUtility.HelpBox("You can not chose another objects in the scene, except points.\r\n Use rectangular selection without pressing shift", MessageType.Warning,
+            BGEditorUtility.HelpBox("You can not chose another objects in the scene, except points.", MessageType.Warning,
                 BGCurveSettingsForEditor.LockView, () => GUILayout.Space(8));
 
             // =========== Tabs
             if (BGCurveSettingsForEditor.CurrentTab < 0 || BGCurveSettingsForEditor.CurrentTab > headers.Length - 1) BGCurveSettingsForEditor.CurrentTab = 0;
-            BGCurveSettingsForEditor.CurrentTab = GUILayout.Toolbar(BGCurveSettingsForEditor.CurrentTab, headers, GUILayout.Height(ToolBarHeight));
+            var newTab = GUILayout.Toolbar(BGCurveSettingsForEditor.CurrentTab, headers, GUILayout.Height(ToolBarHeight));
             //do not move this method(GUILayoutUtility.GetLastRect() is used) 
             ShowStickers();
+            if (BGCurveSettingsForEditor.CurrentTab != newTab) GUI.FocusControl("");
+            BGCurveSettingsForEditor.CurrentTab = newTab;
             editors[BGCurveSettingsForEditor.CurrentTab].OnInspectorGui();
-
 
             if (!GUI.changed) return; // if no change- return
 
-            foreach (var editor in editors) editor.OnBeforeApply();
-
-            serializedObject.ApplyModifiedProperties();
-            EditorUtility.SetDirty(Curve);
-
             foreach (var editor in editors) editor.OnApply();
 
-            transformMonitor.Check();
-
+            transformMonitor.CheckForChange();
         }
 
         //shows error sticker if any component has error
@@ -291,22 +372,92 @@ namespace BansheeGz.BGSpline.Editor
 
         public void OnSceneGUI()
         {
-
             var settings = BGPrivateField.GetSettings(Curve);
 
             AdjustMath(settings, Math);
 
+            if (Curve.ForceChangedEventMode != BGCurve.ForceChangedEventModeEnum.Off) Math.Recalculate(true);
+
+
             if (settings.HandlesSettings != null && settings.HandlesType == BGCurveSettings.HandlesTypeEnum.Configurable
                 || settings.ControlHandlesSettings != null && settings.ControlHandlesType == BGCurveSettings.HandlesTypeEnum.Configurable) BGEditorUtility.ReloadSnapSettings();
 
+
             OverlayMessage.OnSceneGui();
 
+            var frustum = GeometryUtility.CalculateFrustumPlanes(SceneView.currentDrawingSceneView.camera);
+
             // process all editors
-            foreach (var editor in editors) editor.OnSceneGui();
+            foreach (var editor in editors) editor.OnSceneGui(frustum);
 
-            transformMonitor.Check();
+            editorSelection.Process(Event.current);
 
+
+            transformMonitor.CheckForChange();
         }
+
+        public static void AddPoint(BGCurve curve, BGCurvePoint point, int index)
+        {
+            BGPrivateField.Invoke(curve, BGCurve.MethodAddPoint, point, index, GetPointProvider(curve.PointsMode, curve));
+        }
+
+        public static void DeletePoint(BGCurve curve, int index)
+        {
+            BGPrivateField.Invoke(curve, BGCurve.MethodDeletePoint, new[] {typeof(int), typeof(Action<BGCurvePointI>)}, index, GetPointDestroyer(curve.PointsMode, curve));
+        }
+
+        public static void DeletePoints(BGCurve curve, BGCurvePointI[] points)
+        {
+            BGPrivateField.Invoke(curve, BGCurve.MethodDeletePoint, new[] {typeof(BGCurvePointI[]), typeof(Action<BGCurvePointI>)}, points, GetPointDestroyer(curve.PointsMode, curve));
+        }
+
+
+        public static Func<BGCurvePointI> GetPointProvider(BGCurve.PointsModeEnum pointsMode, BGCurve curve)
+        {
+            //init provider 
+            Func<BGCurvePointI> provider = null;
+            switch (pointsMode)
+            {
+                case BGCurve.PointsModeEnum.Components:
+                    provider = () => Undo.AddComponent<BGCurvePointComponent>(curve.gameObject);
+                    break;
+                case BGCurve.PointsModeEnum.GameObjectsNoTransform:
+                case BGCurve.PointsModeEnum.GameObjectsTransform:
+                    provider = () =>
+                    {
+                        var pointGO = new GameObject();
+                        var transform = pointGO.transform;
+                        transform.parent = curve.transform;
+                        transform.localRotation = Quaternion.identity;
+                        transform.localPosition = Vector3.zero;
+                        transform.localScale = Vector3.one;
+
+                        Undo.RegisterCreatedObjectUndo(pointGO, "Create point");
+                        var point = Undo.AddComponent<BGCurvePointGO>(pointGO);
+                        return point;
+                    };
+                    break;
+            }
+            return provider;
+        }
+
+        public static Action<BGCurvePointI> GetPointDestroyer(BGCurve.PointsModeEnum pointsMode, BGCurve curve)
+        {
+            //init destroyer
+            Action<BGCurvePointI> destroyer = null;
+            switch (pointsMode)
+            {
+                case BGCurve.PointsModeEnum.Components:
+                    destroyer = point => Undo.DestroyObjectImmediate((UnityEngine.Object) point);
+                    break;
+                case BGCurve.PointsModeEnum.GameObjectsNoTransform:
+                case BGCurve.PointsModeEnum.GameObjectsTransform:
+                    destroyer = point => Undo.DestroyObjectImmediate(((MonoBehaviour) point).gameObject);
+                    break;
+            }
+            return destroyer;
+        }
+
 
         [MenuItem("GameObject/Create Other/BansheeGz/BG Curve")]
         public static void CreateCurve(MenuCommand command)
@@ -326,7 +477,7 @@ namespace BansheeGz.BGSpline.Editor
             {
                 lastPlayMode = playMode;
 
-                foreach (var painterGizmo in curve2Painter) painterGizmo.Value.Math.Dispose();
+                foreach (var painterGizmo in curve2Painter) painterGizmo.Value.Dispose();
                 curve2Painter.Clear();
             }
 
@@ -342,6 +493,7 @@ namespace BansheeGz.BGSpline.Editor
                 //curve is not selected in hierarchy
                 var painter = BGEditorUtility.Ensure(curve2Painter, curve, () => new BGCurvePainterGizmo(NewMath(curve, settings), true));
                 AdjustMath(settings, painter.Math);
+                if (curve.ForceChangedEventMode != BGCurve.ForceChangedEventModeEnum.Off) painter.Math.Recalculate();
                 painter.DrawCurve();
             }
         }
@@ -353,6 +505,9 @@ namespace BansheeGz.BGSpline.Editor
             if (!settings.ShowCurve) return false;
             if (Selection.Contains(curve.gameObject) && settings.VRay) return false;
             if (settings.ShowCurveMode == BGCurveSettings.ShowCurveModeEnum.CurveSelected && !Comply(gizmoType, GizmoType.Selected)) return false;
+
+            if (BGCurvePointGOEditor.PointSelected) return true;
+
             if (settings.ShowCurveMode == BGCurveSettings.ShowCurveModeEnum.CurveOrParentSelected && !Comply(gizmoType, GizmoType.InSelectionHierarchy)) return false;
             return true;
         }

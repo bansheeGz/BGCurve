@@ -1,5 +1,7 @@
-BG Curve v.1.1 by BancheeGz (09/2016)
+BG Curve v.1.2 by BancheeGz (10/2016)
+Bezier spline editor for Unity
 
+www.bansheegz.com/BGCurve
 support email: banshee.gzzz@gmail.com
 
 =====================================================
@@ -22,8 +24,25 @@ Quick tips:
 5) BGCurve class does not contain any Math operations- to use Math- add BGCcMath component
 6) Use 2D mode if needed, it helps with 2d curves.
 7) Use Lock view to disable selecting of any object except curve's points.
-8) Use point's and selectoin menus in Scene View (hold Ctrl and hover over a point or selection's center).
-9) View demo video.
+8) Use point's and selection menus in Scene View (hold Ctrl and hover over a point or selection's center).
+9) Use standard Unity's AnimationView to animate splines
+10) View demo video.
+
+
+
+=====================================================
+Versions History:
+-----------------------------------------------------
+Version 1.2 changes:
+-----------------------------------------------------
+Animation support
+Custom fields for points
+Snapping (to terrain etc.)
+New components (Scale and Triangulate)
+New approximation type (Adaptive)
+Base math switched to fastest algorithm available for approximation (25% faster)
+Components (ChangeCursor and Rotate) are upgraded to support custom points fields
+Points store options (inlined, component, gameobjects)
 
 -----------------------------------------------------
 Version 1.1 changes:

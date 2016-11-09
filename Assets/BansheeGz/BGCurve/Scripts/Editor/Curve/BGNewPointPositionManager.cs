@@ -51,6 +51,10 @@ namespace BansheeGz.BGSpline.Editor
 
             parts = Mathf.Clamp(parts, 1, 50);
 
+            //we no need no events (maybe check if point was actually added to a curve for events firing?)
+            var oldSuppress = curve.SupressEvents;
+            curve.SupressEvents = true;
+
             //create a point with no controls first
             BGCurvePoint newPoint;
             if (ensureNew)
@@ -108,9 +112,6 @@ namespace BansheeGz.BGSpline.Editor
             //we need local tangent for controls
             tangent = curve.ToLocalDirection(tangent);
 
-            //we no need no events (maybe check if point was actually added to a curve for events firing?)
-            var oldSuppress = curve.SupressEvents;
-            curve.SupressEvents = true;
 
 
             newPoint.ControlSecondLocal = tangent*length;
@@ -175,7 +176,7 @@ namespace BansheeGz.BGSpline.Editor
             return curve.CreatePointFromWorldPosition(pos, controlType, pos - tangent, pos + tangent);
         }
 
-        private static BGCurvePoint CreatePointBetween(BGCurve curve, BGCurvePoint previousPoint, BGCurvePoint nextPoint, int parts, BGCurvePoint.ControlTypeEnum controlType)
+        private static BGCurvePoint CreatePointBetween(BGCurve curve, BGCurvePointI previousPoint, BGCurvePointI nextPoint, int parts, BGCurvePoint.ControlTypeEnum controlType)
         {
             var newPos = BGEditorUtility.CalculatePosition(previousPoint, nextPoint, .5f);
             var tangent = BGEditorUtility.CalculateTangent(previousPoint, nextPoint, .5f);

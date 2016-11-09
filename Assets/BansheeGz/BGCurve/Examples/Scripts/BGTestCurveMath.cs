@@ -1,8 +1,6 @@
 ﻿using System;
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
-using System.Security.Policy;
 using BansheeGz.BGSpline.Curve;
 using Random = UnityEngine.Random;
 
@@ -19,37 +17,46 @@ namespace BansheeGz.BGSpline.Example
         private const int ObjectsCount = 4;
         private const float ObjectsSpeed = .3f;
 
-        private MyCurveData myCurveData;
+        private TestCurves testCurves;
 
         private GUIStyle style;
 
         // Use this for initialization
         private void Start()
         {
-            myCurveData = new MyCurveData(GetComponent<BGCurve>(), new BGCurveBaseMath.Config(BGCurveBaseMath.Fields.PositionAndTangent), ObjectToMove, LineRendererMaterial);
+            testCurves = new TestCurves(GetComponent<BGCurve>(), new BGCurveBaseMath.Config(BGCurveBaseMath.Fields.PositionAndTangent), ObjectToMove, LineRendererMaterial);
 
-            //UsePointPositionsToCalcTangents
-            myCurveData.Add(new SomeCurveData(myCurveData, "BGRuntimePos2TangentsWorld", transform.position + new Vector3(4, 3),
-                new BGCurveBaseMath.Config(BGCurveBaseMath.Fields.PositionAndTangent) {UsePointPositionsToCalcTangents = true}));
+            //Base, OptimizeStraightLines
+            testCurves.Add(new CurveData(testCurves, "BGBaseStraightLines", "Base, OptimizeStraightLines = true", transform.position + new Vector3(-4, 1),
+                new BGCurveBaseMath.Config(BGCurveBaseMath.Fields.PositionAndTangent) {OptimizeStraightLines = true}, CurveData.MathTypeEnum.Base));
 
-            //OptimizeStraightLines
-            myCurveData.Add(new SomeCurveData(myCurveData, "BGRuntimeStraightLinesWorld", transform.position + new Vector3(-4, 3),
-                new BGCurveBaseMath.Config(BGCurveBaseMath.Fields.PositionAndTangent) {OptimizeStraightLines = true}));
+            //Base, UsePointPositionsToCalcTangents
+            testCurves.Add(new CurveData(testCurves, "BGBasePos2Tangents", "Base, UsePointPositionsToCalcTangents = true", transform.position + new Vector3(-4, 4),
+                new BGCurveBaseMath.Config(BGCurveBaseMath.Fields.PositionAndTangent) {UsePointPositionsToCalcTangents = true}, CurveData.MathTypeEnum.Base));
+
+            //Adaptive
+            testCurves.Add(new CurveData(testCurves, "BGAdaptive", "Adaptive", transform.position + new Vector3(4, 4),
+                new BGCurveAdaptiveMath.ConfigAdaptive(BGCurveBaseMath.Fields.PositionAndTangent) /* { Tolerance = .2f }*/, CurveData.MathTypeEnum.Adaptive));
+
+            //Formula
+            testCurves.Add(new CurveData(testCurves, "BGFormula", "Formula", transform.position + new Vector3(4, 1),
+                new BGCurveBaseMath.Config(BGCurveBaseMath.Fields.PositionAndTangent), CurveData.MathTypeEnum.Formula));
         }
 
 
         // Update is called once per frame
         private void Update()
         {
-            myCurveData.Update();
-            if (Input.GetKeyDown(KeyCode.LeftArrow)) myCurveData.MoveLeft();
-            if (Input.GetKeyDown(KeyCode.RightArrow)) myCurveData.MoveRight();
+            testCurves.Update();
+            if (Input.GetKeyDown(KeyCode.LeftArrow)) testCurves.MoveLeft();
+            if (Input.GetKeyDown(KeyCode.RightArrow)) testCurves.MoveRight();
         }
 
         private void OnGUI()
         {
-            if (style == null) style = new GUIStyle(GUI.skin.label) {fontSize = 20};
-            GUI.Label(new Rect(0, 30, 500, 30), "BGTestCurveMath: Left Arrow - move left, Right Arrow - move right", style);
+            if (style == null) style = new GUIStyle(GUI.skin.label) {fontSize = 18};
+            GUI.Label(new Rect(0, 24, 800, 30), "Left Arrow - move left, Right Arrow - move right", style);
+            GUI.Label(new Rect(0, 48, 800, 30), "Comparing with: " + testCurves.CurrentToString(), style);
         }
 
 
@@ -60,7 +67,7 @@ namespace BansheeGz.BGSpline.Example
             private readonly Material objectToMoveMaterial;
             private readonly LineRenderer lineRenderer;
             public readonly Material LineRendererMaterial;
-            public readonly GameObject GameObject;
+            protected readonly GameObject GameObject;
 
             protected BGCurveBaseMath Math;
 
@@ -69,7 +76,7 @@ namespace BansheeGz.BGSpline.Example
             public BGCurve Curve
             {
                 get { return curve; }
-                set
+                protected set
                 {
                     curve = value;
                     curve.Changed += (sender, args) => UpdateLineRenderer();
@@ -90,8 +97,14 @@ namespace BansheeGz.BGSpline.Example
                 //add lineRenderer
                 lineRenderer = gameObject.AddComponent<LineRenderer>();
                 lineRenderer.material = lineRendererMaterial;
+#if UNITY_5_5
+                lineRenderer.startWidth = lineRenderer.endWidth = 0.05f;
+                lineRenderer.startColor = lineRenderer.endColor = color;
+#else
                 lineRenderer.SetWidth(0.05f, 0.05f);
                 lineRenderer.SetColors(color, color);
+#endif
+
             }
 
             //=================== line renderer
@@ -105,7 +118,11 @@ namespace BansheeGz.BGSpline.Example
                     var distanceRatio = i/countMinusOne;
                     positions[i] = Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, distanceRatio);
                 }
+#if UNITY_5_5
+                lineRenderer.numPositions = count;
+#else
                 lineRenderer.SetVertexCount(count);
+#endif
                 lineRenderer.SetPositions(positions);
             }
 
@@ -115,7 +132,6 @@ namespace BansheeGz.BGSpline.Example
                 for (var i = 0; i < count; i++)
                 {
                     var clone = Instantiate(pattern.gameObject);
-                    clone.transform.localScale = pattern.transform.localScale;
                     clone.transform.parent = parent;
                     AddObject(clone);
                 }
@@ -132,7 +148,6 @@ namespace BansheeGz.BGSpline.Example
                 for (var i = 0; i < objectsToMove.Count; i++)
                 {
                     var position = Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, distanceRatios[i]);
-
                     var tangent = Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Tangent, distanceRatios[i]);
 
                     objectsToMove[i].transform.position = position;
@@ -144,11 +159,11 @@ namespace BansheeGz.BGSpline.Example
         }
 
         //==================================== Reference Curve
-        private sealed class MyCurveData : CurveDataAbstract
+        private sealed class TestCurves : CurveDataAbstract
         {
             public readonly List<float> DistanceRatios = new List<float>();
             public readonly MeshRenderer ObjectToMove;
-            private readonly List<SomeCurveData> curves = new List<SomeCurveData>();
+            private readonly List<CurveData> curves = new List<CurveData>();
 
             private float startTime = -Period*2;
             private Quaternion fromRotation;
@@ -156,7 +171,7 @@ namespace BansheeGz.BGSpline.Example
             private int currentCurveIndex = -1;
 
 
-            public MyCurveData(BGCurve curve, BGCurveBaseMath.Config config, MeshRenderer objectToMove, Material lineRendererMaterial)
+            public TestCurves(BGCurve curve, BGCurveBaseMath.Config config, MeshRenderer objectToMove, Material lineRendererMaterial)
                 : base(curve.gameObject, lineRendererMaterial, Color.green)
             {
                 Curve = curve;
@@ -164,7 +179,7 @@ namespace BansheeGz.BGSpline.Example
                 ObjectToMove = objectToMove;
 
                 AddObject(objectToMove.gameObject);
-                AddObjects(ObjectsCount - 1, objectToMove, curve.transform.parent);
+                AddObjects(ObjectsCount - 1, objectToMove, curve.transform);
 
                 const float offset = 1/(float) ObjectsCount;
                 for (var i = 0; i < ObjectsCount; i++) DistanceRatios.Add(i*offset);
@@ -204,61 +219,105 @@ namespace BansheeGz.BGSpline.Example
                 curves.ForEach(data => data.Update());
             }
 
-            public bool IsCurrent(SomeCurveData someCurve)
+            public bool IsCurrent(CurveData curve)
             {
-                return currentCurveIndex >= 0 && currentCurveIndex < curves.Count && curves[currentCurveIndex] == someCurve;
+                return currentCurveIndex >= 0 && currentCurveIndex < curves.Count && curves[currentCurveIndex] == curve;
             }
 
-            public void Add(SomeCurveData someCurveData)
+            public void Add(CurveData curveData)
             {
-                curves.Add(someCurveData);
+                curves.Add(curveData);
+            }
+
+            public string CurrentToString()
+            {
+                return currentCurveIndex < 0 ? "None" : curves[currentCurveIndex].Description;
             }
         }
 
         //==================================== Some Curve
-        private sealed class SomeCurveData : CurveDataAbstract
+        private sealed class CurveData : CurveDataAbstract
         {
-            private readonly Vector3 origin;
-            private readonly MyCurveData referenceCurve;
-            private readonly Vector3 localScale = new Vector3(.7f, .7f, .7f);
-
-            public SomeCurveData(MyCurveData referenceCurve, string name, Vector3 position, BGCurveBaseMath.Config config)
-                : base(new GameObject(name), referenceCurve.LineRendererMaterial, Color.magenta)
+            public enum MathTypeEnum
             {
-                this.referenceCurve = referenceCurve;
+                Base,
+                Formula,
+                Adaptive
+            }
+
+            private readonly Vector3 origin;
+            private readonly TestCurves testCurves;
+            private readonly Vector3 originalScale = new Vector3(.7f, .7f, .7f);
+
+            private readonly string description;
+
+            public string Description
+            {
+                get { return description; }
+            }
+
+            public CurveData(TestCurves testCurves, string name, string description, Vector3 position, BGCurveBaseMath.Config config, MathTypeEnum mathType)
+                : base(new GameObject(name), testCurves.LineRendererMaterial, Color.magenta)
+            {
+                this.testCurves = testCurves;
+                this.description = description;
 
                 //game object
-                GameObject.transform.parent = referenceCurve.GameObject.transform.parent;
-                GameObject.transform.localScale = localScale;
                 GameObject.transform.position = position;
                 origin = position;
 
                 //curve
                 Curve = GameObject.AddComponent<BGCurve>();
-                Curve.Closed = referenceCurve.Curve.Closed;
+                Curve.Closed = testCurves.Curve.Closed;
 
                 //add points
-                for (var i = 0; i < referenceCurve.Curve.PointsCount; i++) Curve.AddPoint(referenceCurve.Curve[i].CloneTo(Curve));
+                for (var i = 0; i < testCurves.Curve.PointsCount; i++)
+                {
+                    var point = testCurves.Curve[i];
+                    var clonePoint = new BGCurvePoint(Curve, point.PositionLocal, point.ControlType, point.ControlFirstLocal, point.ControlSecondLocal);
+                    Curve.AddPoint(clonePoint);
+                }
 
                 //init math after points are added
-                Math = new BGCurveBaseMath(Curve, config);
+                switch (mathType)
+                {
+                    case MathTypeEnum.Base:
+                        Math = new BGCurveBaseMath(Curve, config);
+                        break;
+                    case MathTypeEnum.Formula:
+#pragma warning disable 0618
+                        Math = new BGCurveFormulaMath(Curve, config);
+#pragma warning restore 0618
 
-                AddObjects(ObjectsCount, referenceCurve.ObjectToMove, referenceCurve.Curve.transform.parent);
+                        break;
+                    case MathTypeEnum.Adaptive:
+                        Math = new BGCurveAdaptiveMath(Curve, (BGCurveAdaptiveMath.ConfigAdaptive) config);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException("mathType", mathType, null);
+                }
+
+                AddObjects(ObjectsCount, testCurves.ObjectToMove, GameObject.transform);
+
+                //scale down
+                GameObject.transform.localScale = originalScale;
             }
 
             public override void Update()
             {
                 var curveTransform = Curve.gameObject.transform;
 
-                var referenceTransform = referenceCurve.Curve.transform;
+                var referenceTransform = testCurves.Curve.transform;
 
                 curveTransform.rotation = referenceTransform.rotation;
 
                 var moveTime = 10*Time.deltaTime;
-                curveTransform.position = Vector3.MoveTowards(curveTransform.position, referenceCurve.IsCurrent(this) ? referenceTransform.position : origin, moveTime);
-                curveTransform.localScale = Vector3.MoveTowards(curveTransform.localScale, referenceCurve.IsCurrent(this) ? referenceTransform.transform.localScale : localScale, moveTime/5);
 
-                UpdateObjects(referenceCurve.DistanceRatios);
+                var current = testCurves.IsCurrent(this);
+                curveTransform.position = Vector3.MoveTowards(curveTransform.position, current ? referenceTransform.position : origin, moveTime);
+                curveTransform.localScale = Vector3.MoveTowards(curveTransform.localScale, current ? referenceTransform.transform.localScale : originalScale, moveTime/4);
+
+                UpdateObjects(testCurves.DistanceRatios);
             }
         }
     }

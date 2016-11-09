@@ -35,7 +35,7 @@ namespace BansheeGz.BGSpline.Editor
         public abstract void OnInspectorGui();
 
         //standard onscene
-        public virtual void OnSceneGui()
+        public virtual void OnSceneGui(Plane[] frustum)
         {
         }
 
@@ -56,11 +56,6 @@ namespace BansheeGz.BGSpline.Editor
         }
 
 
-        //before applying the changes
-        public virtual void OnBeforeApply()
-        {
-        }
-
         //after applying the changes
         public virtual void OnApply()
         {
@@ -74,6 +69,10 @@ namespace BansheeGz.BGSpline.Editor
         }
 
         public virtual void OnUndoRedo()
+        {
+        }
+
+        public virtual void OnCurveChanged(BGCurveChangedArgs args)
         {
         }
     }

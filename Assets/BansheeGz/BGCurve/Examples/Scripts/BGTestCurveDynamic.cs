@@ -48,7 +48,12 @@ namespace BansheeGz.BGSpline.Example
                 positions[i] = curveBaseMath.CalcPositionByDistanceRatio(((float) i/(points - 1)));
             }
 
+#if UNITY_5_5
+            lineRenderer.numPositions = points;
+#else
             lineRenderer.SetVertexCount(points);
+#endif
+
             lineRenderer.SetPositions(positions);
         }
 

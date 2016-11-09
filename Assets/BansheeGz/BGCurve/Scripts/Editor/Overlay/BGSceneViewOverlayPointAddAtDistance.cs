@@ -36,10 +36,7 @@ namespace BansheeGz.BGSpline.Editor
                 BGSceneViewOverlayPointAddSnap2D.Get2DPlane(out plane, curve);
                 position = position - Vector3.Project(position, plane.normal.normalized);
             }
-            else
-            {
-                plane = new Plane(ray.direction, settings.NewPointDistance);
-            }
+            else plane = new Plane(ray.direction.normalized, lastPosition);
 
             error = null;
         }

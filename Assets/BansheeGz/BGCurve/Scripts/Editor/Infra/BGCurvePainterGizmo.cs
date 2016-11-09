@@ -1,5 +1,4 @@
-﻿using BansheeGz.BGSpline.Components;
-using BansheeGz.BGSpline.Curve;
+﻿using BansheeGz.BGSpline.Curve;
 using UnityEngine;
 
 namespace BansheeGz.BGSpline.Editor
@@ -7,19 +6,19 @@ namespace BansheeGz.BGSpline.Editor
     //draws a curve in editor
     public class BGCurvePainterGizmo
     {
-        public BGCurveBaseMath Math;
+        public BGCurveBaseMath Math { get; private set; }
 
         private readonly BGTransformMonitor transformMonitor;
 
         public BGCurvePainterGizmo(BGCurveBaseMath math, bool monitorTransform = false)
         {
             Math = math;
-            if (monitorTransform) transformMonitor = new BGTransformMonitor(math.Curve);
+            if (monitorTransform) transformMonitor = BGTransformMonitor.GetMonitor(math.Curve);
         }
 
         public virtual void DrawCurve()
         {
-            if (transformMonitor != null) transformMonitor.Check();
+            if (transformMonitor != null) transformMonitor.CheckForChange();
 
             var settings = BGPrivateField.GetSettings(Math.Curve);
 
@@ -42,6 +41,12 @@ namespace BansheeGz.BGSpline.Editor
             }
         }
 
+        public void Dispose()
+        {
+            if (Math != null) Math.Dispose();
+            if (transformMonitor != null) transformMonitor.Release();
+        }
+
         protected virtual void BeforeDrawingSpheres(BGCurveSettings settings)
         {
         }
@@ -61,7 +66,7 @@ namespace BansheeGz.BGSpline.Editor
 
             var points = section.Points;
             var prevPoint = points[0];
-            for (var i = 1; i < points.Length; i++)
+            for (var i = 1; i < points.Count; i++)
             {
                 var nexPoint = points[i];
                 DrawLine(prevPoint.Position, nexPoint.Position);

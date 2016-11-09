@@ -7,13 +7,13 @@ namespace BansheeGz.BGSpline.Editor
     //idea.. whole BGSceneViewOverlay thing needs to be refactored
     public sealed class BGSceneViewOverlay
     {
-        private static readonly string HeaderColor = ToHex(new Color32(255, 255, 255, 255));
+        private static readonly string HeaderColor = BGEditorUtility.ToHex(new Color32(255, 255, 255, 255));
 //        private static readonly string ErrorColor = ToHex(new Color32(122, 0, 0, 255));
-        private static readonly string ErrorColor = ToHex(new Color32(250, 207, 207, 255));
+        private static readonly string ErrorColor = BGEditorUtility.ToHex(new Color32(250, 207, 207, 255));
 //        private static readonly string OkColor = ToHex(new Color32(0, 122, 0, 255));
-        private static readonly string OkColor = ToHex(new Color32(207, 250, 209, 255));
+        private static readonly string OkColor = BGEditorUtility.ToHex(new Color32(207, 250, 209, 255));
 //        private static readonly string ActionColor = ToHex(new Color32(46, 143, 168, 255));
-        private static readonly string ActionColor = ToHex(Color.white);
+        private static readonly string ActionColor = BGEditorUtility.ToHex(Color.white);
 
         internal readonly BGCurveEditorPoints Editor;
         private GUIStyle style;
@@ -46,9 +46,9 @@ namespace BansheeGz.BGSpline.Editor
 
                 Handles.Label(position, "      "
                                         + "<size=16><b>"
-                                        + ColorIt("Action[", HeaderColor)
-                                        + ColorIt(action.Name, ActionColor)
-                                        + ColorIt("] ", HeaderColor)
+                                        + BGEditorUtility.ColorIt("Action[", HeaderColor)
+                                        + BGEditorUtility.ColorIt(action.Name, ActionColor)
+                                        + BGEditorUtility.ColorIt("] ", HeaderColor)
                                         + (error ? ToError("Error") : ToOk("Ok"))
                                         + "</b></size>\r\n"
                                         + message, style);
@@ -90,40 +90,23 @@ namespace BansheeGz.BGSpline.Editor
                 string message = null;
 
                 var seized = action.Seize(currentEvent, ref position, ref message);
-
                 if (!seized) continue;
 
                 if (message != null) Message(action, position, message);
                 break;
             }
 
-            if (currentEvent.type != EventType.Repaint) SceneView.RepaintAll();
-        }
-
-        public static string ToHex(Color c)
-        {
-            return string.Format("#{0:X2}{1:X2}{2:X2}", ToByte(c.r), ToByte(c.g), ToByte(c.b));
-        }
-
-        private static byte ToByte(float f)
-        {
-            f = Mathf.Clamp01(f);
-            return (byte) (f*255);
-        }
-
-        public static string ColorIt(string message, string color)
-        {
-            return "<color=" + color + ">" + message + "</color>";
+            if (currentEvent.control && currentEvent.type != EventType.Repaint) SceneView.RepaintAll();
         }
 
         public static string ToError(string error)
         {
-            return ColorIt(error, ErrorColor);
+            return BGEditorUtility.ColorIt(error, ErrorColor);
         }
 
         public static string ToOk(string okMessage)
         {
-            return ColorIt(okMessage, OkColor);
+            return BGEditorUtility.ColorIt(okMessage, OkColor);
         }
 
         //identify particular action
@@ -140,6 +123,21 @@ namespace BansheeGz.BGSpline.Editor
 
             //return true if event is seized by this action. if seized, Position and message should also be set in this case
             internal abstract bool Seize(Event currentEvent, ref Vector3 position, ref string message);
+        }
+
+        public static void DrawHandlesGuiTexture(Vector2 screenPoint, BGTransition.SwayTransition pointIndicatorTransition, Texture2D pointSelectedTexture)
+        {
+            pointIndicatorTransition.Tick();
+
+            var shift = pointIndicatorTransition.Value*.5f;
+
+            Handles.BeginGUI();
+
+            GUI.DrawTexture(
+                new Rect(screenPoint - new Vector2(shift, shift), new Vector2(pointIndicatorTransition.Value, pointIndicatorTransition.Value)),
+                pointSelectedTexture, ScaleMode.StretchToFill);
+
+            Handles.EndGUI();
         }
     }
 }

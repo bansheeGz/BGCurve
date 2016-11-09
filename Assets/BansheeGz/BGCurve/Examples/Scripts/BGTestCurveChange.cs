@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
-using System.Collections;
 
 namespace BansheeGz.BGSpline.Example
 {
+    // rotate and scale an object 
     public class BGTestCurveChange : MonoBehaviour
     {
         private const float RotationSpeed = 40;

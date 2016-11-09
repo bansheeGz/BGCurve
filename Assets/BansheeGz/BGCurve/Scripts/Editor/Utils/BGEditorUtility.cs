@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using BansheeGz.BGSpline.Components;
 using BansheeGz.BGSpline.Curve;
 using UnityEngine;
 using UnityEditor;
@@ -65,7 +64,11 @@ namespace BansheeGz.BGSpline.Editor
             BGExpanded123,
             BGCollapsed123,
             BGSettingsIcon123,
-            BGCcEditName123
+            BGCcEditName123,
+            BGHandlesOn123,
+            BGHandlesOff123,
+            BGCopy123,
+            BGPaste123
         }
 
         private static readonly DragSession dragSession = new DragSession();
@@ -77,6 +80,12 @@ namespace BansheeGz.BGSpline.Editor
 
         private static string currentIconPath = DefaultIconPath;
         private static string additionalCcIconPath;
+
+        private static readonly List<string> layers = new List<string>();
+        private static readonly List<int> layerNumbers = new List<int>();
+        private static readonly List<GUIContent> optionsList = new List<GUIContent>();
+        private static readonly List<BGCurvePointField> fieldsList = new List<BGCurvePointField>();
+        private static bool vertexSnappingOn;
 
         static BGEditorUtility()
         {
@@ -143,9 +152,8 @@ namespace BansheeGz.BGSpline.Editor
                 var temp = whiteTexture1x1.width;
                 temp.Equals(1);
             }
-            catch (MissingReferenceException e)
+            catch (MissingReferenceException)
             {
-                e.HelpLink = e.HelpLink;
                 //have no darn idea about any other way to reload the texture
                 whiteTexture1x1 = Texture1X1(Color.white);
             }
@@ -237,9 +245,45 @@ namespace BansheeGz.BGSpline.Editor
 
 
         // ==============================================  Fields
+        public static void TextField(Rect rect, string value, Action<string> action, bool isDelayed)
+        {
+            var newValue = !isDelayed ? EditorGUI.TextField(rect, value) : EditorGUI.DelayedTextField(rect, value);
+            if (!String.Equals(newValue, value)) action(newValue);
+        }
+
+        public static void TextField(string value, Action<string> action, bool isDelayed)
+        {
+            var newValue = !isDelayed ? EditorGUILayout.TextField(value) : EditorGUILayout.DelayedTextField(value);
+            if (!String.Equals(newValue, value)) action(newValue);
+        }
+
+        public static void TextField(string label, string value, Action<string> action, bool isDelayed)
+        {
+            var newValue = !isDelayed ? EditorGUILayout.TextField(label, value) : EditorGUILayout.DelayedTextField(label, value);
+            if (!String.Equals(newValue, value)) action(newValue);
+        }
+
+        public static void BoolField(Rect rect, bool value, Action<bool> action)
+        {
+            var newValue = EditorGUI.Toggle(rect, value);
+            if (value != newValue) action(newValue);
+        }
+
+        public static void BoolField(string label, bool value, Action<bool> action)
+        {
+            var newValue = EditorGUILayout.Toggle(label, value);
+            if (value != newValue) action(newValue);
+        }
+
         public static void Vector3Field(string name, string tooltip, Vector3 value, Action<Vector3> action)
         {
-            var newValue = EditorGUILayout.Vector3Field(new GUIContent(name) {tooltip = tooltip}, value);
+            var newValue = EditorGUILayout.Vector3Field(new GUIContent(name, tooltip), value);
+            if (AnyChange(newValue, value)) action(newValue);
+        }
+
+        public static void Vector2Field(string name, string tooltip, Vector2 value, Action<Vector2> action)
+        {
+            var newValue = EditorGUILayout.Vector2Field(new GUIContent(name, tooltip), value);
             if (AnyChange(newValue, value)) action(newValue);
         }
 
@@ -255,13 +299,88 @@ namespace BansheeGz.BGSpline.Editor
             if (value ^ newValue && action != null) action(newValue);
         }
 
+        public static void IntField(string label, int value, Action<int> action)
+        {
+            var newValue = EditorGUILayout.IntField(label, value);
+            if (value != newValue) action(newValue);
+        }
+
+        public static void FloatField(string label, float value, Action<float> action)
+        {
+            var newValue = EditorGUILayout.FloatField(label, value);
+            if (Math.Abs(value - newValue) > BGCurve.Epsilon) action(newValue);
+        }
+
+        public static void BoundsField(string label, Bounds value, Action<Bounds> action)
+        {
+            var newValue = EditorGUILayout.BoundsField(label, value);
+            if (value != newValue) action(newValue);
+        }
+
+        public static void AnimationCurveField(string label, AnimationCurve value, Action<AnimationCurve> action)
+        {
+            if (value == null) value = new AnimationCurve();
+            var newValue = EditorGUILayout.CurveField(label, value);
+            if (value != newValue) action(newValue);
+        }
+
+        public static void QuaternionField(string label, Quaternion value, Action<Quaternion> action)
+        {
+            var oldValue = new Vector4(value.x, value.y, value.z, value.w);
+            var newValue = EditorGUILayout.Vector4Field(label, oldValue);
+            if (oldValue != newValue) action(new Quaternion(newValue.x, newValue.y, newValue.z, newValue.w));
+        }
+
+        public static void GameObjectField(string label, GameObject value, Action<GameObject> action)
+        {
+            var newValue = EditorGUILayout.ObjectField(label, value, typeof(GameObject), true);
+            if (value != newValue) action((GameObject) newValue);
+        }
+
+        public static void ComponentField<T>(string label, T value, Action<T> action) where T : Component
+        {
+            var newValue = EditorGUILayout.ObjectField(label, value, typeof(T), true);
+            if (value != newValue) action((T) newValue);
+        }
+
+
+        public static void ComponentChoosableField(string label, Component value, Action<Component> action)
+        {
+            Horizontal(() =>
+            {
+                var newValue = EditorGUILayout.ObjectField(label, value, typeof(Component), true);
+                if (value != newValue) action((Component) newValue);
+
+                if (newValue != null && GUILayout.Button("...", GUILayout.Width(40))) BGChoseComponentWindow.Open((Component) newValue, action);
+            });
+        }
+
+        public static void BGCurveField(string label, BGCurve value, Action<BGCurve> action)
+        {
+            var newValue = EditorGUILayout.ObjectField(label, value, typeof(BGCurve), true);
+            if (value != newValue) action((BGCurve) newValue);
+        }
+
+        public static void BGCurvePointComponentField(string label, BGCurvePointComponent value, Action<BGCurvePointComponent> action)
+        {
+            var newValue = EditorGUILayout.ObjectField(label, value, typeof(BGCurvePointComponent), true);
+            if (value != newValue) action((BGCurvePointComponent) newValue);
+        }
+
+        public static void BGCurvePointGOField(string label, BGCurvePointGO value, Action<BGCurvePointGO> action)
+        {
+            var newValue = EditorGUILayout.ObjectField(label, value, typeof(BGCurvePointGO), true);
+            if (value != newValue) action((BGCurvePointGO) newValue);
+        }
+
+
         public static void ColorField(Rect rect, Color color, Action<Color> action)
         {
             var newValue = EditorGUI.ColorField(rect, color);
             if (AnyChange(color, newValue)) action(newValue);
         }
 
-        public static void ColorField(Color32 color, string label, Action<Color> action)
+        public static void ColorField(string label, Color32 color, Action<Color> action)
         {
             var newValue = EditorGUILayout.ColorField(label, color);
             if (AnyChange(color, newValue)) action(newValue);
@@ -273,22 +392,137 @@ namespace BansheeGz.BGSpline.Editor
             if (AnyChange(value, newValue)) action(newValue);
         }
 
-        public static void PopupField(Rect rect, Enum value, Action<Enum> action)
+        public static void SliderField(int value, int min, int max, Action<int> action)
         {
-            var values = Enum.GetValues(value.GetType());
+            var newValue = EditorGUILayout.IntSlider(value, min, max);
+            if (AnyChange(value, newValue)) action(newValue);
+        }
 
-            var options = new string[values.Length];
+        public static void SliderField(float value, float min, float max, Action<float> action)
+        {
+            var newValue = GUILayout.HorizontalSlider(value, min, max);
+            if (AnyChange(value, newValue)) action(newValue);
+        }
+
+
+        public static void PopupField(Rect rect, Enum value, Enum[] allOptions, Action<Enum> action)
+        {
+            var options = new string[allOptions.Length];
             var selected = 0;
-            for (var i = 0; i < values.Length; i++)
+            for (var i = 0; i < allOptions.Length; i++)
             {
-                var val = values.GetValue(i);
+                var val = allOptions.GetValue(i);
 
                 options[i] = val.ToString();
                 if (Equals(value, val)) selected = i;
             }
             var newIndex = EditorGUI.Popup(rect, selected, options);
 
-            if (newIndex != selected) action((Enum) values.GetValue(newIndex));
+            if (newIndex != selected) action((Enum) allOptions.GetValue(newIndex));
+        }
+
+        public static void PopupField(Rect rect, Enum value, Action<Enum> action)
+        {
+            PopupField(rect, value, Enum.GetValues(value.GetType()).Cast<Enum>().ToArray(), action);
+        }
+
+        public static void PopupField(Enum value, string label, Enum[] allOptions, Action<Enum> action)
+        {
+            var options = new string[allOptions.Length];
+            var selected = 0;
+            for (var i = 0; i < allOptions.Length; i++)
+            {
+                var val = allOptions.GetValue(i);
+
+                options[i] = val.ToString();
+                if (Equals(value, val)) selected = i;
+            }
+            var newIndex = EditorGUILayout.Popup(label, selected, options);
+
+            if (newIndex != selected) action((Enum) allOptions.GetValue(newIndex));
+        }
+
+        public static void PopupField(Enum value, string label, Action<Enum> action)
+        {
+            PopupField(value, label, Enum.GetValues(value.GetType()).Cast<Enum>().ToArray(), action);
+        }
+
+
+        public static void LayerMaskField(string label, LayerMask layer, Action<int> action)
+        {
+/*
+                                                                                                            var newValue = EditorGUILayout.LayerField(label, layer.value);
+                                                                                                            if (newValue != layer.value) action(newValue);
+                                                                                                */
+            //thanks to FlyingOstriche
+            //I have no time to figure out what's going on here
+            layers.Clear();
+            layerNumbers.Clear();
+
+            for (var i = 0; i < 32; i++)
+            {
+                var layerName = LayerMask.LayerToName(i);
+                if (String.IsNullOrEmpty(layerName)) continue;
+
+                layers.Add(layerName);
+                layerNumbers.Add(i);
+            }
+
+            var mask = 0;
+            for (var i = 0; i < layerNumbers.Count; i++)
+                if (((1 << layerNumbers[i]) & layer.value) > 0)
+                {
+                    mask |= (1 << i);
+                }
+
+            var newValue = EditorGUILayout.MaskField(label, mask, layers.ToArray());
+
+            //do not convert to LINQ
+            var newMask = 0;
+            var newMaskCheck = 0;
+            for (var i = 0; i < layerNumbers.Count; i++)
+                if ((newValue & (1 << i)) > 0)
+                {
+                    newMask |= (1 << layerNumbers[i]);
+                    newMaskCheck |= (1 << i);
+                }
+
+            if (newMaskCheck == mask) return;
+
+
+            action(newMask);
+        }
+
+        public static void CustomField(GUIContent label, BGCurve curve, BGCurvePointField value, BGCurvePointField.TypeEnum type, Action<BGCurvePointField> action)
+        {
+            //idea.. this is a nasty hack to get rid of weak reference object.. not sure how to get rid of it properly
+            if (value == null) action(null);
+
+            optionsList.Clear();
+            fieldsList.Clear();
+
+            optionsList.Add(new GUIContent("None"));
+
+            var fields = curve.Fields;
+            var selectedIndex = 0;
+            if (fields != null && fields.Length > 0)
+            {
+                var cursor = 1;
+                foreach (var field in fields)
+                {
+                    if (field.Type != type) continue;
+
+                    var b = value != null;
+                    var @equals = b && String.Equals(value.FieldName, field.FieldName);
+                    if (b && @equals) selectedIndex = cursor;
+
+                    optionsList.Add(new GUIContent(field.FieldName));
+                    fieldsList.Add(field);
+                    cursor++;
+                }
+            }
+            var newIndex = EditorGUILayout.Popup(label, selectedIndex, optionsList.ToArray());
+            if (newIndex != selectedIndex) action(newIndex == 0 ? null : fieldsList[newIndex - 1]);
         }
 
 
@@ -334,9 +568,8 @@ namespace BansheeGz.BGSpline.Editor
                     fileName = FileFromFullPath(path);
                     fileNameNoExtension = StripExtension(fileName);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    e.HelpLink = e.HelpLink;
                     return null;
                 }
 
@@ -378,9 +611,8 @@ namespace BansheeGz.BGSpline.Editor
                 var maxSlashIndex = Mathf.Max(path.LastIndexOf('/'), path.LastIndexOf('\\'));
                 return maxSlashIndex >= 0 ? path.Substring(0, maxSlashIndex + 1) : path;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                e.HelpLink = e.HelpLink;
                 return null;
             }
         }
@@ -392,9 +624,8 @@ namespace BansheeGz.BGSpline.Editor
                 var maxSlashIndex = Mathf.Max(path.LastIndexOf('/'), path.LastIndexOf('\\'));
                 return maxSlashIndex >= 0 ? path.Substring(maxSlashIndex + 1, path.Length - maxSlashIndex - 1) : path;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                e.HelpLink = e.HelpLink;
                 return null;
             }
         }
@@ -406,9 +637,8 @@ namespace BansheeGz.BGSpline.Editor
                 var dotIndex = Mathf.Max(fileName.LastIndexOf('.'));
                 return dotIndex >= 0 ? fileName.Substring(0, dotIndex) : fileName;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                e.HelpLink = e.HelpLink;
                 return null;
             }
         }
@@ -425,8 +655,39 @@ namespace BansheeGz.BGSpline.Editor
 
         public static Texture2D Texture1X1(Color color)
         {
-            var texture = new Texture2D(1, 1);
+            var texture = new Texture2D(1, 1, TextureFormat.ARGB32, false);
             texture.SetPixel(0, 0, color);
+            texture.Apply(false);
+            return texture;
+        }
+
+        public static Texture2D TextureWithBorder(int size, int borderSize, Color color, Color borderColor)
+        {
+            if (size < 4) size = 4;
+            else if (size > 1024) size = 1024;
+            if (!Mathf.IsPowerOfTwo(size)) size = Mathf.ClosestPowerOfTwo(size);
+
+            if (borderSize < 1) borderSize = 1;
+            else if (borderSize > size/2) borderSize = Mathf.CeilToInt(size/2f);
+
+            var texture = new Texture2D(size, size, TextureFormat.ARGB32, false);
+
+            //idea... setPixels works faster
+            //left
+            for (var i = 0; i < borderSize; i++) for (var j = 0; j < size; j++) texture.SetPixel(i, j, borderColor);
+            //right
+            for (var i = size - borderSize; i < size; i++) for (var j = 0; j < size; j++) texture.SetPixel(i, j, borderColor);
+            for (var i = borderSize; i < size - borderSize; i++)
+            {
+                //top
+                for (var j = 0; j < borderSize; j++) texture.SetPixel(i, j, borderColor);
+                //bottom
+                for (var j = size - borderSize; j < size; j++) texture.SetPixel(i, j, borderColor);
+            }
+
+            //back
+            for (var i = borderSize; i < size - borderSize; i++) for (var j = borderSize; j < size - borderSize; j++) texture.SetPixel(i, j, color);
+
             texture.Apply(false);
             return texture;
         }
@@ -454,6 +715,13 @@ namespace BansheeGz.BGSpline.Editor
         public static Vector3 ControlHandleCustom(int number, Vector3 position, Quaternion rotation, BGCurveSettings.SettingsForHandles handlesSettings)
         {
             var handleSize = GetHandleSize(position);
+
+            if (vertexSnappingOn)
+            {
+                Handles.color = Handles.centerColor;
+                GUI.SetNextControlName("FreeMoveAxis");
+                return Handles.FreeMoveHandle(position, rotation, handleSize*0.15f, new Vector3(xSnap, ySnap, zSnap), Handles.RectangleCap);
+            }
 
             var axisSize = handleSize*handlesSettings.AxisScale;
 
@@ -535,14 +803,31 @@ namespace BansheeGz.BGSpline.Editor
 
 
         // ============================================= Misc functions
+
+        public static string ToHex(Color c)
+        {
+            return String.Format("#{0:X2}{1:X2}{2:X2}", ToByte(c.r), ToByte(c.g), ToByte(c.b));
+        }
+
+        private static byte ToByte(float f)
+        {
+            f = Mathf.Clamp01(f);
+            return (byte) (f*255);
+        }
+
+        public static string ColorIt(string message, string color)
+        {
+            return "<color=" + color + ">" + message + "</color>";
+        }
+
         public static bool AnyChange(Vector3 vector1, Vector3 vector2)
         {
-            return Math.Abs(vector1.x - vector2.x) > BGCurve.Epsilon || Math.Abs(vector1.y - vector2.y) > BGCurve.Epsilon || Math.Abs(vector1.z - vector2.z) > BGCurve.Epsilon;
+            return !Mathf.Approximately(vector1.x, vector2.x) || !Mathf.Approximately(vector1.y, vector2.y) || !Mathf.Approximately(vector1.z, vector2.z);
         }
 
         public static bool AnyChange(float value1, float value2)
         {
-            return Math.Abs(value1 - value2) > BGCurve.Epsilon;
+            return !Mathf.Approximately(value1, value2);
         }
 
         private static bool AnyChange(Color32 color1, Color32 color2)
@@ -584,6 +869,15 @@ namespace BansheeGz.BGSpline.Editor
             var newValue = new List<TV>();
             key2Value[key] = newValue;
             return newValue;
+        }
+
+        public static bool ChangeCheck(Action action, Action changeCallback = null)
+        {
+            EditorGUI.BeginChangeCheck();
+            action();
+            var changed = EditorGUI.EndChangeCheck();
+            if (changed && changeCallback != null) changeCallback();
+            return changed;
         }
 
 
@@ -652,7 +946,7 @@ namespace BansheeGz.BGSpline.Editor
             return window;
         }
 
-        public static void DrawBound(Bounds bounds, Color color, Color bColor)
+        public static void DrawBound(Bounds bounds, Color color, Color borderColor)
         {
             var min = bounds.min;
             var max = bounds.max;
@@ -673,12 +967,12 @@ namespace BansheeGz.BGSpline.Editor
             var p7 = new Vector3(xMax, yMax, zMax);
             var p8 = new Vector3(xMax, yMin, zMax);
 
-            DrawRect(p1, p2, p3, p4, color, bColor);
-            DrawRect(p1, p5, p6, p2, color, bColor);
-            DrawRect(p2, p6, p7, p3, color, bColor);
-            DrawRect(p3, p7, p8, p4, color, bColor);
-            DrawRect(p4, p8, p5, p1, color, bColor);
-            DrawRect(p5, p6, p7, p8, color, bColor);
+            DrawRect(p1, p2, p3, p4, color, borderColor);
+            DrawRect(p1, p5, p6, p2, color, borderColor);
+            DrawRect(p2, p6, p7, p3, color, borderColor);
+            DrawRect(p3, p7, p8, p4, color, borderColor);
+            DrawRect(p4, p8, p5, p1, color, borderColor);
+            DrawRect(p5, p6, p7, p8, color, borderColor);
         }
 
 
@@ -690,7 +984,7 @@ namespace BansheeGz.BGSpline.Editor
 
         // ============================================= Curve related
         //this is very slow
-        public static void Split(BGCurvePoint @from, BGCurvePoint to, int parts, Action<Vector3, Vector3> action)
+        public static void Split(BGCurvePointI @from, BGCurvePointI to, int parts, Action<Vector3, Vector3> action)
         {
             var noControls = @from.ControlType == BGCurvePoint.ControlTypeEnum.Absent && to.ControlType == BGCurvePoint.ControlTypeEnum.Absent;
             if (noControls)
@@ -722,7 +1016,7 @@ namespace BansheeGz.BGSpline.Editor
         }
 
         //copy paste from math, not sure how to refactor it 
-        public static Vector3 CalculatePosition(BGCurvePoint @from, BGCurvePoint to, float t)
+        public static Vector3 CalculatePosition(BGCurvePointI @from, BGCurvePointI to, float t)
         {
             if (@from.ControlType == BGCurvePoint.ControlTypeEnum.Absent && to.ControlType == BGCurvePoint.ControlTypeEnum.Absent)
             {
@@ -738,7 +1032,7 @@ namespace BansheeGz.BGSpline.Editor
         }
 
         /// <summary>Tangent in World coordinates </summary>
-        public static Vector3 CalculateTangent(BGCurvePoint @from, BGCurvePoint to, float t)
+        public static Vector3 CalculateTangent(BGCurvePointI @from, BGCurvePointI to, float t)
         {
             if (@from.ControlType == BGCurvePoint.ControlTypeEnum.Absent && to.ControlType == BGCurvePoint.ControlTypeEnum.Absent)
             {
@@ -754,7 +1048,7 @@ namespace BansheeGz.BGSpline.Editor
         }
 
         /// <summary>Tangent in World coordinates </summary>
-        public static Vector3 CalculateTangent(BGCurvePoint point, BGCurvePoint previous, BGCurvePoint next, float precision)
+        public static Vector3 CalculateTangent(BGCurvePointI point, BGCurvePointI previous, BGCurvePointI next, float precision)
         {
             var prevTangent = previous != null ? CalculateTangent(previous, point, 1 - precision) : Vector3.zero;
             var nextTangent = next != null ? CalculateTangent(point, next, precision) : Vector3.zero;
@@ -767,36 +1061,36 @@ namespace BansheeGz.BGSpline.Editor
         }
 
 /*
-        public static Vector3 CalculateTangent(BGCurvePoint point, float precision)
-        {
-            var curve = point.Curve;
+                                                                        public static Vector3 CalculateTangent(BGCurvePoint point, float precision)
+                                                                        {
+                                                                            var curve = point.Curve;
+                                                                
+                                                                            //not enough points
+                                                                            if (curve.PointsCount < 2) return Vector3.zero;
+                                                                
+                                                                            var myIndex = curve.IndexOf(point);
+                                                                
+                                                                            //have no idea why it can happen
+                                                                            if (myIndex < 0) return Vector3.zero;
+                                                                
+                                                                            //prev point
+                                                                            BGCurvePoint prev = null;
+                                                                            if (myIndex != 0 || curve.Closed)
+                                                                            {
+                                                                                prev = myIndex == 0 ? curve[curve.PointsCount - 1] : curve[myIndex - 1];
+                                                                            }
+                                                                
+                                                                            //next point
+                                                                            BGCurvePoint next = null;
+                                                                            if (myIndex != curve.PointsCount - 1 || curve.Closed)
+                                                                            {
+                                                                                next = myIndex == curve.PointsCount - 1 ? curve[0] : curve[myIndex + 1];
+                                                                            }
+                                                                            return CalculateTangent(point, prev, next, precision);
+                                                                        }
+                                                                */
 
-            //not enough points
-            if (curve.PointsCount < 2) return Vector3.zero;
-
-            var myIndex = curve.IndexOf(point);
-
-            //have no idea why it can happen
-            if (myIndex < 0) return Vector3.zero;
-
-            //prev point
-            BGCurvePoint prev = null;
-            if (myIndex != 0 || curve.Closed)
-            {
-                prev = myIndex == 0 ? curve[curve.PointsCount - 1] : curve[myIndex - 1];
-            }
-
-            //next point
-            BGCurvePoint next = null;
-            if (myIndex != curve.PointsCount - 1 || curve.Closed)
-            {
-                next = myIndex == curve.PointsCount - 1 ? curve[0] : curve[myIndex + 1];
-            }
-            return CalculateTangent(point, prev, next, precision);
-        }
-*/
-
-        public static float CalculateDistance(BGCurvePoint from, BGCurvePoint to, int parts)
+        public static float CalculateDistance(BGCurvePointI from, BGCurvePointI to, int parts)
         {
             var distance = 0f;
             Split(@from, to, parts, (fromPos, toPos) => distance += Vector3.Distance(fromPos, toPos));
@@ -867,6 +1161,47 @@ namespace BansheeGz.BGSpline.Editor
             {
                 GUIUtility.hotControl = 0;
             }
+        }
+
+        public class ExitException : Exception
+        {
+            //get me outta of here
+        }
+
+        //handles
+        public static Vector3 Handle(int number, BGCurveSettings.HandlesTypeEnum type, Vector3 position, Quaternion rotation, BGCurveSettings.SettingsForHandles handlesSettings)
+        {
+            switch (type)
+            {
+                case BGCurveSettings.HandlesTypeEnum.FreeMove:
+                    position = Handles.FreeMoveHandle(position, rotation, GetHandleSize(position, .2f), Vector3.zero, Handles.CircleCap);
+                    break;
+                case BGCurveSettings.HandlesTypeEnum.Standard:
+                    position = Handles.PositionHandle(position, rotation);
+                    break;
+                case BGCurveSettings.HandlesTypeEnum.Configurable:
+
+                    var dragging = GUIUtility.hotControl != 0;
+                    var current = Event.current;
+                    switch (current.type)
+                    {
+                        case EventType.KeyDown:
+                            if (current.keyCode == KeyCode.V && !dragging) vertexSnappingOn = true;
+                            break;
+                        case EventType.KeyUp:
+                            if (current.keyCode == KeyCode.V && !current.shift && !dragging) vertexSnappingOn = false;
+                            break;
+                        case EventType.Layout:
+                            var vertexDragging = BGPrivateField.Get<bool>(typeof(Tools), "vertexDragging");
+                            if (!dragging && !vertexDragging) vertexSnappingOn = current.shift;
+                            break;
+                    }
+
+
+                    position = ControlHandleCustom(number, position, rotation, handlesSettings);
+                    break;
+            }
+            return position;
         }
     }
 }

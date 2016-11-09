@@ -1,5 +1,4 @@
-﻿using System;
-using BansheeGz.BGSpline.Curve;
+﻿using BansheeGz.BGSpline.Curve;
 using UnityEngine;
 using UnityEditor;
 

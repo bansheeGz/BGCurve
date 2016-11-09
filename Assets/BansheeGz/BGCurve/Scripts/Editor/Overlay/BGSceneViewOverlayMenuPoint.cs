@@ -63,7 +63,7 @@ namespace BansheeGz.BGSpline.Editor
         public sealed class PointMenu : AbstractMenu
         {
             public int PointIndex;
-            private BGCurvePoint point;
+            private BGCurvePointI point;
             private MenuItemButton addToSelectionItem;
             private MenuItemButton removeFromSelectionItem;
 
@@ -88,7 +88,8 @@ namespace BansheeGz.BGSpline.Editor
                         var curve = point.Curve;
                         var settings = BGPrivateField.GetSettings(curve);
                         var index = curve.IndexOf(point);
-                        curve.AddPoint(BGNewPointPositionManager.InsertBefore(curve, index, settings.ControlType, settings.Sections), index);
+
+                        BGCurveEditor.AddPoint(curve, BGNewPointPositionManager.InsertBefore(curve, index, settings.ControlType, settings.Sections), index);
                     }));
 
                 //add after
@@ -98,7 +99,7 @@ namespace BansheeGz.BGSpline.Editor
                         var curve = point.Curve;
                         var settings = BGPrivateField.GetSettings(curve);
                         var index = curve.IndexOf(point);
-                        curve.AddPoint(BGNewPointPositionManager.InsertAfter(curve, index, settings.ControlType, settings.Sections), index + 1);
+                        BGCurveEditor.AddPoint(curve, BGNewPointPositionManager.InsertAfter(curve, index, settings.ControlType, settings.Sections), index + 1);
                     }));
 
 
@@ -118,7 +119,7 @@ namespace BansheeGz.BGSpline.Editor
                 point.ControlType = type;
             }
 
-            public void On(BGCurvePoint point, int index)
+            public void On(BGCurvePointI point, int index)
             {
                 PointIndex = index;
                 this.point = point;
@@ -126,12 +127,12 @@ namespace BansheeGz.BGSpline.Editor
 
                 Get(0).Current = point.ControlType == BGCurvePoint.ControlTypeEnum.Absent;
                 Get(1).Current = point.ControlType == BGCurvePoint.ControlTypeEnum.BezierSymmetrical;
-                Get(2).Current = point.ControlType == BGCurvePoint.ControlTypeEnum.BezierIndependant; 
+                Get(2).Current = point.ControlType == BGCurvePoint.ControlTypeEnum.BezierIndependant;
             }
 
             protected override void Delete()
             {
-                point.Curve.Delete(point);
+                BGCurveEditor.DeletePoint(point.Curve, point.Curve.IndexOf(point));
             }
 
             public override void On(Vector3 position)

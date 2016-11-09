@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using BansheeGz.BGSpline.Curve;
+using UnityEditor;
 
 namespace BansheeGz.BGSpline.Editor
 {
@@ -90,7 +91,11 @@ namespace BansheeGz.BGSpline.Editor
             {
                 Add(new MenuSeparator());
                 Add(new MenuItemButton(BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGSelectionRemove123), "Remove this point from selection",
-                    () => EditorSelection.Clear()));
+                    () =>
+                    {
+                        EditorSelection.Clear();
+                        EditorUtility.SetDirty(Overlay.Editor.Curve);
+                    }));
             }
 
 

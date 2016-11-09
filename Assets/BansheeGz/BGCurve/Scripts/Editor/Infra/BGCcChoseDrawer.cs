@@ -39,6 +39,7 @@ namespace BansheeGz.BGSpline.Editor
                         {
                             BGCcChoseWindow.Open(cc, allPossibleCcList, newCc =>
                             {
+                                Undo.RecordObject(property.serializedObject.targetObject, "Cc changed");
                                 property.objectReferenceValue = newCc;
                                 property.serializedObject.ApplyModifiedProperties();
                                 EditorUtility.SetDirty(property.serializedObject.targetObject);

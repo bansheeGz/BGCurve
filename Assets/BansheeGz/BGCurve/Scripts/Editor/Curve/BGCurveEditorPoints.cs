@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using BansheeGz.BGSpline.Curve;
 using UnityEditor;
@@ -9,52 +11,85 @@ namespace BansheeGz.BGSpline.Editor
     public class BGCurveEditorPoints : BGCurveEditorTab
     {
         // ====================================== Static const
+        private static readonly Color32 HiddenPointMenuColor = new Color32(144, 195, 212, 255);
+
+        private static readonly GUIContent[] XZLabels = {new GUIContent("X"), new GUIContent("Z")};
+        private static readonly GUIContent[] YZLabels = {new GUIContent("Y"), new GUIContent("Z")};
+
+        // ====================================== Fields
         private readonly Texture2D convertAll2D;
         private readonly Texture2D addPointIcon;
 
-        private static readonly Color32 HiddenPointMenuColor = new Color32(144, 195, 212, 255);
-
-        // ====================================== Fields
         private readonly SerializedProperty closedProperty;
+        private readonly SerializedProperty pointsModeProperty;
         private readonly SerializedProperty controlTypeProperty;
         private readonly SerializedProperty mode2DProperty;
+        private readonly SerializedProperty snapTypeProperty;
+        private readonly SerializedProperty snapDistanceProperty;
+        private readonly SerializedProperty snapAxisProperty;
+        private readonly SerializedProperty snapTriggerInteractionProperty;
+        private readonly SerializedProperty snapToBackFacesProperty;
+        private readonly SerializedProperty eventModeProperty;
+        private readonly SerializedProperty forceChangedEventModeProperty;
 
-        //selected points
-        private readonly BGCurveEditorPointsSelection editorSelection;
         //point
         private readonly BGCurveEditorPoint editorPoint;
         //painting a curve in the scene
         private BGCurvePainterGizmo painter;
 
-        private bool closeChanged;
-        private bool mode2DChanged;
-
         private readonly BGSceneViewOverlay overlay;
+        private readonly BGCurveEditorPointsSelection editorSelection;
+        private readonly SerializedObject serializedObject;
+        private readonly List<BGTransformMonitor> pointTransformTrackers = new List<BGTransformMonitor>();
 
-        public BGCurveEditorPoints(BGCurveEditor editor, SerializedObject curveObject) : base(editor, curveObject, BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGPoints123))
+        private GUIContent syncContent;
+
+
+        public BGCurveEditorPoints(BGCurveEditor editor, SerializedObject serializedObject, BGCurveEditorPointsSelection editorSelection)
+            : base(editor, serializedObject, BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGPoints123))
         {
+            this.serializedObject = serializedObject;
+            this.editorSelection = editorSelection;
+
             //textures
             convertAll2D = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGConvertAll123);
             addPointIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGAdd123);
 
-            //selection
-            editorSelection = new BGCurveEditorPointsSelection(Curve, this);
-
             //point
-            editorPoint = new BGCurveEditorPoint(this, editorSelection);
+            editorPoint = new BGCurveEditorPoint(() => Editor.Math, editorSelection);
 
             //closed or not
-            closedProperty = curveObject.FindProperty("closed");
+            closedProperty = serializedObject.FindProperty("closed");
+
+            //how points are stored
+            pointsModeProperty = serializedObject.FindProperty("pointsMode");
 
             //2d mode
-            mode2DProperty = curveObject.FindProperty("mode2D");
+            mode2DProperty = serializedObject.FindProperty("mode2D");
+
+            //snapping
+            snapTypeProperty = serializedObject.FindProperty("snapType");
+            snapAxisProperty = serializedObject.FindProperty("snapAxis");
+            snapDistanceProperty = serializedObject.FindProperty("snapDistance");
+            snapTriggerInteractionProperty = serializedObject.FindProperty("snapTriggerInteraction");
+            snapToBackFacesProperty = serializedObject.FindProperty("snapToBackFaces");
+
+            //force update
+            forceChangedEventModeProperty = serializedObject.FindProperty("forceChangedEventMode");
+
+            //event type
+            eventModeProperty = serializedObject.FindProperty("eventMode");
 
             //settings
-            controlTypeProperty = curveObject.FindProperty("settings").FindPropertyRelative("controlType");
+            controlTypeProperty = serializedObject.FindProperty("settings").FindPropertyRelative("controlType");
 
             //Context menu
             overlay = new BGSceneViewOverlay(this, editorSelection);
+
+            //for GameObjects points which use transforms
+            UpdatePointsTrackers();
         }
+
 
         // ================================================================================ Inspector
         public override void OnInspectorGui()
@@ -71,15 +106,18 @@ namespace BansheeGz.BGSpline.Editor
 
             if (Curve.PointsCount > 0)
             {
-                var temp = BGCurveSettingsForEditor.DisableInspectorPointMenu;
-                BGCurveSettingsForEditor.DisableInspectorPointMenu = BGEditorUtility.ButtonOnOff(ref temp, "Points menu [" + Curve.PointsCount + "]", "Show points in Editor inspector",
-                    HiddenPointMenuColor,
-                    new GUIContent("Show", "Click to show points menu"),
-                    new GUIContent("Hide", "Click to hide points menu"), () =>
-                    {
-                        const string title = "Reverse points";
-                        if (GUILayout.Button(new GUIContent(title, "Reverse all points, but keep curve intact")))
+                BGEditorUtility.VerticalBox(() =>
+                {
+                    var temp = BGCurveSettingsForEditor.DisableInspectorPointMenu;
+                    BGCurveSettingsForEditor.DisableInspectorPointMenu = BGEditorUtility.ButtonOnOff(ref temp, "Points menu [" + Curve.PointsCount + "]", "Show points in Editor inspector",
+                        HiddenPointMenuColor,
+                        new GUIContent("Show", "Click to show points menu"),
+                        new GUIContent("Hide", "Click to hide points menu"), () =>
                         {
+                            const string title = "Reverse points";
+
+                            if (!GUILayout.Button(new GUIContent(title, "Reverse all points, but keep curve intact"))) return;
+
                             if (Curve.PointsCount < 2)
                             {
                                 BGEditorUtility.Inform(title, "There should be at least 2 points. Curve has " + Curve.PointsCount);
@@ -88,11 +126,12 @@ namespace BansheeGz.BGSpline.Editor
                             if (!BGEditorUtility.Confirm(title, "Are you sure you want to reverse the order of " + Curve.PointsCount + " points? Curve will remain intact.", "Reverse")) return;
 
                             Curve.Reverse();
-                            EditorUtility.SetDirty(Curve);
-                        }
-                    });
+                        });
 
-                if (!BGCurveSettingsForEditor.DisableInspectorPointMenu) BGEditorUtility.VerticalBox(() => Curve.ForEach((point, index, count) => editorPoint.OnInspectorGUI(point, index, settings)));
+                    //show points!
+                    if (!BGCurveSettingsForEditor.DisableInspectorPointMenu)
+                        SwapVector2Labels(Curve.Mode2D, () => Curve.ForEach((point, index, count) => editorPoint.OnInspectorGui(point, index, settings)));
+                });
 
                 // ======================================== Selections operations
                 editorSelection.InspectorSelectionOperations();
@@ -105,12 +144,16 @@ namespace BansheeGz.BGSpline.Editor
                 BGEditorUtility.HorizontalBox(() =>
                 {
                     EditorGUILayout.LabelField("No points!");
+
                     if (BGEditorUtility.ButtonWithIcon(addPointIcon, "Add new point at (0,0,0) local coordinates"))
-                        Curve.AddPoint(new BGCurvePoint(Curve, Vector3.zero, settings.ControlType, Vector3.right, Vector3.left));
+                        BGCurveEditor.AddPoint(Curve, new BGCurvePoint(Curve, Vector3.zero, settings.ControlType, Vector3.right, Vector3.left), 0);
                 });
             }
 
-            if (editorSelection.Changed) EditorUtility.SetDirty(Curve);
+            if (!editorSelection.Changed) return;
+
+            Editor.Repaint();
+            SceneView.RepaintAll();
         }
 
 
@@ -129,27 +172,110 @@ namespace BansheeGz.BGSpline.Editor
                     + "\r\n4) Hold shift + drag to use rectangular selection in Scene View"
                     , MessageType.Info);
 
-            EditorGUILayout.PropertyField(closedProperty);
-            EditorGUILayout.PropertyField(mode2DProperty);
 
-            BGEditorUtility.Horizontal(() =>
+            try
             {
-                EditorGUILayout.PropertyField(controlTypeProperty);
+                // Curve's block
+                BGEditorUtility.VerticalBox(() =>
+                {
+                    //closed
+                    EditorGUILayout.PropertyField(closedProperty);
 
-                if (!BGEditorUtility.ButtonWithIcon(convertAll2D, "Convert control types for all existing points ", 44)) return;
 
-                var settings = Settings;
+                    //point's store mode
+                    BGEditorUtility.Horizontal(() =>
+                    {
+                        EditorGUILayout.PropertyField(pointsModeProperty);
 
-                foreach (var point in Curve.Points.Where(point => point.ControlType != settings.ControlType)) point.ControlType = settings.ControlType;
-            });
+                        BGEditorUtility.DisableGui(() =>
+                        {
+                            BGEditorUtility.Assign(ref syncContent, () => new GUIContent("Sync", "Sort points Game Objects and update names"));
+
+                            if (!GUILayout.Button(syncContent)) return;
+
+                            BGPrivateField.Invoke(Curve, BGCurve.MethodSetPointsNames);
+                        }, !BGCurve.IsGoMode(Curve.PointsMode));
+                    });
+
+
+                    //2D mode
+                    BGEditorUtility.Horizontal(() =>
+                    {
+                        EditorGUILayout.PropertyField(mode2DProperty);
+                        BGEditorUtility.DisableGui(() =>
+                        {
+                            if (!GUILayout.Button("Apply", GUI.skin.button, GUILayout.Width(80))) return;
+
+                            Curve.FireBeforeChange(BGCurve.Event2D);
+                            Curve.Apply2D(Curve.Mode2D);
+                            Curve.FireChange(BGCurveChangedArgs.GetInstance(Curve, BGCurveChangedArgs.ChangeTypeEnum.Points, BGCurve.Event2D));
+                        }, mode2DProperty.enumValueIndex == 0);
+                    });
+
+                    //snapping
+                    BGEditorUtility.VerticalBox(() =>
+                    {
+                        BGEditorUtility.Horizontal(() =>
+                        {
+                            EditorGUILayout.PropertyField(snapTypeProperty);
+
+                            BGEditorUtility.DisableGui(() =>
+                            {
+                                if (!GUILayout.Button("Apply", GUI.skin.button, GUILayout.Width(80))) return;
+
+                                Curve.FireBeforeChange(BGCurve.EventSnapType);
+                                Curve.ApplySnapping();
+                                Curve.FireChange(BGCurveChangedArgs.GetInstance(Curve, BGCurveChangedArgs.ChangeTypeEnum.Snap, BGCurve.EventSnapType));
+                            }, snapTypeProperty.enumValueIndex == 0);
+                        });
+
+                        if (snapTypeProperty.enumValueIndex == 0) return;
+
+                        EditorGUILayout.PropertyField(snapAxisProperty);
+                        EditorGUILayout.PropertyField(snapDistanceProperty);
+                        EditorGUILayout.PropertyField(snapTriggerInteractionProperty);
+                        EditorGUILayout.PropertyField(snapToBackFacesProperty);
+
+                        BGEditorUtility.LayerMaskField("Snap Layer Mask", Curve.SnapLayerMask, i =>
+                        {
+                            Curve.FireBeforeChange(BGCurve.EventSnapTrigger);
+                            Curve.SnapLayerMask = i;
+                            Curve.ApplySnapping();
+                            Curve.FireChange(BGCurveChangedArgs.GetInstance(Curve, BGCurveChangedArgs.ChangeTypeEnum.Snap, BGCurve.EventSnapTrigger));
+                        });
+                    });
+
+                    //event mode
+                    EditorGUILayout.PropertyField(eventModeProperty);
+
+                    //force update
+                    EditorGUILayout.PropertyField(forceChangedEventModeProperty);
+
+                    //convert control type
+                    BGEditorUtility.Horizontal(() =>
+                    {
+                        EditorGUILayout.PropertyField(controlTypeProperty);
+
+                        if (!BGEditorUtility.ButtonWithIcon(convertAll2D, "Convert control types for all existing points ", 44)) return;
+
+                        var settings = Settings;
+
+                        foreach (var point in Curve.Points.Where(point => point.ControlType != settings.ControlType)) point.ControlType = settings.ControlType;
+                    });
+                });
+            }
+            catch (BGEditorUtility.ExitException)
+            {
+                GUIUtility.ExitGUI();
+            }
         }
 
         // ================================================================================ Scene
-        public override void OnSceneGui()
+        public override void OnSceneGui(Plane[] frustum)
         {
             var settings = Settings;
 
-            var rotation = Tools.pivotRotation == PivotRotation.Global ? Quaternion.identity : Curve.transform.rotation;
+            var curveRotation = GetRotation(Curve.transform);
 
             if (Curve.PointsCount != 0 && settings.VRay)
             {
@@ -157,11 +283,7 @@ namespace BansheeGz.BGSpline.Editor
                 painter.DrawCurve();
             }
 
-            editorPoint.OnSceneGUIStart(settings);
-
-            var frustum = GeometryUtility.CalculateFrustumPlanes(SceneView.currentDrawingSceneView.camera);
-
-            Curve.ForEach((point, index, count) => editorPoint.OnSceneGUI(point, index, settings, rotation, frustum));
+            Curve.ForEach((point, index, count) => editorPoint.OnSceneGUI(point, index, settings, curveRotation, frustum));
 
             //tangents
             if (settings.ShowCurve && settings.ShowTangents && Editor.Math.SectionsCount > 0 && Editor.Math.IsCalculated(BGCurveBaseMath.Field.Tangent))
@@ -195,13 +317,17 @@ namespace BansheeGz.BGSpline.Editor
             }
 
 
-            editorSelection.Scene(rotation);
+            editorSelection.Scene(curveRotation);
 
-            var currentEvent = Event.current;
+            overlay.Process(Event.current);
 
-            overlay.Process(currentEvent);
+            CheckPointsTransforms();
+        }
 
-            editorSelection.Process(currentEvent);
+        private void CheckPointsTransforms()
+        {
+            var skipAction = false;
+            foreach (var tracker in pointTransformTrackers) skipAction |= tracker.CheckForChange(skipAction);
         }
 
         private static void ShowTangent(Vector3 position, Vector3 tangent, float size)
@@ -209,36 +335,70 @@ namespace BansheeGz.BGSpline.Editor
             if (tangent.sqrMagnitude > 0.0001f) Handles.ArrowCap(0, position, Quaternion.LookRotation(tangent), BGEditorUtility.GetHandleSize(position, size));
         }
 
-
-        public override void OnBeforeApply()
+        public static Quaternion GetRotation(Transform transform)
         {
-            closeChanged = false;
-            if (Editor.Curve.Closed != closedProperty.boolValue)
-            {
-                closeChanged = true;
-                Curve.FireBeforeChange("closed changed");
-            }
-
-            mode2DChanged = false;
-            if ((int) Editor.Curve.Mode2D != mode2DProperty.enumValueIndex)
-            {
-                mode2DChanged = true;
-                Curve.FireBeforeChange("2d mode changed");
-            }
+            return Tools.pivotRotation == PivotRotation.Global ? Quaternion.identity : transform.rotation;
         }
+
 
         public override void OnApply()
         {
-            if (closeChanged) Curve.FireChange(Curve.UseEventsArgs ? new BGCurveChangedArgs(Curve, BGCurveChangedArgs.ChangeTypeEnum.Points) : null);
+            var curve = Editor.Curve;
+            var settings = Settings;
 
-            if (mode2DChanged)
+            // ==============================================    Closed
+            if (curve.Closed != closedProperty.boolValue)
             {
+                Curve.FireBeforeChange(BGCurve.EventClosed);
+                serializedObject.ApplyModifiedProperties();
+                Curve.FireChange(BGCurveChangedArgs.GetInstance(Curve, BGCurveChangedArgs.ChangeTypeEnum.Points, BGCurve.EventClosed));
+            }
+
+            if ((int) curve.ForceChangedEventMode != forceChangedEventModeProperty.enumValueIndex)
+            {
+                Curve.FireBeforeChange(BGCurve.EventForceUpdate);
+                serializedObject.ApplyModifiedProperties();
+                Curve.FireChange(BGCurveChangedArgs.GetInstance(Curve, BGCurveChangedArgs.ChangeTypeEnum.Curve, BGCurve.EventForceUpdate));
+            }
+
+            // ==============================================    Points store mode
+            if ((int) Curve.PointsMode != pointsModeProperty.enumValueIndex)
+            {
+                var newPointsMode = (BGCurve.PointsModeEnum) pointsModeProperty.enumValueIndex;
+
+                //ask for confirmation in case changes may affect something else
+                if ((Curve.PointsMode == BGCurve.PointsModeEnum.Components) && !BGEditorUtility.Confirm("Convert Points",
+                        "Are you sure you want to convert points? All existing references to these points will be lost.", "Convert")) return;
+
+                if ((Curve.PointsMode == BGCurve.PointsModeEnum.GameObjectsNoTransform && newPointsMode != BGCurve.PointsModeEnum.GameObjectsTransform ||
+                     Curve.PointsMode == BGCurve.PointsModeEnum.GameObjectsTransform && newPointsMode != BGCurve.PointsModeEnum.GameObjectsNoTransform)
+                    && !BGEditorUtility.Confirm("Convert Points", "Are you sure you want to convert points? All existing GameObjects for points will be deleted.", "Convert")) return;
+
+                editorSelection.Clear();
+
+                //invoke convert
+                BGPrivateField.Invoke(Curve, BGCurve.MethodConvertPoints, newPointsMode,
+                    BGCurveEditor.GetPointProvider(newPointsMode, Curve),
+                    BGCurveEditor.GetPointDestroyer(Curve.PointsMode, Curve));
+
+                //this call is not required
+                //                serializedObject.ApplyModifiedProperties();
+            }
+
+            // ==============================================    2D mode
+            if ((int) curve.Mode2D != mode2DProperty.enumValueIndex)
+            {
+                Curve.FireBeforeChange(BGCurve.Event2D);
+                serializedObject.ApplyModifiedProperties();
+
+                var oldEventMode = Curve.EventMode;
+                Curve.EventMode = BGCurve.EventModeEnum.NoEvents;
+
                 //force points recalc
                 Curve.Apply2D(Curve.Mode2D);
 
                 if (BGEditorUtility.Confirm("Editor handles change", "Do you want to adjust configurable Editor handles (in Scene View) to chosen mode? This affects only current curve.", "Yes"))
                 {
-                    var settings = Settings;
                     if (Curve.Mode2D != BGCurve.Mode2DEnum.Off)
                     {
                         Apply2D(settings.HandlesSettings);
@@ -250,7 +410,39 @@ namespace BansheeGz.BGSpline.Editor
                         Apply3D(settings.ControlHandlesSettings);
                     }
                 }
+
+                Curve.EventMode = oldEventMode;
+
+                Curve.FireChange(BGCurveChangedArgs.GetInstance(Curve, BGCurveChangedArgs.ChangeTypeEnum.Points, BGCurve.Event2D));
             }
+
+            // ==============================================    Snapping
+            if ((int) curve.SnapType != snapTypeProperty.enumValueIndex) SnappingChanged(BGCurve.EventSnapType);
+
+            if ((int) curve.SnapAxis != snapAxisProperty.enumValueIndex) SnappingChanged(BGCurve.EventSnapAxis);
+
+            if (Math.Abs((int) curve.SnapDistance - snapDistanceProperty.floatValue) > BGCurve.Epsilon) SnappingChanged(BGCurve.EventSnapDistance);
+
+            if ((int) curve.SnapTriggerInteraction != snapTriggerInteractionProperty.enumValueIndex) SnappingChanged(BGCurve.EventSnapTrigger);
+
+            if (curve.SnapToBackFaces != snapToBackFacesProperty.boolValue) SnappingChanged(BGCurve.EventSnapBackfaces);
+
+            // ==============================================    Event mode
+            if ((int) curve.EventMode != eventModeProperty.enumValueIndex) serializedObject.ApplyModifiedProperties();
+
+            // ==============================================    Control Type
+            if ((int) settings.ControlType != controlTypeProperty.enumValueIndex) serializedObject.ApplyModifiedProperties();
+        }
+
+        private void SnappingChanged(string eventMessage)
+        {
+            Curve.FireBeforeChange(eventMessage);
+
+            serializedObject.ApplyModifiedProperties();
+
+            Curve.ApplySnapping();
+
+            Curve.FireChange(BGCurveChangedArgs.GetInstance(Curve, BGCurveChangedArgs.ChangeTypeEnum.Snap, eventMessage));
         }
 
         private void Apply3D(BGCurveSettings.SettingsForHandles handlesSettings)
@@ -270,29 +462,6 @@ namespace BansheeGz.BGSpline.Editor
         }
 
 
-        internal Vector3 Handle(int number, BGCurveSettings.HandlesTypeEnum type, Vector3 position, Quaternion rotation, BGCurveSettings.SettingsForHandles handlesSettings)
-        {
-            switch (type)
-            {
-                case BGCurveSettings.HandlesTypeEnum.FreeMove:
-                    position = Handles.FreeMoveHandle(position, rotation, BGEditorUtility.GetHandleSize(position, .2f), Vector3.zero, Handles.CircleCap);
-                    break;
-                case BGCurveSettings.HandlesTypeEnum.Standard:
-                    position = Handles.PositionHandle(position, rotation);
-                    break;
-                case BGCurveSettings.HandlesTypeEnum.Configurable:
-                    position = BGEditorUtility.ControlHandleCustom(number, position, rotation, handlesSettings);
-                    break;
-            }
-            return position;
-        }
-
-
-        internal Vector3 GetLabelPosition(BGCurveSettings settings, Vector3 positionWorld)
-        {
-            return settings.ShowSpheres ? positionWorld + Vector3.up*settings.SphereRadius : positionWorld + Vector3.up*0.2f;
-        }
-
         public override string GetStickerMessage(ref MessageType type)
         {
             return "" + Curve.PointsCount;
@@ -301,6 +470,69 @@ namespace BansheeGz.BGSpline.Editor
         public override void OnUndoRedo()
         {
             editorSelection.OnUndoRedo();
+        }
+
+        public override void OnCurveChanged(BGCurveChangedArgs args)
+        {
+            if (args == null || string.IsNullOrEmpty(args.Message) || Curve.PointsMode != BGCurve.PointsModeEnum.GameObjectsTransform) return;
+
+            if (args.ChangeType != BGCurveChangedArgs.ChangeTypeEnum.Point && args.ChangeType != BGCurveChangedArgs.ChangeTypeEnum.Points) return;
+
+            if (!(
+                args.Message.Equals(BGCurve.EventAddPoint) || args.Message.Equals(BGCurve.EventAddPoints)
+                || args.Message.Equals(BGCurve.EventClearAllPoints) || args.Message.Equals(BGCurve.EventDeletePoints)
+            )) return;
+
+            UpdatePointsTrackers();
+        }
+
+        private void UpdatePointsTrackers()
+        {
+            if (pointTransformTrackers.Count > 0) foreach (var tracker in pointTransformTrackers) tracker.Release();
+
+            pointTransformTrackers.Clear();
+
+            //for GameObjectsTransform mode
+            if (Curve.PointsMode == BGCurve.PointsModeEnum.GameObjectsTransform)
+                Curve.ForEach((point, index, count) => pointTransformTrackers.Add(BGTransformMonitor.GetMonitor(((BGCurvePointGO) point).transform, transform => Curve.FireChange(null))));
+
+            //for points transforms
+            Curve.ForEach((point, index, count) =>
+            {
+                if (point.PointTransform != null) pointTransformTrackers.Add(BGTransformMonitor.GetMonitor(point.PointTransform, transform => Curve.FireChange(null)));
+            });
+        }
+
+        public static void SwapVector2Labels(BGCurve.Mode2DEnum mode2D, Action action)
+        {
+            var needToSwap = mode2D != BGCurve.Mode2DEnum.Off && mode2D != BGCurve.Mode2DEnum.XY;
+            GUIContent[] oldLabels = null;
+            if (needToSwap)
+            {
+                oldLabels = BGPrivateField.Get<GUIContent[]>(typeof(EditorGUI), "s_XYLabels");
+                GUIContent[] newLabels;
+                switch (mode2D)
+                {
+                    case BGCurve.Mode2DEnum.XZ:
+                        newLabels = XZLabels;
+                        break;
+                    case BGCurve.Mode2DEnum.YZ:
+                        newLabels = YZLabels;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException("mode2D", mode2D, null);
+                }
+                BGPrivateField.Set(typeof(EditorGUI), "s_XYLabels", newLabels);
+            }
+
+            try
+            {
+                action();
+            }
+            finally
+            {
+                if (needToSwap) BGPrivateField.Set(typeof(EditorGUI), "s_XYLabels", oldLabels);
+            }
         }
     }
 }

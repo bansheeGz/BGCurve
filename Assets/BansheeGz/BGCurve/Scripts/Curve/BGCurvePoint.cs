@@ -1,26 +1,41 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace BansheeGz.BGSpline.Curve
 {
-    /// <summary>One point data</summary>
+    /// <summary>One inlined point data</summary>
+    // !!! Note, there is a  BGCurvePointGO class, partially copied from this class
     [Serializable]
-    public class BGCurvePoint
+    public class BGCurvePoint : BGCurvePointI
     {
-        #region fields
+        #region static
 
-        //possible point's control types
+        public const string MethodCurveTransformForPointAdded = "TransformForPointAdded";
+        public const string MethodCurveTransformForPointRemoved = "TransformForPointRemoved";
+
+        private static MethodInfo curveTransformForPointAddedMethod;
+        private static MethodInfo curveTransformForPointAddedRemoved;
+
+        #endregion
+
+        #region enums
+
+        /// <summary>possible point's control types</summary>
         public enum ControlTypeEnum
         {
-            //no control point
+            /// <summary>no control point</summary>
             Absent,
-            //2 points, symmetrical to each other
+
+            /// <summary>2 points, symmetrical to each other</summary>
             BezierSymmetrical,
-            //2 points, independant
+
+            /// <summary>2 points, independant</summary>
             BezierIndependant
         }
 
-        //helper enum for fields
+        /// <summary>helper enum for system fields</summary>
         public enum FieldEnum
         {
             PositionWorld,
@@ -29,154 +44,6 @@ namespace BansheeGz.BGSpline.Curve
             ControlFirstLocal,
             ControlSecondWorld,
             ControlSecondLocal
-        }
-
-
-        //control type
-        [SerializeField] private ControlTypeEnum controlType;
-
-        //relative to curve position
-        [SerializeField] private Vector3 positionLocal;
-
-        //relative to point position
-        [SerializeField] private Vector3 controlFirstLocal;
-        [SerializeField] private Vector3 controlSecondLocal;
-
-
-        //point's curve
-        [SerializeField] private BGCurve curve;
-
-
-
-        /// <summary>The curve, point's belong to</summary>
-        public BGCurve Curve
-        {
-            get { return curve; }
-        }
-
-        // =============================================== Position
-        /// <summary>Local position, relative to curve's location</summary>
-        public Vector3 PositionLocal
-        {
-            get { return positionLocal; }
-            set
-            {
-                curve.FireBeforeChange("point's position change");
-
-                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) value = curve.Apply2D(value);
-
-                positionLocal = value;
-                curve.FireChange(curve.UseEventsArgs ? new BGCurveChangedArgs(Curve, this, BGCurveChangedArgs.ChangeTypeEnum.Point) : null);
-            }
-        }
-
-        /// <summary>World absolute position</summary>
-        public Vector3 PositionWorld
-        {
-            get { return curve.transform.TransformPoint(positionLocal); }
-            set
-            {
-                curve.FireBeforeChange("point's position change");
-                positionLocal = curve.transform.InverseTransformPoint(value);
-
-                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) positionLocal = curve.Apply2D(positionLocal);
-
-                curve.FireChange(curve.UseEventsArgs ? new BGCurveChangedArgs(Curve, this, BGCurveChangedArgs.ChangeTypeEnum.Point) : null);
-            }
-        }
-
-
-        // =============================================== First Handle
-        /// <summary>Local position for 1st control (In), relative to point's location</summary>
-        public Vector3 ControlFirstLocal
-        {
-            get { return controlFirstLocal; }
-            set
-            {
-                curve.FireBeforeChange("point's control change");
-
-                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) value = curve.Apply2D(value);
-
-                if (controlType == ControlTypeEnum.BezierSymmetrical) controlSecondLocal = -value;
-
-                controlFirstLocal = value;
-                curve.FireChange(curve.UseEventsArgs ? new BGCurveChangedArgs(Curve, this, BGCurveChangedArgs.ChangeTypeEnum.PointControl) : null);
-            }
-        }
-
-        /// <summary>World position for 1st control (In)</summary>
-        public Vector3 ControlFirstWorld
-        {
-            get { return curve.transform.TransformPoint(new Vector3(positionLocal.x + controlFirstLocal.x, positionLocal.y + controlFirstLocal.y, positionLocal.z + controlFirstLocal.z)); }
-            set
-            {
-                curve.FireBeforeChange("point's control change");
-
-                controlFirstLocal = curve.transform.InverseTransformPoint(value) - PositionLocal;
-
-                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) controlFirstLocal = curve.Apply2D(controlFirstLocal);
-
-                if (controlType == ControlTypeEnum.BezierSymmetrical) controlSecondLocal = -controlFirstLocal;
-
-                curve.FireChange(curve.UseEventsArgs ? new BGCurveChangedArgs(Curve, this, BGCurveChangedArgs.ChangeTypeEnum.PointControl) : null);
-            }
-        }
-
-
-        // =============================================== Second Handle
-        /// <summary>Local position for 2nd control (Out), relative to point's position</summary>
-        public Vector3 ControlSecondLocal
-        {
-            get { return controlSecondLocal; }
-            set
-            {
-                curve.FireBeforeChange("point's control change");
-
-                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) value = curve.Apply2D(value);
-
-                if (controlType == ControlTypeEnum.BezierSymmetrical) controlFirstLocal = -value;
-
-                controlSecondLocal = value;
-                curve.FireChange(curve.UseEventsArgs ? new BGCurveChangedArgs(Curve, this, BGCurveChangedArgs.ChangeTypeEnum.PointControl) : null);
-            }
-        }
-
-        /// <summary>World position for 2nd control (Out)</summary>
-        public Vector3 ControlSecondWorld
-        {
-            get { return curve.transform.TransformPoint(new Vector3(positionLocal.x + controlSecondLocal.x, positionLocal.y + controlSecondLocal.y, positionLocal.z + controlSecondLocal.z)); }
-            set
-            {
-                curve.FireBeforeChange("point's control change");
-
-                controlSecondLocal = curve.transform.InverseTransformPoint(value) - PositionLocal;
-
-
-                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) controlSecondLocal = curve.Apply2D(controlSecondLocal);
-
-                if (controlType == ControlTypeEnum.BezierSymmetrical) controlFirstLocal = -controlSecondLocal;
-
-                curve.FireChange(curve.UseEventsArgs ? new BGCurveChangedArgs(Curve, this, BGCurveChangedArgs.ChangeTypeEnum.PointControl) : null);
-            }
-        }
-
-
-        // =============================================== Control type
-        /// <summary>Control type for the point</summary>
-        public ControlTypeEnum ControlType
-        {
-            get { return controlType; }
-            set
-            {
-                if (controlType == value) return;
-
-                curve.FireBeforeChange("point's control type change");
-                controlType = value;
-
-                if (controlType == ControlTypeEnum.BezierSymmetrical) controlSecondLocal = -controlFirstLocal;
-
-                curve.FireChange(curve.UseEventsArgs ? new BGCurveChangedArgs(Curve, this, BGCurveChangedArgs.ChangeTypeEnum.PointControlType) : null);
-            }
         }
 
         #endregion
@@ -196,9 +63,16 @@ namespace BansheeGz.BGSpline.Curve
 
         /// <summary> All coordinates are Local by default. positionLocal relative to curve's transform, controls are relative to positionLocal. Set useWorldCoordinates to true to use world coordinates</summary>
         public BGCurvePoint(BGCurve curve, Vector3 position, ControlTypeEnum controlType, Vector3 controlFirst, Vector3 controlSecond, bool useWorldCoordinates = false)
+            : this(curve, null , position, controlType, controlFirst, controlSecond, useWorldCoordinates)
+        {
+        }
+
+        /// <summary> All coordinates are Local by default. positionLocal relative to curve's transform, controls are relative to positionLocal. Set useWorldCoordinates to true to use world coordinates</summary>
+        public BGCurvePoint(BGCurve curve, Transform pointTransform, Vector3 position, ControlTypeEnum controlType, Vector3 controlFirst, Vector3 controlSecond, bool useWorldCoordinates = false )
         {
             this.curve = curve;
             this.controlType = controlType;
+            this.pointTransform = pointTransform;
 
             if (useWorldCoordinates)
             {
@@ -216,9 +90,355 @@ namespace BansheeGz.BGSpline.Curve
 
         #endregion
 
-        #region public methods
+        #region fields
 
-        // =============================================== Public functions
+        //control type
+        [SerializeField] private ControlTypeEnum controlType;
+
+        //relative to curve position
+        [SerializeField] private Vector3 positionLocal;
+
+        //relative to point position
+        [SerializeField] private Vector3 controlFirstLocal;
+        [SerializeField] private Vector3 controlSecondLocal;
+
+        [SerializeField] private Transform pointTransform;
+
+
+        //point's curve
+        [SerializeField] private BGCurve curve;
+
+        //custom fields values for all points. it's an array with only one element. the reason why we store it like this- is to reduce storage and serialization costs.
+        [SerializeField] private FieldsValues[] fieldsValues;
+
+        /// <summary>The curve, point's belong to</summary>
+        public BGCurve Curve
+        {
+            get { return curve; }
+        }
+
+        //all fields values
+        private FieldsValues ValuesForFields
+        {
+            get
+            {
+                if (fieldsValues == null || fieldsValues.Length < 1 || fieldsValues[0] == null) fieldsValues = new[] {new FieldsValues()};
+                return fieldsValues[0];
+            }
+            set
+            {
+                if (fieldsValues == null || fieldsValues.Length < 1 || fieldsValues[0] == null) fieldsValues = new[] {new FieldsValues()};
+                fieldsValues[0] = value;
+            }
+        }
+
+        // =============================================== Position
+        //see interface for comments
+        public Vector3 PositionLocal
+        {
+            get { return pointTransform == null ? positionLocal : curve.transform.InverseTransformPoint(pointTransform.position); }
+            set { SetPosition(value); }
+        }
+
+        //see interface for comments
+        public Vector3 PositionLocalTransformed
+        {
+            get
+            {
+                return pointTransform == null
+                    ? curve.transform.TransformPoint(positionLocal) - curve.transform.position
+                    : pointTransform.position - curve.transform.position;
+            }
+            set { SetPosition(value + curve.transform.position, true); }
+        }
+
+        //see interface for comments
+        public Vector3 PositionWorld
+        {
+            get { return pointTransform == null ? curve.transform.TransformPoint(positionLocal) : pointTransform.position; }
+            set { SetPosition(value, true); }
+        }
+
+
+        // =============================================== First Handle
+        //see interface for comments
+        public Vector3 ControlFirstLocal
+        {
+            get { return controlFirstLocal; }
+            set { SetControlFirstLocal(value); }
+        }
+
+        //see interface for comments
+        public Vector3 ControlFirstLocalTransformed
+        {
+            get { return (pointTransform == null ? curve.transform : pointTransform).TransformVector(controlFirstLocal); }
+            set
+            {
+                var transform = pointTransform == null ? curve.transform : pointTransform;
+                SetControlFirstLocal(transform.InverseTransformVector(value));
+            }
+        }
+
+        //see interface for comments
+        public Vector3 ControlFirstWorld
+        {
+            get
+            {
+                if (pointTransform == null)
+                    return curve.transform.TransformPoint(new Vector3(positionLocal.x + controlFirstLocal.x, positionLocal.y + controlFirstLocal.y, positionLocal.z + controlFirstLocal.z));
+
+                return pointTransform.position + pointTransform.TransformVector(controlFirstLocal);
+            }
+            set
+            {
+                var pos = pointTransform == null ? curve.transform.InverseTransformPoint(value) - positionLocal : pointTransform.InverseTransformVector(value - pointTransform.position);
+                SetControlFirstLocal(pos);
+            }
+        }
+
+
+        // =============================================== Second Handle
+        //see interface for comments
+        public Vector3 ControlSecondLocal
+        {
+            get { return controlSecondLocal; }
+            set { SetControlSecondLocal(value); }
+        }
+
+        //see interface for comments
+        public Vector3 ControlSecondLocalTransformed
+        {
+            get { return (pointTransform == null ? curve.transform : pointTransform).TransformVector(controlSecondLocal); }
+            set
+            {
+                var transform = pointTransform == null ? curve.transform : pointTransform;
+                SetControlSecondLocal(transform.InverseTransformVector(value));
+            }
+        }
+
+
+        //see interface for comments
+        public Vector3 ControlSecondWorld
+        {
+            get
+            {
+                if (pointTransform == null)
+                    return curve.transform.TransformPoint(new Vector3(positionLocal.x + controlSecondLocal.x, positionLocal.y + controlSecondLocal.y, positionLocal.z + controlSecondLocal.z));
+
+                return pointTransform.position + pointTransform.TransformVector(controlSecondLocal);
+            }
+            set
+            {
+                var pos = pointTransform == null ? curve.transform.InverseTransformPoint(value) - positionLocal : pointTransform.InverseTransformVector(value - pointTransform.position);
+                SetControlSecondLocal(pos);
+            }
+        }
+
+
+        // =============================================== Control type
+        //see interface for comments
+        public ControlTypeEnum ControlType
+        {
+            get { return controlType; }
+            set
+            {
+                if (controlType == value) return;
+
+                curve.FireBeforeChange(BGCurve.EventPointControlType);
+
+                controlType = value;
+
+                if (controlType == ControlTypeEnum.BezierSymmetrical) controlSecondLocal = -controlFirstLocal;
+
+                curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointControlType) : null, sender: this);
+            }
+        }
+
+
+        // =============================================== Transform
+        public Transform PointTransform
+        {
+            get { return pointTransform; }
+            set
+            {
+                if (pointTransform == value) return;
+
+                curve.FireBeforeChange(BGCurve.EventPointTransform);
+
+                var oldTransformNull = pointTransform == null;
+                var newTransformNull = value == null;
+
+                //we need to transfer system fields 
+                var control1 = ControlFirstLocalTransformed;
+                var control2 = ControlSecondLocalTransformed;
+                var positionWorld = PositionWorld;
+
+                pointTransform = value;
+
+                // transfer system fields
+                if (pointTransform != null)
+                {
+                    pointTransform.position = positionWorld;
+                    controlFirstLocal = pointTransform.InverseTransformVector(control1);
+                    controlSecondLocal = pointTransform.InverseTransformVector(control2);
+                }
+                else
+                {
+                    positionLocal = curve.transform.InverseTransformPoint(positionWorld);
+                    controlFirstLocal = curve.transform.InverseTransformVector(control1);
+                    controlSecondLocal = curve.transform.InverseTransformVector(control2);
+                }
+
+
+                // inform curve
+                if (oldTransformNull) GetCurveTransformForPointAddedMethod().Invoke(curve, new object[] {curve.IndexOf(this)});
+                else if (newTransformNull) GetCurveTransformForPointRemovedMethod().Invoke(curve, new object[] {curve.IndexOf(this)});
+
+                curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointTransform) : null, sender: this);
+            }
+        }
+
+        #endregion
+
+        #region custom fields
+
+        //===============================================================================================
+        //                                                    Custom Fields (see interface for comments)
+        //===============================================================================================
+        //----------------------------------- Getters
+        public T GetField<T>(string name)
+        {
+            var type = typeof(T);
+            var value = GetField(name, type);
+            var field = (T) value;
+            return field;
+        }
+
+        public float GetFloat(string name)
+        {
+            return ValuesForFields.floatValues[curve.IndexOfFieldValue(name)];
+        }
+
+        public bool GetBool(string name)
+        {
+            return ValuesForFields.boolValues[curve.IndexOfFieldValue(name)];
+        }
+
+        public int GetInt(string name)
+        {
+            return ValuesForFields.intValues[curve.IndexOfFieldValue(name)];
+        }
+
+        public Vector3 GetVector3(string name)
+        {
+            return ValuesForFields.vector3Values[curve.IndexOfFieldValue(name)];
+        }
+
+        public Quaternion GetQuaternion(string name)
+        {
+            return ValuesForFields.quaternionValues[curve.IndexOfFieldValue(name)];
+        }
+
+        public Bounds GetBounds(string name)
+        {
+            return ValuesForFields.boundsValues[curve.IndexOfFieldValue(name)];
+        }
+
+        public Color GetColor(string name)
+        {
+            return ValuesForFields.colorValues[curve.IndexOfFieldValue(name)];
+        }
+
+        public object GetField(string name, Type type)
+        {
+            return FieldTypes.GetField(curve, type, name, ValuesForFields);
+        }
+
+        //----------------------------------- Setters
+        public void SetField<T>(string name, T value)
+        {
+            SetField(name, value, typeof(T));
+        }
+
+        public void SetField(string name, object value, Type type)
+        {
+            curve.FireBeforeChange(BGCurve.EventPointField);
+
+            FieldTypes.SetField(curve, type, name, value, ValuesForFields);
+
+            curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
+        }
+
+        public void SetFloat(string name, float value)
+        {
+            curve.FireBeforeChange(BGCurve.EventPointField);
+
+            ValuesForFields.floatValues[curve.IndexOfFieldValue(name)] = value;
+
+            curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
+        }
+
+        public void SetBool(string name, bool value)
+        {
+            curve.FireBeforeChange(BGCurve.EventPointField);
+
+            ValuesForFields.boolValues[curve.IndexOfFieldValue(name)] = value;
+
+            curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
+        }
+
+        public void SetInt(string name, int value)
+        {
+            curve.FireBeforeChange(BGCurve.EventPointField);
+
+            ValuesForFields.intValues[curve.IndexOfFieldValue(name)] = value;
+
+            curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
+        }
+
+        public void SetVector3(string name, Vector3 value)
+        {
+            curve.FireBeforeChange(BGCurve.EventPointField);
+
+            ValuesForFields.vector3Values[curve.IndexOfFieldValue(name)] = value;
+
+            curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
+        }
+
+        public void SetQuaternion(string name, Quaternion value)
+        {
+            curve.FireBeforeChange(BGCurve.EventPointField);
+
+            ValuesForFields.quaternionValues[curve.IndexOfFieldValue(name)] = value;
+
+            curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
+        }
+
+        public void SetBounds(string name, Bounds value)
+        {
+            curve.FireBeforeChange(BGCurve.EventPointField);
+
+            ValuesForFields.boundsValues[curve.IndexOfFieldValue(name)] = value;
+
+            curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
+        }
+
+        public void SetColor(string name, Color value)
+        {
+            curve.FireBeforeChange(BGCurve.EventPointField);
+
+            ValuesForFields.colorValues[curve.IndexOfFieldValue(name)] = value;
+
+            curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
+        }
+
+        #endregion
+
+        #region Misc public methods
+
+        //================================================================================
+        //                                                    Misc public functions
+        //================================================================================
         /// <summary>return system Vector 3 field </summary>
         public Vector3 Get(FieldEnum field)
         {
@@ -252,20 +472,370 @@ namespace BansheeGz.BGSpline.Curve
             return result;
         }
 
-        public BGCurvePoint CloneTo(BGCurve curve)
-        {
-            return new BGCurvePoint(curve, PositionLocal, ControlType, ControlFirstLocal, ControlSecondLocal);
-        }
-
-        #endregion
-
-
-
-        #region Object methods overrides
+        //see interface for comments
 
         public override string ToString()
         {
             return "Point [localPosition=" + positionLocal + "]";
+        }
+
+        #endregion
+
+        #region private methods
+
+        //set local position
+        private void SetPosition(Vector3 value, bool worldSpaceIsUsed = false)
+        {
+            curve.FireBeforeChange(BGCurve.EventPointPosition);
+
+            //snapping
+            if (curve.SnapType != BGCurve.SnapTypeEnum.Off)
+            {
+                if (worldSpaceIsUsed) curve.ApplySnapping(ref value);
+                else
+                {
+                    //we need to transfer space before applying snapping
+                    var pos = curve.transform.TransformPoint(value);
+                    if (curve.ApplySnapping(ref pos)) value = curve.transform.InverseTransformPoint(pos);
+                }
+            }
+
+
+            //assign position
+            if (pointTransform == null)
+            {
+                if (worldSpaceIsUsed)
+                {
+                    var localPos = curve.transform.InverseTransformPoint(value);
+                    if (curve.Mode2D != BGCurve.Mode2DEnum.Off) localPos = curve.Apply2D(localPos);
+                    positionLocal = localPos;
+                }
+                else
+                {
+                    if (curve.Mode2D != BGCurve.Mode2DEnum.Off) value = curve.Apply2D(value);
+                    positionLocal = value;
+                }
+            }
+            else
+            {
+                //2d mode with curve's transform changed is not working correctly
+                if (curve.Mode2D != BGCurve.Mode2DEnum.Off) value = curve.Apply2D(value);
+                pointTransform.position = worldSpaceIsUsed ? value : curve.transform.TransformPoint(value);
+            }
+
+            curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointPosition) : null, sender: this);
+        }
+
+        //set local control 1
+        private void SetControlFirstLocal(Vector3 value)
+        {
+            curve.FireBeforeChange(BGCurve.EventPointControl);
+
+            if (curve.Mode2D != BGCurve.Mode2DEnum.Off) value = curve.Apply2D(value);
+
+            if (controlType == ControlTypeEnum.BezierSymmetrical) controlSecondLocal = -value;
+
+            controlFirstLocal = value;
+            curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointControl) : null, sender: this);
+        }
+
+        //set local control 2 (it's basically copy/paste from SetControlFirstLocal, but we can not use delegates here because of performance)
+        private void SetControlSecondLocal(Vector3 value)
+        {
+            curve.FireBeforeChange(BGCurve.EventPointControl);
+
+            if (curve.Mode2D != BGCurve.Mode2DEnum.Off) value = curve.Apply2D(value);
+
+            if (controlType == ControlTypeEnum.BezierSymmetrical) controlFirstLocal = -value;
+
+            controlSecondLocal = value;
+            curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointControl) : null, sender: this);
+        }
+
+        //get curve's private method
+        private MethodInfo GetCurveTransformForPointAddedMethod()
+        {
+            if (curveTransformForPointAddedMethod != null) return curveTransformForPointAddedMethod;
+
+            curveTransformForPointAddedMethod = typeof(BGCurve).GetMethod(MethodCurveTransformForPointAdded, BindingFlags.NonPublic | BindingFlags.Instance);
+            return curveTransformForPointAddedMethod;
+        }
+
+        //get curve's private method
+        private MethodInfo GetCurveTransformForPointRemovedMethod()
+        {
+            if (curveTransformForPointAddedRemoved != null) return curveTransformForPointAddedRemoved;
+
+            curveTransformForPointAddedRemoved = typeof(BGCurve).GetMethod(MethodCurveTransformForPointAdded, BindingFlags.NonPublic | BindingFlags.Instance);
+            return curveTransformForPointAddedRemoved;
+        }
+
+
+        // do not remove (it's used via reflection). Field was deleted callback.
+        private static void FieldDeleted(BGCurvePointField field, int indexOfField, FieldsValues fieldsValues)
+        {
+            switch (field.Type)
+            {
+                case BGCurvePointField.TypeEnum.Bool:
+                    Ensure(ref fieldsValues.boolValues);
+                    fieldsValues.boolValues = BGCurve.Remove(fieldsValues.boolValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.Int:
+                    Ensure(ref fieldsValues.intValues);
+                    fieldsValues.intValues = BGCurve.Remove(fieldsValues.intValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.Float:
+                    Ensure(ref fieldsValues.floatValues);
+                    fieldsValues.floatValues = BGCurve.Remove(fieldsValues.floatValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.Vector3:
+                    Ensure(ref fieldsValues.vector3Values);
+                    fieldsValues.vector3Values = BGCurve.Remove(fieldsValues.vector3Values, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.Bounds:
+                    Ensure(ref fieldsValues.boundsValues);
+                    fieldsValues.boundsValues = BGCurve.Remove(fieldsValues.boundsValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.Color:
+                    Ensure(ref fieldsValues.colorValues);
+                    fieldsValues.colorValues = BGCurve.Remove(fieldsValues.colorValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.String:
+                    Ensure(ref fieldsValues.stringValues);
+                    fieldsValues.stringValues = BGCurve.Remove(fieldsValues.stringValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.Quaternion:
+                    Ensure(ref fieldsValues.quaternionValues);
+                    fieldsValues.quaternionValues = BGCurve.Remove(fieldsValues.quaternionValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.AnimationCurve:
+                    Ensure(ref fieldsValues.animationCurveValues);
+                    fieldsValues.animationCurveValues = BGCurve.Remove(fieldsValues.animationCurveValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.GameObject:
+                    Ensure(ref fieldsValues.gameObjectValues);
+                    fieldsValues.gameObjectValues = BGCurve.Remove(fieldsValues.gameObjectValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.Component:
+                    Ensure(ref fieldsValues.componentValues);
+                    fieldsValues.componentValues = BGCurve.Remove(fieldsValues.componentValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.BGCurve:
+                    Ensure(ref fieldsValues.bgCurveValues);
+                    fieldsValues.bgCurveValues = BGCurve.Remove(fieldsValues.bgCurveValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.BGCurvePointComponent:
+                    Ensure(ref fieldsValues.bgCurvePointComponentValues);
+                    fieldsValues.bgCurvePointComponentValues = BGCurve.Remove(fieldsValues.bgCurvePointComponentValues, indexOfField);
+                    break;
+                case BGCurvePointField.TypeEnum.BGCurvePointGO:
+                    Ensure(ref fieldsValues.bgCurvePointGOValues);
+                    fieldsValues.bgCurvePointGOValues = BGCurve.Remove(fieldsValues.bgCurvePointGOValues, indexOfField);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("field.Type", field.Type, "Unsupported type " + field.Type);
+            }
+        }
+
+        // do not remove it (it's used via reflection). Field was added callback.
+        private static void FieldAdded(BGCurvePointField field, FieldsValues fieldsValues)
+        {
+            var type = FieldTypes.GetType(field.Type);
+            var item = type.IsValueType ? Activator.CreateInstance(type) : null;
+
+            switch (field.Type)
+            {
+                case BGCurvePointField.TypeEnum.Bool:
+                    Ensure(ref fieldsValues.boolValues);
+                    fieldsValues.boolValues = BGCurve.Insert(fieldsValues.boolValues, fieldsValues.boolValues.Length, (bool) item);
+                    break;
+                case BGCurvePointField.TypeEnum.Int:
+                    Ensure(ref fieldsValues.intValues);
+                    fieldsValues.intValues = BGCurve.Insert(fieldsValues.intValues, fieldsValues.intValues.Length, (int) item);
+                    break;
+                case BGCurvePointField.TypeEnum.Float:
+                    Ensure(ref fieldsValues.floatValues);
+                    fieldsValues.floatValues = BGCurve.Insert(fieldsValues.floatValues, fieldsValues.floatValues.Length, (float) item);
+                    break;
+                case BGCurvePointField.TypeEnum.Vector3:
+                    Ensure(ref fieldsValues.vector3Values);
+                    fieldsValues.vector3Values = BGCurve.Insert(fieldsValues.vector3Values, fieldsValues.vector3Values.Length, (Vector3) item);
+                    break;
+                case BGCurvePointField.TypeEnum.Bounds:
+                    Ensure(ref fieldsValues.boundsValues);
+                    fieldsValues.boundsValues = BGCurve.Insert(fieldsValues.boundsValues, fieldsValues.boundsValues.Length, (Bounds) item);
+                    break;
+                case BGCurvePointField.TypeEnum.Color:
+                    Ensure(ref fieldsValues.colorValues);
+                    fieldsValues.colorValues = BGCurve.Insert(fieldsValues.colorValues, fieldsValues.colorValues.Length, (Color) item);
+                    break;
+                case BGCurvePointField.TypeEnum.String:
+                    Ensure(ref fieldsValues.stringValues);
+                    fieldsValues.stringValues = BGCurve.Insert(fieldsValues.stringValues, fieldsValues.stringValues.Length, (string) item);
+                    break;
+                case BGCurvePointField.TypeEnum.Quaternion:
+                    Ensure(ref fieldsValues.quaternionValues);
+                    fieldsValues.quaternionValues = BGCurve.Insert(fieldsValues.quaternionValues, fieldsValues.quaternionValues.Length, (Quaternion) item);
+                    break;
+                case BGCurvePointField.TypeEnum.AnimationCurve:
+                    Ensure(ref fieldsValues.animationCurveValues);
+                    fieldsValues.animationCurveValues = BGCurve.Insert(fieldsValues.animationCurveValues, fieldsValues.animationCurveValues.Length, (AnimationCurve) item);
+                    break;
+                case BGCurvePointField.TypeEnum.GameObject:
+                    Ensure(ref fieldsValues.gameObjectValues);
+                    fieldsValues.gameObjectValues = BGCurve.Insert(fieldsValues.gameObjectValues, fieldsValues.gameObjectValues.Length, (GameObject) item);
+                    break;
+                case BGCurvePointField.TypeEnum.Component:
+                    Ensure(ref fieldsValues.componentValues);
+                    fieldsValues.componentValues = BGCurve.Insert(fieldsValues.componentValues, fieldsValues.componentValues.Length, (Component) item);
+                    break;
+                case BGCurvePointField.TypeEnum.BGCurve:
+                    Ensure(ref fieldsValues.bgCurveValues);
+                    fieldsValues.bgCurveValues = BGCurve.Insert(fieldsValues.bgCurveValues, fieldsValues.bgCurveValues.Length, (BGCurve) item);
+                    break;
+                case BGCurvePointField.TypeEnum.BGCurvePointComponent:
+                    Ensure(ref fieldsValues.bgCurvePointComponentValues);
+                    fieldsValues.bgCurvePointComponentValues = BGCurve.Insert(fieldsValues.bgCurvePointComponentValues, fieldsValues.bgCurvePointComponentValues.Length, (BGCurvePointComponent) item);
+                    break;
+                case BGCurvePointField.TypeEnum.BGCurvePointGO:
+                    Ensure(ref fieldsValues.bgCurvePointGOValues);
+                    fieldsValues.bgCurvePointGOValues = BGCurve.Insert(fieldsValues.bgCurvePointGOValues, fieldsValues.bgCurvePointGOValues.Length, (BGCurvePointGO) item);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("field.Type", field.Type, "Unsupported type " + field.Type);
+            }
+        }
+
+        //ensure list is not null
+        private static void Ensure<T>(ref T[] array)
+        {
+            if (array == null) array = new T[0];
+        }
+
+        #endregion
+
+        #region helper classes
+
+        //================================================================================
+        //                                                    Values for the fields
+        //================================================================================
+        /// <summary> All values for custom fields </summary>
+        //the reason we store it like this- is to reduce memory and serialization cost
+        [Serializable]
+        public sealed class FieldsValues
+        {
+            // c#
+            [SerializeField] public bool[] boolValues;
+            [SerializeField] public int[] intValues;
+            [SerializeField] public float[] floatValues;
+            [SerializeField] public string[] stringValues;
+
+            // Unity structs
+            [SerializeField] public Vector3[] vector3Values;
+            [SerializeField] public Bounds[] boundsValues;
+            [SerializeField] public Color[] colorValues;
+            [SerializeField] public Quaternion[] quaternionValues;
+
+            // Unity objects
+            [SerializeField] public AnimationCurve[] animationCurveValues;
+            [SerializeField] public GameObject[] gameObjectValues;
+            [SerializeField] public Component[] componentValues;
+
+            // BGCurve
+            [SerializeField] public BGCurve[] bgCurveValues;
+            [SerializeField] public BGCurvePointComponent[] bgCurvePointComponentValues;
+            [SerializeField] public BGCurvePointGO[] bgCurvePointGOValues;
+        }
+
+        //================================================================================
+        //                                                    Types for the fields
+        //================================================================================
+        /// <summary> Types for custom fields </summary>
+        public static class FieldTypes
+        {
+            private static readonly Dictionary<Type, Func<FieldsValues, int, object>> type2fieldGetter = new Dictionary<Type, Func<FieldsValues, int, object>>();
+            private static readonly Dictionary<Type, Action<FieldsValues, int, object>> type2fieldSetter = new Dictionary<Type, Action<FieldsValues, int, object>>();
+            private static readonly Dictionary<BGCurvePointField.TypeEnum, Type> type2Type = new Dictionary<BGCurvePointField.TypeEnum, Type>();
+
+            static FieldTypes()
+            {
+                // All these getters/setters are used only for classes now. For structs and primitives there is overriden getXXX setXXX methods (to get rid of boxing/unboxing).
+                //primitives
+                Register(BGCurvePointField.TypeEnum.Bool, typeof(bool), (value, index) => value.boolValues[index], (value, index, o) => value.boolValues[index] = Convert.ToBoolean((object) o));
+                Register(BGCurvePointField.TypeEnum.Int, typeof(int), (value, index) => value.intValues[index], (value, index, o) => value.intValues[index] = Convert.ToInt32((object) o));
+                Register(BGCurvePointField.TypeEnum.Float, typeof(float), (value, index) => value.floatValues[index], (value, index, o) => value.floatValues[index] = Convert.ToSingle((object) o));
+
+                //string
+                Register(BGCurvePointField.TypeEnum.String, typeof(string), (value, index) => value.stringValues[index], (value, index, o) => value.stringValues[index] = (string) o);
+
+                //unity structs and classes
+                Register(BGCurvePointField.TypeEnum.Vector3, typeof(Vector3), (value, index) => value.vector3Values[index], (value, index, o) => value.vector3Values[index] = (Vector3) o);
+                Register(BGCurvePointField.TypeEnum.Bounds, typeof(Bounds), (value, index) =>
+                {
+                    var r = value.boundsValues[index];
+                    return r;
+                }, (value, index, o) => value.boundsValues[index] = (Bounds) o);
+                Register(BGCurvePointField.TypeEnum.Quaternion, typeof(Quaternion), (value, index) => value.quaternionValues[index],
+                    (value, index, o) => value.quaternionValues[index] = (Quaternion) o);
+                Register(BGCurvePointField.TypeEnum.Color, typeof(Color), (value, index) => value.colorValues[index], (value, index, o) => value.colorValues[index] = (Color) o);
+                Register(BGCurvePointField.TypeEnum.AnimationCurve, typeof(AnimationCurve), (value, index) => value.animationCurveValues[index],
+                    (value, index, o) => value.animationCurveValues[index] = (AnimationCurve) o);
+
+                //unity GO and components
+                Register(BGCurvePointField.TypeEnum.GameObject, typeof(GameObject), (value, index) => value.gameObjectValues[index],
+                    (value, index, o) => value.gameObjectValues[index] = (GameObject) o);
+                Register(BGCurvePointField.TypeEnum.Component, typeof(Component), (value, index) => value.componentValues[index],
+                    (value, index, o) => value.componentValues[index] = (Component) o);
+
+                //bg curve related
+                Register(BGCurvePointField.TypeEnum.BGCurve, typeof(BGCurve), (value, index) => value.bgCurveValues[index], (value, index, o) => value.bgCurveValues[index] = (BGCurve) o);
+                Register(BGCurvePointField.TypeEnum.BGCurvePointComponent, typeof(BGCurvePointComponent), (value, index) => value.bgCurvePointComponentValues[index],
+                    (value, index, o) => value.bgCurvePointComponentValues[index] = (BGCurvePointComponent) o);
+                Register(BGCurvePointField.TypeEnum.BGCurvePointGO, typeof(BGCurvePointGO), (value, index) => value.bgCurvePointGOValues[index],
+                    (value, index, o) => value.bgCurvePointGOValues[index] = (BGCurvePointGO) o);
+            }
+
+            // register data about one type
+            private static void Register(BGCurvePointField.TypeEnum typeEnum, Type type, Func<FieldsValues, int, object> getter, Action<FieldsValues, int, object> setter)
+            {
+                type2Type[typeEnum] = type;
+                type2fieldGetter[type] = getter;
+                type2fieldSetter[type] = setter;
+            }
+
+            /// <summary> Get c# type(class), used for value of custom field with type "type"</summary>
+            public static Type GetType(BGCurvePointField.TypeEnum type)
+            {
+                return type2Type[type];
+            }
+
+            /// <summary> retrieve value for particular field with name "name" and type "type"</summary>
+            public static object GetField(BGCurve curve, Type type, string name, FieldsValues values)
+            {
+                Func<FieldsValues, int, object> getter;
+                if (!type2fieldGetter.TryGetValue(type, out getter)) throw new UnityException("Unsupported type for a field, type= " + type);
+
+                return getter(values, IndexOfFieldRelative(curve, name));
+            }
+
+            /// <summary> set value for particular field with name "name" and type "type"</summary>
+            public static void SetField(BGCurve curve, Type type, string name, object value, FieldsValues values)
+            {
+                Action<FieldsValues, int, object> setter;
+                if (!type2fieldSetter.TryGetValue(type, out setter)) throw new UnityException("Unsupported type for a field, type= " + type);
+
+                setter(values, IndexOfFieldRelative(curve, name), value);
+            }
+
+            //get the index of field's value within array of values
+            private static int IndexOfFieldRelative(BGCurve curve, string name)
+            {
+                var result = curve.IndexOfFieldValue(name);
+
+                if (result < 0) throw new UnityException("Can not find a field with name " + name);
+
+                return result;
+            }
         }
 
         #endregion

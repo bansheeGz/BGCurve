@@ -2,7 +2,6 @@
 using UnityEngine;
 using BansheeGz.BGSpline.Curve;
 using UnityEditor;
-
 namespace BansheeGz.BGSpline.Editor
 {
     public class BGCcEditor : UnityEditor.Editor
@@ -46,54 +45,53 @@ namespace BansheeGz.BGSpline.Editor
             serializedObject.Update();
 
 
-            EditorGUI.BeginChangeCheck();
-
-            //custom fields
-            InternalOnInspectorGUI();
-
-            // -------------  parents
-            if (parentClass != null)
+            var componentChanged = BGEditorUtility.ChangeCheck(() =>
             {
-                var possibleParents = cc.GetComponents(parentClass);
-                if (possibleParents.Length > 1)
+                //custom fields
+                InternalOnInspectorGUI();
+
+                // -------------  parents
+                if (parentClass != null)
                 {
-                    BGEditorUtility.Horizontal(() =>
+                    var possibleParents = cc.GetComponents(parentClass);
+                    if (possibleParents.Length > 1)
                     {
-                        GUILayout.Space(10);
-                        BGEditorUtility.VerticalBox(() =>
+                        BGEditorUtility.Horizontal(() =>
                         {
-                            var myParent = cc.GetParent(parentClass);
-                            var options = new string[possibleParents.Length];
-                            var index = 0;
-                            for (var i = 0; i < possibleParents.Length; i++)
+                            GUILayout.Space(10);
+                            BGEditorUtility.VerticalBox(() =>
                             {
-                                var possibleParent = possibleParents[i];
-                                if (possibleParent == myParent)
+                                var myParent = cc.GetParent(parentClass);
+                                var options = new string[possibleParents.Length];
+                                var index = 0;
+                                for (var i = 0; i < possibleParents.Length; i++)
                                 {
-                                    index = i;
+                                    var possibleParent = possibleParents[i];
+                                    if (possibleParent == myParent)
+                                    {
+                                        index = i;
+                                    }
+                                    options[i] = "" + possibleParent.GetInstanceID();
                                 }
-                                options[i] = "" + possibleParent.GetInstanceID();
-                            }
 
-                            //show popup
-                            var label = BGCc.GetDescriptor(parentClass).Name ?? parentClass.Name;
-                            var newIndex = EditorGUILayout.Popup(label, index, options);
-                            if (newIndex != index)
-                            {
-                                Undo.RecordObject(cc, "parent change");
-                                cc.SetParent((BGCc) possibleParents[newIndex]);
-                                if (ChangedParent != null) ChangedParent(this, null);
-                            }
+                                //show popup
+                                var label = BGCc.GetDescriptor(parentClass).Name ?? parentClass.Name;
+                                var newIndex = EditorGUILayout.Popup(label, index, options);
+                                if (newIndex != index)
+                                {
+                                    Undo.RecordObject(cc, "parent change");
+                                    cc.SetParent((BGCc) possibleParents[newIndex]);
+                                    if (ChangedParent != null) ChangedParent(this, null);
+                                }
+                            });
                         });
-                    });
+                    }
                 }
-            }
-
-            var componentChanged = EditorGUI.EndChangeCheck();
+            });
 
 
             //--------------  handles
-            if (cc.SupportHandles)
+            if (cc.SupportHandles && !BGCurveSettingsForEditor.CcInspectorHandlesOff)
             {
                 BGEditorUtility.Horizontal(() =>
                 {

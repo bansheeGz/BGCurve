@@ -5,6 +5,7 @@ using BansheeGz.BGSpline.Curve;
 
 namespace BansheeGz.BGSpline.Example
 {
+    //for 1.1 version Demo scene
     public class BGTestCurveShowcase : MonoBehaviour
     {
         [Header("Light")] public Light Light;

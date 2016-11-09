@@ -13,9 +13,6 @@ namespace BansheeGz.BGSpline.Editor
 
         //anim props
         private readonly BGEditorUtility.BoolAnimatedProperty showCurveProp;
-//        private readonly BGEUtil.BoolAnimatedProperty showControlHandlesProp;
-//        private readonly BGEUtil.BoolAnimatedProperty showLablesProp;
-//        private readonly BGEUtil.BoolAnimatedProperty showSpheresProp;
         private SerializedProperty settings;
 
 
@@ -24,9 +21,6 @@ namespace BansheeGz.BGSpline.Editor
         {
             //anim props
             showCurveProp = new BGEditorUtility.BoolAnimatedProperty(editor, serializedObject.FindProperty("settings"), "showCurve");
-//            showControlHandlesProp = new BGEUtil.BoolAnimatedProperty(editor, settings, "showControlHandles");
-//            showLablesProp = new BGEUtil.BoolAnimatedProperty(editor, settings, "showLabels");
-//            showSpheresProp = new BGEUtil.BoolAnimatedProperty(editor, settings, "showSpheres");
         }
 
         public override void OnInspectorGui()
@@ -106,45 +100,50 @@ namespace BansheeGz.BGSpline.Editor
 
             EditorGUILayout.HelpBox("All fields settings are under Fields tab", MessageType.Warning);
 
-            //Points
-            BGEditorUtility.VerticalBox(() =>
+            BGEditorUtility.ChangeCheck(() =>
             {
-                //Hide handles
-                EditorGUILayout.PropertyField(Find("hideHandles"));
-
-                EditorGUILayout.PropertyField(Find("newPointDistance"));
-                EditorGUILayout.PropertyField(Find("showPointMenu"));
-            });
-
-            var tangentProp = Find("showTangents");
-            var tangentOld = tangentProp.boolValue;
-
-            //curve
-            BGEditorUtility.FadeGroup(showCurveProp, () =>
-            {
-                EditorGUILayout.PropertyField(Find("showCurveMode"));
-                EditorGUILayout.PropertyField(Find("sections"));
-                EditorGUILayout.PropertyField(Find("vRay"));
-                BGEditorUtility.HelpBox("VRay will work only if object is selected.", MessageType.Warning, Find("vRay").boolValue && Find("showCurveMode").enumValueIndex != 0);
-                EditorGUILayout.PropertyField(Find("lineColor"));
-
-                //tangents
+                //Points
                 BGEditorUtility.VerticalBox(() =>
                 {
-                    EditorGUILayout.PropertyField(tangentProp);
-                    if (settingsObj.ShowTangents)
-                    {
-                        BGEditorUtility.Indent(1, () =>
-                        {
-                            EditorGUILayout.PropertyField(Find("tangentsSize"));
-                            EditorGUILayout.PropertyField(Find("tangentsPerSection"));
-                            EditorGUILayout.PropertyField(Find("tangentsColor"));
-                        });
-                    }
-                });
-            });
+                    //Hide handles
+                    EditorGUILayout.PropertyField(Find("hideHandles"));
 
-            if (tangentOld != tangentProp.boolValue) SceneView.RepaintAll();
+                    EditorGUILayout.PropertyField(Find("newPointDistance"));
+                    EditorGUILayout.PropertyField(Find("showPointMenu"));
+                });
+
+                var tangentProp = Find("showTangents");
+
+                //curve
+                BGEditorUtility.FadeGroup(showCurveProp, () =>
+                {
+                    EditorGUILayout.PropertyField(Find("showCurveMode"));
+                    EditorGUILayout.PropertyField(Find("sections"));
+                    EditorGUILayout.PropertyField(Find("vRay"));
+                    BGEditorUtility.HelpBox("VRay will work only if object is selected.", MessageType.Warning, Find("vRay").boolValue && Find("showCurveMode").enumValueIndex != 0);
+                    EditorGUILayout.PropertyField(Find("lineColor"));
+
+                    //tangents
+                    BGEditorUtility.VerticalBox(() =>
+                    {
+                        EditorGUILayout.PropertyField(tangentProp);
+                        if (settingsObj.ShowTangents)
+                        {
+                            BGEditorUtility.Indent(1, () =>
+                            {
+                                EditorGUILayout.PropertyField(Find("tangentsSize"));
+                                EditorGUILayout.PropertyField(Find("tangentsPerSection"));
+                                EditorGUILayout.PropertyField(Find("tangentsColor"));
+                            });
+                        }
+                    });
+                });
+            }, () =>
+            {
+                //if any change
+                SerializedObject.ApplyModifiedProperties();
+                SceneView.RepaintAll();
+            });
         }
 
         private SerializedProperty Find(string name)

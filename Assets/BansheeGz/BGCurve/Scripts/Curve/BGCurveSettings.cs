@@ -29,7 +29,7 @@ namespace BansheeGz.BGSpline.Curve
 
 
         //===============================================================  Curve itself
-        [SerializeField] [Tooltip("Hide the object's handles")] private bool hideHandles;
+        [SerializeField] [Tooltip("Hide Game Object's handles")] private bool hideHandles;
 
         [SerializeField] [Tooltip("Distance from the camera, at which new points are created")] private float newPointDistance = 2;
 
@@ -77,7 +77,7 @@ namespace BansheeGz.BGSpline.Curve
 
         [SerializeField] [Tooltip("Show points positions labels in the scene ")] private bool showLabels = true;
 
-        [SerializeField] [Tooltip("Point's labels color in the scene")] private Color labelColor = Color.black;
+        [SerializeField] [Tooltip("Point's labels color in the scene")] private Color labelColor = Color.white;
 
 
         [SerializeField] [Tooltip("Show points positions in the scene")] private bool showPositions;
@@ -108,7 +108,11 @@ namespace BansheeGz.BGSpline.Curve
 
         [SerializeField] [Tooltip("Show points control positions in the scene")] private bool showControlPositions;
 
-        [SerializeField] [Tooltip("Control point's labels color in the scene")] private Color labelControlColor = Color.black;
+        [SerializeField] [Tooltip("Control point's labels color in the scene")] private Color labelControlColor = Color.yellow;
+
+        //===============================================================  Transform field
+
+        [SerializeField] [Tooltip("Show points transform field in the editor (for Points tab)")] private bool showTransformField;
 
         //===============================================================  Misc
 
@@ -320,6 +324,12 @@ namespace BansheeGz.BGSpline.Curve
         {
             get { return labelControlColor; }
             set { labelControlColor = value; }
+        }
+
+        public bool ShowTransformField
+        {
+            get { return showTransformField; }
+            set { showTransformField = value; }
         }
 
         #endregion

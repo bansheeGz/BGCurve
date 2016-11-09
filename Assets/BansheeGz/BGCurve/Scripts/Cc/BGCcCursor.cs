@@ -3,7 +3,7 @@ using BansheeGz.BGSpline.Curve;
 
 namespace BansheeGz.BGSpline.Components
 {
-    /// <summary>Identify the position on the curve. </summary>
+    /// <summary>Identify the position on the curve by the distance from the start. </summary>
     [HelpURL("http://www.bansheegz.com/BGCurve/Cc/BGCcCursor")]
     [
         CcDescriptor(
@@ -11,12 +11,16 @@ namespace BansheeGz.BGSpline.Components
             Name = "Cursor",
             Image = "Assets/BansheeGz/BGCurve/Icons/Components/BGCcCursor123.png")
     ]
-    [AddComponentMenu("BansheeGz/BGCurve/Components/BGCcCursor", 1)]
+    [AddComponentMenu("BansheeGz/BGCurve/Components/BGCcCursor")]
     public class BGCcCursor : BGCcWithMath
     {
+        //===============================================================================================
+        //                                                    Fields
+        //===============================================================================================
+
         [SerializeField] [Tooltip("Distance from start of the curve.")] private float distance;
 
-
+        /// <summary>Distance from the start </summary>
         public float Distance
         {
             get { return distance; }
@@ -27,6 +31,7 @@ namespace BansheeGz.BGSpline.Components
             }
         }
 
+        /// <summary>Normalized distance from the start [Range(0,1)]</summary>
         public float DistanceRatio
         {
             get { return Mathf.Clamp01(distance/Math.GetDistance()); }
@@ -64,17 +69,30 @@ namespace BansheeGz.BGSpline.Components
         }
 #endif
 
-
+        //===============================================================================================
+        //                                                    Public functions
+        //===============================================================================================
+        /// <summary>Calculates tangent by current distance </summary>
         public Vector3 CalculateTangent()
         {
             return Math.CalcByDistance(BGCurveBaseMath.Field.Tangent, distance);
         }
 
+        /// <summary>Calculates position by current distance </summary>
         public Vector3 CalculatePosition()
         {
             return Math.CalcByDistance(BGCurveBaseMath.Field.Position, distance);
         }
 
+        /// <summary>Calculates section's index by current distance </summary>
+        public int CalculateSectionIndex()
+        {
+            return Math.CalcSectionIndexByDistance(distance);
+        }
+
+        //===============================================================================================
+        //                                                    Unity Callbacks
+        //===============================================================================================
         public override void Start()
         {
             //clamp

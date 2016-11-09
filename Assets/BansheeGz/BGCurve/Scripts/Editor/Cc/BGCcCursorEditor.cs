@@ -31,7 +31,9 @@ namespace BansheeGz.BGSpline.Editor
 
         protected override void InternalOnSceneGUI()
         {
-            var cursor = (BGCcCursor) cc;
+            var cursor = Cursor;
+
+            if (cursor == null) return;
 
             var position = cursor.CalculatePosition();
 

@@ -33,7 +33,7 @@ namespace BansheeGz.BGSpline.Editor
             {
                 BGEditorUtility.Horizontal(BGEditorUtility.Assign(ref boxStyle, () => new GUIStyle("Box") {padding = new RectOffset(8, 8, 8, 8)}), () =>
                 {
-                    ccName = EditorGUILayout.DelayedTextField("Name", ccName);
+                    ccName = EditorGUILayout.TextField("Name", ccName);
 
                     GUILayout.Space(8);
 

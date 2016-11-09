@@ -1,4 +1,6 @@
-﻿using BansheeGz.BGSpline.Curve;
+﻿using System;
+using System.Linq;
+using BansheeGz.BGSpline.Curve;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,19 +13,17 @@ namespace BansheeGz.BGSpline.Editor
         private readonly Texture2D addBeforeTexture;
         private readonly Texture2D moveUpTexture;
         private readonly Texture2D moveDownTexture;
-        private readonly Texture2D maskTexture;
+        private readonly Texture2D copyTexture;
+        private readonly Texture2D pasteTexture;
 
         private readonly BGCurveEditorPointsSelection editorSelection;
-        private readonly BGCurveEditorPoints editor;
+        private readonly Func<BGCurveBaseMath> mathProvider;
 
-        //styles
-        private GUIStyle positionLabelStyle;
-        private GUIStyle selectedPositionLabelStyle;
         private GUIStyle controlLabelStyle;
 
-        public BGCurveEditorPoint(BGCurveEditorPoints editor, BGCurveEditorPointsSelection editorSelection)
+        public BGCurveEditorPoint(Func<BGCurveBaseMath> mathProvider, BGCurveEditorPointsSelection editorSelection)
         {
-            this.editor = editor;
+            this.mathProvider = mathProvider;
             this.editorSelection = editorSelection;
 
             //textures
@@ -31,16 +31,26 @@ namespace BansheeGz.BGSpline.Editor
             addBeforeTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGAdd123);
             moveUpTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGMoveUp123);
             moveDownTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGMoveDown123);
-            maskTexture = BGEditorUtility.Texture1X1(new Color(1, 0, 0, .15f));
+            copyTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGCopy123);
+            pasteTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGPaste123);
         }
 
-        internal void OnInspectorGUI(BGCurvePoint point, int index, BGCurveSettings settings)
+        internal void OnInspectorGui(BGCurvePointI point, int index, BGCurveSettings settings)
         {
-            var maskField = point.Curve.Mode2DOn && Event.current.type == EventType.Repaint;
+            var mode2D = point.Curve.Mode2D;
+
+
+            //point transform
+            if (point.Curve.PointsMode != BGCurve.PointsModeEnum.Inlined && point.PointTransform != null)
+            {
+                var referenceToPoint = BGCurveReferenceToPoint.GetReferenceToPoint(point);
+                if (referenceToPoint == null) point.PointTransform.gameObject.AddComponent<BGCurveReferenceToPoint>().Point = point;
+            }
 
             BGEditorUtility.HorizontalBox(() =>
             {
-                editorSelection.InspectorSelectionRect(point);
+                if (editorSelection != null) editorSelection.InspectorSelectionRect(point);
+
                 BGEditorUtility.VerticalBox(() =>
                 {
                     BGEditorUtility.SwapLabelWidth(60, () =>
@@ -49,6 +59,7 @@ namespace BansheeGz.BGSpline.Editor
                         {
                             BGEditorUtility.Horizontal(() =>
                             {
+                                //nothing to show- only label
                                 EditorGUILayout.LabelField("Point " + index);
                                 PointButtons(point, index, settings);
                             });
@@ -70,24 +81,16 @@ namespace BansheeGz.BGSpline.Editor
                             //position
                             if (settings.ShowPointPosition)
                             {
-                                var math = editor.Editor.Math;
-                                var positionWorld = math.GetPosition(index);
-
                                 if (!settings.ShowPointControlType)
                                 {
                                     BGEditorUtility.Horizontal(() =>
                                     {
-                                        BGEditorUtility.Vector3Field("Point " + index, "Point's position in world space", positionWorld, vector3 => point.PositionWorld = vector3);
-                                        if (maskField) MaskFieldFor2D(point);
+                                        PositionField("Point " + index, point, mode2D, index);
                                         PointButtons(point, index, settings);
                                     });
                                     BGEditorUtility.StartIndent(1);
                                 }
-                                else
-                                {
-                                    BGEditorUtility.Vector3Field("Pos", "Point's position in world space", positionWorld, vector3 => point.PositionWorld = vector3);
-                                    if (maskField) MaskFieldFor2D(point);
-                                }
+                                else PositionField("Pos", point, mode2D, index);
                             }
                         }
                     });
@@ -96,83 +99,277 @@ namespace BansheeGz.BGSpline.Editor
                     if (point.ControlType != BGCurvePoint.ControlTypeEnum.Absent && settings.ShowPointControlPositions)
                     {
                         // 1st
-                        BGEditorUtility.Vector3Field("Control 1", "Point 1st control position (local)", point.ControlFirstLocal, vector3 => { point.ControlFirstLocal = vector3; });
-                        if (maskField) MaskFieldFor2D(point);
+                        ControlField(point, mode2D, 1);
 
                         // 2nd
-                        BGEditorUtility.Vector3Field("Control 2", "Point 2nd control position (local)", point.ControlSecondLocal, vector3 => { point.ControlSecondLocal = vector3; });
-                        if (maskField) MaskFieldFor2D(point);
+                        ControlField(point, mode2D, 2);
                     }
+
+                    //transform
+                    if (settings.ShowTransformField)
+                        BGEditorUtility.ComponentField("Transform", point.PointTransform, transform =>
+                        {
+                            if (transform != null)
+                            {
+                                Undo.RecordObject(transform, "Object moved");
+
+                                if (point.Curve.PointsMode != BGCurve.PointsModeEnum.Inlined) Undo.AddComponent<BGCurveReferenceToPoint>(transform.gameObject).Point = point;
+                            }
+
+                            if (point.PointTransform != null)
+                            {
+                                var referenceToPoint = BGCurveReferenceToPoint.GetReferenceToPoint(point);
+                                if (referenceToPoint != null) Undo.DestroyObjectImmediate(referenceToPoint);
+                            }
+
+                            point.PointTransform = transform;
+                        });
+
+
+                    //fields
+                    if (point.Curve.FieldsCount > 0) ShowFields(point);
 
                     BGEditorUtility.EndIndent(1);
                 });
             });
         }
 
-        //mask disabled field with red texture
-        private void MaskFieldFor2D(BGCurvePoint point)
+        private void ControlField(BGCurvePointI point, BGCurve.Mode2DEnum mode2D, int index)
         {
-            var lastRect = GUILayoutUtility.GetLastRect();
-
-            var twoLiner = lastRect.height > 18;
-
-            if (twoLiner)
+            Vector3 pos;
+            string tooltipDetails, details;
+            Action<Vector3> newValueAction;
+            switch (BGCurveSettingsForEditor.InspectorControlCoordinateSpace)
             {
-                //I have no idea how to calculate it (bruteforce)
-                var offset = (EditorGUIUtility.labelWidth/lastRect.width)*50f;
-                var oneFieldWidth = (lastRect.width - offset)/3;
+                case BGCurveSettingsForEditor.CoordinateSpaceEnum.Local:
+                    tooltipDetails = "local";
+                    details = "L";
+                    if (index == 1)
+                    {
+                        pos = point.ControlFirstLocal;
+                        newValueAction = vector3 => point.ControlFirstLocal = vector3;
+                    }
+                    else
+                    {
+                        pos = point.ControlSecondLocal;
+                        newValueAction = vector3 => point.ControlSecondLocal = vector3;
+                    }
+                    break;
+                case BGCurveSettingsForEditor.CoordinateSpaceEnum.LocalTransformed:
+                    tooltipDetails = "local transformed";
+                    details = "LT";
 
-                var rect = new Rect(lastRect)
-                {
-                    x = lastRect.x + offset,
-                    y = lastRect.y + 16,
-                    height = 16,
-                    width = oneFieldWidth
-                };
-                switch (point.Curve.Mode2D)
-                {
-                    case BGCurve.Mode2DEnum.XY:
-                        rect.x += oneFieldWidth*2;
-                        break;
-                    case BGCurve.Mode2DEnum.XZ:
-                        rect.x += oneFieldWidth;
-                        break;
-                    case BGCurve.Mode2DEnum.YZ:
-                        break;
-                }
-                GUI.DrawTexture(rect, maskTexture);
+                    if (index == 1)
+                    {
+                        pos = point.ControlFirstLocalTransformed;
+                        newValueAction = vector3 => point.ControlFirstLocalTransformed = vector3;
+                    }
+                    else
+                    {
+                        pos = point.ControlSecondLocalTransformed;
+                        newValueAction = vector3 => point.ControlSecondLocalTransformed = vector3;
+                    }
+                    break;
+                case BGCurveSettingsForEditor.CoordinateSpaceEnum.World:
+                    tooltipDetails = "world";
+                    details = "W";
+
+                    if (index == 1)
+                    {
+                        pos = point.ControlFirstWorld;
+                        newValueAction = vector3 => point.ControlFirstWorld = vector3;
+                    }
+                    else
+                    {
+                        pos = point.ControlSecondWorld;
+                        newValueAction = vector3 => point.ControlSecondWorld = vector3;
+                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("BGCurveSettingsForEditor.InspectorPointControlsCoordinates");
             }
-            else
+
+            var label = "Control " + index + " (" + details + ")";
+            var tooltip = "Point " + (index == 0 ? "1st" : "2nd") + " control position in " + tooltipDetails + " space. You can change points space in BGCurve Editor settings (gear icon)";
+
+            
+
+            if (mode2D == BGCurve.Mode2DEnum.Off) BGEditorUtility.Vector3Field(label, tooltip, pos, newValueAction);
+            else Vector2Field(label, tooltip, pos, mode2D, newValueAction);
+
+        }
+
+        private void PositionField(string name, BGCurvePointI point, BGCurve.Mode2DEnum mode2D, int index)
+        {
+            var math = mathProvider();
+
+            Vector3 pos;
+            Action<Vector3> newValueAction;
+            string tooltipDetails;
+            string details;
+            switch (BGCurveSettingsForEditor.InspectorPointCoordinateSpace)
             {
-                var rect = new Rect(lastRect) {width = (lastRect.width - EditorGUIUtility.labelWidth)/3f};
-                switch (point.Curve.Mode2D)
+                case BGCurveSettingsForEditor.CoordinateSpaceEnum.World:
+                    pos = math == null ? point.PositionWorld : math.GetPosition(index);
+                    newValueAction = vector3 => point.PositionWorld = vector3;
+                    tooltipDetails = "world";
+                    details = "W";
+                    break;
+                case BGCurveSettingsForEditor.CoordinateSpaceEnum.LocalTransformed:
+                    pos = point.PositionLocalTransformed;
+                    newValueAction = vector3 => point.PositionLocalTransformed = vector3;
+                    tooltipDetails = "local transformed";
+                    details = "LT";
+                    break;
+                case BGCurveSettingsForEditor.CoordinateSpaceEnum.Local:
+                    pos = point.PositionLocal;
+                    newValueAction = vector3 => point.PositionLocal = vector3;
+                    tooltipDetails = "local";
+                    details = "L";
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("BGCurveSettingsForEditor.InspectorPointCoordinates");
+            }
+
+            BGEditorUtility.SwapLabelWidth(80, () =>
+            {
+                var label = name + "(" + details + ")";
+                var tooltip = "Point's position in " + tooltipDetails + " space. You can change points space in BGCurve Editor settings (gear icon)";
+
+                if (mode2D == BGCurve.Mode2DEnum.Off) BGEditorUtility.Vector3Field(label, tooltip, pos, newValueAction);
+                else Vector2Field(label, tooltip, pos, mode2D, newValueAction);
+            });
+        }
+
+        private void Vector2Field(string label, string tooltip, Vector3 value, BGCurve.Mode2DEnum mode2D, Action<Vector3> newValueAction)
+        {
+            Vector2 val;
+            switch (mode2D)
+            {
+                case BGCurve.Mode2DEnum.XY:
+                    val = value;
+                    break;
+                case BGCurve.Mode2DEnum.XZ:
+                    val = new Vector2(value.x, value.z);
+                    break;
+                case BGCurve.Mode2DEnum.YZ:
+                    val = new Vector2(value.y, value.z);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("mode2D", mode2D, null);
+            }
+
+            BGEditorUtility.Vector2Field(label, tooltip, val, vector2 =>
+            {
+                Vector3 newValue;
+                switch (mode2D)
                 {
                     case BGCurve.Mode2DEnum.XY:
-                        rect.x = lastRect.x + EditorGUIUtility.labelWidth + rect.width*2;
+                        newValue = vector2;
                         break;
                     case BGCurve.Mode2DEnum.XZ:
-                        rect.x = lastRect.x + EditorGUIUtility.labelWidth + rect.width;
+                        newValue = new Vector3(vector2.x, 0, vector2.y);
                         break;
                     case BGCurve.Mode2DEnum.YZ:
-                        rect.x = lastRect.x + EditorGUIUtility.labelWidth;
+                        newValue = new Vector3(0, vector2.x, vector2.y);
                         break;
+                    default:
+                        throw new ArgumentOutOfRangeException("mode2D", mode2D, null);
                 }
-                GUI.DrawTexture(rect, maskTexture);
+                newValueAction(newValue);
+            });
+        }
+
+
+        private static void ShowFields(BGCurvePointI point)
+        {
+            foreach (var field in point.Curve.Fields.Where(BGPrivateField.GetShowInPointsMenu)) ShowField(point, field);
+        }
+
+        public static void ShowField(BGCurvePointI point, BGCurvePointField field, Action<string, AnimationCurve> animationCurveCallback = null)
+        {
+            var name = point.Curve.IndexOf(field) + ") " + field.FieldName;
+            switch (field.Type)
+            {
+                case BGCurvePointField.TypeEnum.Bool:
+                    BGEditorUtility.BoolField(name, point.GetField<bool>(field.FieldName), v => point.SetField(field.FieldName, v));
+                    break;
+                case BGCurvePointField.TypeEnum.Int:
+                    BGEditorUtility.IntField(name, point.GetField<int>(field.FieldName), v => point.SetField(field.FieldName, v));
+                    break;
+                case BGCurvePointField.TypeEnum.Float:
+                    BGEditorUtility.FloatField(name, point.GetField<float>(field.FieldName), v => point.SetField(field.FieldName, v));
+                    break;
+                case BGCurvePointField.TypeEnum.Vector3:
+                    BGEditorUtility.Vector3Field(name, null, point.GetField<Vector3>(field.FieldName), v => point.SetField(field.FieldName, v));
+                    break;
+                case BGCurvePointField.TypeEnum.Bounds:
+                    BGEditorUtility.BoundsField(name, point.GetField<Bounds>(field.FieldName), v => point.SetField(field.FieldName, v));
+                    break;
+                case BGCurvePointField.TypeEnum.Color:
+                    BGEditorUtility.ColorField(name, point.GetField<Color>(field.FieldName), v => point.SetField(field.FieldName, v));
+                    break;
+                case BGCurvePointField.TypeEnum.String:
+                    BGEditorUtility.TextField(name, point.GetField<string>(field.FieldName), v => point.SetField(field.FieldName, v), false);
+                    break;
+                case BGCurvePointField.TypeEnum.AnimationCurve:
+                    BGEditorUtility.Horizontal(() =>
+                    {
+                        BGEditorUtility.AnimationCurveField(name, point.GetField<AnimationCurve>(field.FieldName), v => point.SetField(field.FieldName, v));
+
+                        if (animationCurveCallback != null && GUILayout.Button("Set", GUILayout.Width(40))) animationCurveCallback(field.FieldName, point.GetField<AnimationCurve>(field.FieldName));
+                    });
+
+                    break;
+                case BGCurvePointField.TypeEnum.Quaternion:
+                    BGEditorUtility.QuaternionField(name, point.GetField<Quaternion>(field.FieldName), v => point.SetField(field.FieldName, v));
+                    break;
+                case BGCurvePointField.TypeEnum.GameObject:
+                    BGEditorUtility.GameObjectField(name, point.GetField<GameObject>(field.FieldName), v => point.SetField(field.FieldName, v));
+                    break;
+                case BGCurvePointField.TypeEnum.Component:
+                    BGEditorUtility.ComponentChoosableField(name, point.GetField<Component>(field.FieldName), v => point.SetField(field.FieldName, v));
+                    break;
+                case BGCurvePointField.TypeEnum.BGCurve:
+                    BGEditorUtility.BGCurveField(name, point.GetField<BGCurve>(field.FieldName), v => point.SetField(field.FieldName, v));
+                    break;
+                case BGCurvePointField.TypeEnum.BGCurvePointComponent:
+                    BGEditorUtility.Horizontal(() =>
+                    {
+                        BGEditorUtility.BGCurvePointComponentField(name, point.GetField<BGCurvePointComponent>(field.FieldName), v => point.SetField(field.FieldName, v));
+                        var currentPoint = point.GetField<BGCurvePointComponent>(field.FieldName);
+
+                        if (currentPoint == null || currentPoint.Curve.PointsCount < 2) return;
+
+                        var indexOfField = currentPoint.Curve.IndexOf(currentPoint);
+
+                        if (GUILayout.Button("" + indexOfField, GUILayout.Width(40))) BGCurveChosePointWindow.Open(indexOfField, currentPoint.Curve, c => point.SetField(field.FieldName, c));
+                    });
+                    break;
+                case BGCurvePointField.TypeEnum.BGCurvePointGO:
+                    BGEditorUtility.BGCurvePointGOField(name, point.GetField<BGCurvePointGO>(field.FieldName), v => point.SetField(field.FieldName, v));
+                    break;
             }
         }
 
-        private void PointButtons(BGCurvePoint point, int index, BGCurveSettings settings)
+
+        private void PointButtons(BGCurvePointI point, int index, BGCurveSettings settings)
         {
             if (!settings.ShowPointMenu) return;
 
             var curve = point.Curve;
 
+            //================== Copy
+            if (BGEditorUtility.ButtonWithIcon(copyTexture, PointCopyPaste.Instance.CopyTooltip)) PointCopyPaste.Instance.Copy(point);
+            GUILayout.Space(2);
+
+            //================== Paste
+            if (BGEditorUtility.ButtonWithIcon(pasteTexture, PointCopyPaste.Instance.PasteTooltip)) PointCopyPaste.Instance.Paste(point);
+            GUILayout.Space(2);
+
             //================== Add before
             if (BGEditorUtility.ButtonWithIcon(addBeforeTexture, "Insert a point before this point"))
-            {
-                curve.AddPoint(BGNewPointPositionManager.InsertBefore(curve, index, settings.ControlType, settings.Sections), index);
-            }
-
+                BGCurveEditor.AddPoint(curve, BGNewPointPositionManager.InsertBefore(curve, index, settings.ControlType, settings.Sections), index);
             GUILayout.Space(2);
 
 
@@ -188,37 +385,44 @@ namespace BansheeGz.BGSpline.Editor
             //=========================== Delete
             if (BGEditorUtility.ButtonWithIcon(deleteTexture, "Delete the point"))
             {
-                curve.Delete(index);
-                editorSelection.Remove(point);
+                BGCurveEditor.DeletePoint(curve, index);
+                if (editorSelection != null) editorSelection.Remove(point);
                 GUIUtility.ExitGUI();
             }
         }
 
 
-        public void OnSceneGUI(BGCurvePoint point, int index, BGCurveSettings settings, Quaternion rotation, Plane[] frustum)
+        public void OnSceneGUI(BGCurvePointI point, int index, BGCurveSettings settings, Quaternion rotation, Plane[] frustum)
         {
-            var math = editor.Editor.Math;
-            var positionWorld = math.GetPosition(index);
+            var math = mathProvider();
+            var positionWorld = math == null ? point.Curve[index].PositionWorld : math.GetPosition(index);
 
-            if (settings.ShowControlHandles && settings.ShowCurve && (!editorSelection.HasSelected() || editorSelection.SingleSelected(point)))
+            //adjust rotation
+            if (point.PointTransform != null) rotation = BGCurveEditorPoints.GetRotation(point.PointTransform);
+            else if (point.Curve.PointsMode == BGCurve.PointsModeEnum.GameObjectsTransform) rotation = BGCurveEditorPoints.GetRotation(((BGCurvePointGO) point).transform);
+
+            if (settings.ShowControlHandles && settings.ShowCurve && (editorSelection == null || !editorSelection.HasSelected() || editorSelection.SingleSelected(point)))
             {
                 // ============================================== Controls Handles
                 if (point.ControlType != BGCurvePoint.ControlTypeEnum.Absent)
                 {
-                    var controlFirstWorld = math.GetControlFirst(index);
-                    var controlSecondWorld = math.GetControlSecond(index);
+                    var controlFirstWorld = math == null ? point.Curve[index].ControlFirstWorld : math.GetControlFirst(index);
+                    var controlSecondWorld = math == null ? point.Curve[index].ControlSecondWorld : math.GetControlSecond(index);
 
                     BGEditorUtility.SwapHandlesColor(settings.ControlHandlesColor, () =>
                     {
                         Handles.DrawLine(positionWorld, controlFirstWorld);
                         Handles.DrawLine(positionWorld, controlSecondWorld);
 
-                        // control handles different types
-                        var newPositionFirst = editor.Handle(GetUniqueNumber(index) - 1, settings.ControlHandlesType, controlFirstWorld, rotation, settings.ControlHandlesSettings);
-                        var newPositionSecond = editor.Handle(GetUniqueNumber(index) - 2, settings.ControlHandlesType, controlSecondWorld, rotation, settings.ControlHandlesSettings);
+                        if (ShowingHandles)
+                        {
+                            // control handles different types
+                            var newPositionFirst = BGEditorUtility.Handle(GetUniqueNumber(index) - 1, settings.ControlHandlesType, controlFirstWorld, rotation, settings.ControlHandlesSettings);
+                            var newPositionSecond = BGEditorUtility.Handle(GetUniqueNumber(index) - 2, settings.ControlHandlesType, controlSecondWorld, rotation, settings.ControlHandlesSettings);
 
-                        if (BGEditorUtility.AnyChange(controlFirstWorld, newPositionFirst)) point.ControlFirstWorld = newPositionFirst;
-                        if (BGEditorUtility.AnyChange(controlSecondWorld, newPositionSecond)) point.ControlSecondWorld = newPositionSecond;
+                            if (BGEditorUtility.AnyChange(controlFirstWorld, newPositionFirst)) point.ControlFirstWorld = newPositionFirst;
+                            if (BGEditorUtility.AnyChange(controlSecondWorld, newPositionSecond)) point.ControlSecondWorld = newPositionSecond;
+                        }
                     });
 
                     if (settings.ShowControlLabels)
@@ -230,30 +434,28 @@ namespace BansheeGz.BGSpline.Editor
             }
 
             //if only one point is selected and this is the selected point- do not print anything further
-            if (editorSelection.HasSelected() && editorSelection.SingleSelected(point)) return;
-
-            // ============================================== Labels & Positions
-            if (settings.ShowLabels && GeometryUtility.TestPlanesAABB(frustum, new Bounds(positionWorld, Vector3.one)))
-            {
-                Handles.Label(editor.GetLabelPosition(settings, positionWorld), "Point " + index + (settings.ShowPositions ? " " + positionWorld : ""),
-                    editorSelection.Contains(point) ? selectedPositionLabelStyle : positionLabelStyle);
-            }
+            if (editorSelection != null && editorSelection.HasSelected() && editorSelection.SingleSelected(point)) return;
 
             // ============================================== Move Handles
-            if (!editorSelection.HasSelected() && settings.ShowCurve && settings.ShowHandles)
+            if ((editorSelection == null || !editorSelection.HasSelected()) && settings.ShowCurve && settings.ShowHandles && ShowingHandles)
             {
-                var newPos = editor.Handle(GetUniqueNumber(index), settings.HandlesType, positionWorld, rotation, settings.HandlesSettings);
+                var newPos = BGEditorUtility.Handle(GetUniqueNumber(index), settings.HandlesType, positionWorld, rotation, settings.HandlesSettings);
 
                 if (BGEditorUtility.AnyChange(positionWorld, newPos)) point.PositionWorld = newPos;
             }
         }
 
+        private static bool ShowingHandles
+        {
+            get { return Tools.current != Tool.View; }
+        }
+
         private void ShowControlLabel(BGCurveSettings settings, Plane[] frustum, Vector3 positionWorld, Vector3 positionLocal, string label)
         {
+            BGEditorUtility.Assign(ref controlLabelStyle, () => new GUIStyle("Label") {normal = new GUIStyleState {textColor = settings.LabelControlColor}});
+
             if (GeometryUtility.TestPlanesAABB(frustum, new Bounds(positionWorld, Vector3.one)))
-            {
                 Handles.Label(positionWorld, label + (settings.ShowControlPositions ? " " + positionLocal : ""), controlLabelStyle);
-            }
         }
 
 
@@ -263,12 +465,62 @@ namespace BansheeGz.BGSpline.Editor
             return (-index - 1)*3;
         }
 
-        public void OnSceneGUIStart(BGCurveSettings settings)
+        private sealed class PointCopyPaste
         {
-            positionLabelStyle = new GUIStyle("Label") {normal = new GUIStyleState {textColor = settings.LabelColor}};
-            selectedPositionLabelStyle = new GUIStyle("Label") {normal = new GUIStyleState {textColor = settings.LabelColorSelected}};
+            public static readonly PointCopyPaste Instance = new PointCopyPaste();
 
-            controlLabelStyle = new GUIStyle("Label") {normal = new GUIStyleState {textColor = settings.LabelControlColor}};
+            public readonly string CopyTooltip = "Copy " +
+                                                 "\r\n1) ControlType, " +
+                                                 "\r\n2) Position (Local), " +
+                                                 "\r\n3) Control1 (LocalTransformed), " +
+                                                 "\r\n4) Control2 (LocalTransformed), " +
+                                                 "\r\n5) PointTransform";
+
+            public string PasteTooltip;
+
+            private BGCurvePoint.ControlTypeEnum controlType;
+            private Vector3 positionLocal;
+            private Vector3 control1LocalTransformed;
+            private Vector3 control2LocalTransformed;
+            private Transform pointTransform;
+
+            private PointCopyPaste()
+            {
+                InitPasteTooltip();
+            }
+
+            public void Copy(BGCurvePointI point)
+            {
+                controlType = point.ControlType;
+                positionLocal = point.PositionLocal;
+                control1LocalTransformed = point.ControlFirstLocalTransformed;
+                control2LocalTransformed = point.ControlSecondLocalTransformed;
+                pointTransform = point.PointTransform;
+
+                InitPasteTooltip();
+            }
+
+            private void InitPasteTooltip()
+            {
+                PasteTooltip = "Paste " +
+                               "\r\n1) ControlType=" + controlType +
+                               "\r\n2) Position (Local)=" + positionLocal +
+                               "\r\n3) Control1 (LocalTransformed)=" + control1LocalTransformed +
+                               "\r\n4) Control2 (LocalTransformed)=" + control2LocalTransformed +
+                               "\r\n5) PointTransform=" + pointTransform;
+            }
+
+            public void Paste(BGCurvePointI point)
+            {
+                point.Curve.Transaction(() =>
+                {
+                    point.ControlType = controlType;
+                    point.PositionLocal = positionLocal;
+                    point.ControlFirstLocalTransformed = control1LocalTransformed;
+                    point.ControlSecondLocalTransformed = control2LocalTransformed;
+                    point.PointTransform = pointTransform;
+                });
+            }
         }
     }
 }

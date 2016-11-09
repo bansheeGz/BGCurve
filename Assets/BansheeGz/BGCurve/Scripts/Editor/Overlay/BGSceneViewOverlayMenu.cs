@@ -28,7 +28,9 @@ namespace BansheeGz.BGSpline.Editor
             if (menu.Active)
             {
                 menu.OnGui(currentEvent);
-                DrawActiveAnimatedTexture(menu.Point2DPosition);
+
+                BGEditorUtility.Assign(ref pointIndicatorTransition, () => new BGTransition.SwayTransition(20, 30, .4f));
+                BGSceneViewOverlay.DrawHandlesGuiTexture(menu.Point2DPosition, pointIndicatorTransition, pointSelectedTexture);
 
                 var okMessage = menu.ActiveItem != null && menu.ActiveItem.Description != null
                     ? "Release Ctrl to " + menu.ActiveItem.Description
@@ -53,23 +55,7 @@ namespace BansheeGz.BGSpline.Editor
 
         protected abstract bool Process(Event @event, BGCurveBaseMath math, float sceneViewHeight, ref Vector3 position, ref string message);
 
-        //small animated rectangular texture
-        private void DrawActiveAnimatedTexture(Vector2 screenPoint)
-        {
-            BGEditorUtility.Assign(ref pointIndicatorTransition, () => new BGTransition.SwayTransition(20, 30, .4f));
 
-            pointIndicatorTransition.Tick();
-
-            var shift = pointIndicatorTransition.Value*.5f;
-
-            Handles.BeginGUI();
-
-            GUI.DrawTexture(
-                new Rect(screenPoint - new Vector2(shift, shift), new Vector2(pointIndicatorTransition.Value, pointIndicatorTransition.Value)),
-                pointSelectedTexture, ScaleMode.StretchToFill);
-
-            Handles.EndGUI();
-        }
 
         protected static string SuccessMessage(string message)
         {
@@ -81,6 +67,7 @@ namespace BansheeGz.BGSpline.Editor
         public abstract class AbstractMenu : BGPopupMenu
         {
             public readonly BGCurveEditorPointsSelection EditorSelection;
+            public readonly BGSceneViewOverlay Overlay;
 
             public abstract string Details { get; }
 
@@ -88,6 +75,7 @@ namespace BansheeGz.BGSpline.Editor
                 : base(title)
             {
                 EditorSelection = editorSelection;
+                Overlay = overlay;
 
                 Add(new MenuItemButton(BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGControlAbsent123), "Convert point control to Absent",
                     () => { SetControl(BGCurvePoint.ControlTypeEnum.Absent); }));

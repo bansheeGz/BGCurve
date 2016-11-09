@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace BansheeGz.BGSpline.Example
 {
+    //camera movements
     public class BGTestCamera : MonoBehaviour
     {
         private const int Speed = 100;
@@ -18,7 +20,14 @@ namespace BansheeGz.BGSpline.Example
         private void OnGUI()
         {
             if (style == null) style = new GUIStyle(GUI.skin.label) {fontSize = 24};
+
+            GUILayout.BeginHorizontal();
+
             GUILayout.Label("Use A and D to rotate camera", style);
+
+            if (BGTestMainMenu.Inited && GUILayout.Button("To Main Menu")) SceneManager.LoadScene("BGCurveMainMenu");
+
+            GUILayout.EndHorizontal();
         }
     }
 }
