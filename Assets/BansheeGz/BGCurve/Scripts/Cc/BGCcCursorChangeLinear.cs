@@ -116,7 +116,7 @@ namespace BansheeGz.BGSpline.Components
         //===============================================================================================
         //curve's length at last calculation (only if adjustByTotalLength=true)
         private float oldLength;
-        //is speed is reversed
+        //is speed is reversed (if speed field is present)
         private bool speedReversed;
         //current section index (it's calculated only if it's required)
         private int currentSectionIndex;
@@ -131,7 +131,7 @@ namespace BansheeGz.BGSpline.Components
         /// <summary>If it's stopped or moving</summary>
         public bool Stopped { get; set; }
 
-        /// <summary>If actual speed is reversed at the moment. It can be the case if PingPong is used.</summary>
+        /// <summary>If speed field is present and actual speed is reversed at the moment. It can be the case if PingPong is used.</summary>
         public bool SpeedReversed
         {
             get { return speedReversed; }
@@ -145,10 +145,11 @@ namespace BansheeGz.BGSpline.Components
                 if (Curve.PointsCount < 2) return 0;
 
                 //no field
-                if (speedField == null) return speedReversed ? -speed : speed;
+                if (speedField == null) return speed;
 
                 //by field
-                return Curve[Cursor.CalculateSectionIndex()].GetFloat(speedField.FieldName);
+                var speedAtPoint = Curve[Cursor.CalculateSectionIndex()].GetFloat(speedField.FieldName);
+                return speedReversed ? -speedAtPoint : speedAtPoint;
             }
         }
 
@@ -206,8 +207,8 @@ namespace BansheeGz.BGSpline.Components
                 //we need to retrieve speed from a field value
                 if (newSectionIndex == -1) newSectionIndex = math.CalcSectionIndexByDistance(distance);
                 currentSpeed = Curve[newSectionIndex].GetFloat(speedField.FieldName);
+                if (speedReversed) currentSpeed = -currentSpeed;
             }
-            if (speedReversed) currentSpeed = -currentSpeed;
 
             //--------------------------------  change distance
             var newDistance = distance + currentSpeed*Time.deltaTime;
@@ -265,8 +266,13 @@ namespace BansheeGz.BGSpline.Components
                 //section is changed (there could be several points between)
 
                 //if speed was positive or negative?
-                var speedPositive = (speedField == null ? speed : Curve[currentSectionIndex].GetFloat(speedField.FieldName)) > 0;
-                if (speedReversed) speedPositive = !speedPositive;
+                bool speedPositive;
+                if (speedField == null) speedPositive = speed > 0;
+                else
+                {
+                    speedPositive = Curve[currentSectionIndex].GetFloat(speedField.FieldName) > 0;
+                    if (speedReversed) speedPositive = !speedPositive;
+                }
 
                 if (CheckDelayAtSectionChanged(newSectionIndex, checkDelay, firingEvents, speedPositive)) return true;
             }
@@ -389,6 +395,7 @@ namespace BansheeGz.BGSpline.Components
                     break;
 
                 case OverflowControlEnum.PingPong:
+                    if (speedField == null) speed = -speed;
                     speedReversed = !speedReversed;
                     currentSpeedPositive = !currentSpeedPositive;
                     newDistance = lessThanZero ? -newDistance : totalDistance*2 - newDistance;
@@ -496,7 +503,6 @@ namespace BansheeGz.BGSpline.Components
                         currentSectionIndex = pointsCountMinusOne;
                         cursor.Distance = math.GetDistance() - BGCurve.Epsilon;
                     }
-                    
                 }
             }
             return true;

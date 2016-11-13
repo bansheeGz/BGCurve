@@ -2015,7 +2015,7 @@ namespace BansheeGz.BGSpline.Curve
 
         // ============================================== Utils
         //destroy Unity object
-        private static void DestroyIt(Object obj)
+        public static void DestroyIt(Object obj)
         {
             if (Application.isEditor) DestroyImmediate(obj);
             else Destroy(obj);

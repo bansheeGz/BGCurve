@@ -18,6 +18,7 @@ namespace BansheeGz.BGSpline.Example
      * D0- delay at point 0
      * DL- delay at last point 
      * DA- delay at all points
+     * SF- speed field is present
      * */
 
     public class BGTestCcChangeCursorLinear : MonoBehaviour
@@ -387,7 +388,7 @@ namespace BansheeGz.BGSpline.Example
                     }
 
                     //last point
-                    expectedPoints.Add(new ExpectedPoint(-1, math[sectionIndex].DistanceFromEndToOrigin - cursor.Distance, changeCursor.GetSpeedAtPoint(sectionIndex + 1),
+                    expectedPoints.Add(new ExpectedPoint(-1, math[sectionIndex].DistanceFromEndToOrigin - cursor.Distance, changeCursor.GetSpeedAtPoint(sectionIndex),
                         changeCursor.GetDelayAtPoint(sectionIndex + 1)));
                 }
             }
