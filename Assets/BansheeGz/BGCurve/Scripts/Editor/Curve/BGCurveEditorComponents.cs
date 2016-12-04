@@ -157,6 +157,8 @@ namespace BansheeGz.BGSpline.Editor
         private static BGCc AddComponent(BGCurve curve, Type type)
         {
             var newCc = Undo.AddComponent(curve.gameObject, type);
+            if (newCc == null) return null;
+
             var bgCc = ((BGCc) newCc);
             UnityEditorInternal.InternalEditorUtility.SetIsInspectorExpanded(bgCc, true);
             bgCc.AddedInEditor();
@@ -563,6 +565,7 @@ namespace BansheeGz.BGSpline.Editor
 
                                     //add
                                     var addedCc = AddComponent(MyTree.Curve, type);
+                                    if (addedCc == null) return;
 
                                     //we need to process all the way up to the Cc and link Ccs to right (newly created) parents
                                     var parentClass = addedCc.GetParentClass();

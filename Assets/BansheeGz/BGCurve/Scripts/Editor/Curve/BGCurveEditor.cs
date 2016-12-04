@@ -249,7 +249,7 @@ namespace BansheeGz.BGSpline.Editor
         {
             transformMonitor.CheckForChange();
 
-            BGPrivateField.Invoke(Curve, BGCurve.MethodUpdateFieldsValuesIndexes);
+            Curve.PrivateUpdateFieldsValuesIndexes();
 
             if (BGCurve.IsGoMode(Curve.PointsMode)) BGPrivateField.Invoke(Curve, BGCurve.MethodSetPointsNames);
 
@@ -295,7 +295,7 @@ namespace BansheeGz.BGSpline.Editor
                     new GUIContent("Turn Off", "Click to turn this mode off"),
                     new GUIContent("Turn On", "Click to turn this mode on"));
 
-                if (BGEditorUtility.ButtonWithIcon(settingsTexture, "Open BGCurve Editor Settings", 24, 24)) BGCurveSettingsForEditorWindow.Open();
+                if (GUILayout.Button(settingsTexture, GUILayout.MaxWidth(24), GUILayout.MaxHeight(24))) BGCurveSettingsForEditorWindow.Open();
             });
 
             //warning

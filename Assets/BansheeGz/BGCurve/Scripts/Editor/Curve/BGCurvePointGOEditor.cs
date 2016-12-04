@@ -1,6 +1,7 @@
 ﻿using BansheeGz.BGSpline.Curve;
 using UnityEditor;
 using UnityEngine;
+using UnityEngineInternal;
 
 namespace BansheeGz.BGSpline.Editor
 {
@@ -17,9 +18,14 @@ namespace BansheeGz.BGSpline.Editor
         private BGTransition.SwayTransition pointIndicatorTransition;
         private Texture2D pointSelectedTexture;
 
+        protected virtual BGCurvePointI Point
+        {
+            get { return (BGCurvePointI) target; }
+        }
+
         protected virtual void OnEnable()
         {
-            point = GetPoint();
+            point = Point;
 
             pointEditor = new BGCurveEditorPoint(() => null, null);
 
@@ -69,11 +75,6 @@ namespace BansheeGz.BGSpline.Editor
         public static void DrawGizmos(BGCurve curve, GizmoType gizmoType)
         {
             BGCurveEditor.DrawGizmos(curve, gizmoType);
-        }
-
-        protected virtual BGCurvePointI GetPoint()
-        {
-            return (BGCurvePointI) target;
         }
     }
 }

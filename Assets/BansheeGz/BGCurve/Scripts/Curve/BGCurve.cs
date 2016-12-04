@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
 
 namespace BansheeGz.BGSpline.Curve
@@ -22,7 +20,7 @@ namespace BansheeGz.BGSpline.Curve
         //===============================================================================================
 
         //Package version
-        public const float Version = 1.2f;
+        public const float Version = 1.21f;
         //Epsilon value (very small value, that can be ignored). Assuming 1=1 meter (Unity's recommendation), it equals to (1*10^-5)=10 micrometers 
         public const float Epsilon = 0.00001f;
 
@@ -31,21 +29,13 @@ namespace BansheeGz.BGSpline.Curve
         //max snapping distance
         public const float MaxSnapDistance = 100;
 
-        //Some private methods names (editor may invoke private methods and fields to properly handle Undo/Redo operations and points mode conversion)
-        //also some methods are private for curve, points and fields communications 
+        //Some private methods names  (editor may invoke private methods and fields to properly handle Undo/Redo operations and points mode conversion)
         public const string MethodAddPoint = "AddPoint";
         public const string MethodDeletePoint = "Delete";
-        public const string MethodUpdateFieldsValuesIndexes = "UpdateFieldsValuesIndexes";
         public const string MethodSetPointsNames = "SetPointsNames";
         public const string MethodAddField = "AddField";
         public const string MethodDeleteField = "DeleteField";
         public const string MethodConvertPoints = "ConvertPoints";
-        //these methods for points
-        public const string MethodPointFieldAdded = "FieldAdded";
-        public const string MethodPointFieldDeleted = "FieldDeleted";
-        public const string MethodPointInit = "Init";
-        //these fields for points
-        public const string PropertyPointFieldsValues = "ValuesForFields";
 
 
         //Event names (these events are fired at any rate)
@@ -80,14 +70,6 @@ namespace BansheeGz.BGSpline.Curve
         public const string EventPointControl = "point control is changed";
         public const string EventPointControlType = "point control type is changed";
         public const string EventPointField = "point field value is changed";
-
-        // these methods and fields are used to access private members (probably it's better to use reflection than exposing private members as public)
-        private static MethodInfo fieldDeletedMethod;
-        private static MethodInfo fieldAddedMethod;
-        private static MethodInfo pointComponentInitMethod;
-        private static MethodInfo pointGoInitMethod;
-        private static PropertyInfo fieldValuesProperty;
-        private static PropertyInfo fieldValuesGOProperty;
 
         //static reusable array for snapping double sided
         private static readonly RaycastHit[] raycastHitArray = new RaycastHit[50];
@@ -262,7 +244,6 @@ namespace BansheeGz.BGSpline.Curve
         //events mode
         [Tooltip("Event mode for runtime")] [SerializeField] private EventModeEnum eventMode = EventModeEnum.Update;
 
-        [FormerlySerializedAs("pointsStoreMode")]
         //points mode
         [Tooltip("Points mode, how points are stored. " +
                  "\r\n 1) Inline - points stored inlined with the curve's component." +
@@ -692,8 +673,6 @@ namespace BansheeGz.BGSpline.Curve
             var hasFields = FieldsCount > 0;
             var pointsMode = PointsMode;
 
-            var valuesField = hasFields ? GetFieldValuesProperty(pointsMode) : null;
-
             var mid = pointsCount >> 1;
             var countMinusOne = pointsCount - 1;
             for (var i = 0; i < mid; i++)
@@ -705,25 +684,19 @@ namespace BansheeGz.BGSpline.Curve
                 var controlType = point2.ControlType;
                 var control1 = point2.ControlFirstLocal;
                 var control2 = point2.ControlSecondLocal;
-                var fields2 = hasFields ? valuesField.GetValue(pointsMode == PointsModeEnum.Components ? ((BGCurvePointComponent) point2).Point : point2, null) : null;
+                var fields2 = hasFields ? GetFieldsValues(point2, pointsMode) : null;
 
                 point2.PositionLocal = point1.PositionLocal;
                 point2.ControlType = point1.ControlType;
                 point2.ControlFirstLocal = point1.ControlSecondLocal;
                 point2.ControlSecondLocal = point1.ControlFirstLocal;
-                if (hasFields)
-                {
-                    if (pointsMode == PointsModeEnum.Components)
-                        valuesField.SetValue(((BGCurvePointComponent) point2).Point, valuesField.GetValue(((BGCurvePointComponent) point1).Point, null), null);
-                    else valuesField.SetValue(point2, valuesField.GetValue(point1, null), null);
-                }
+                if (hasFields) SetFieldsValues(point2, pointsMode, GetFieldsValues(point1, pointsMode));
 
                 point1.PositionLocal = position;
                 point1.ControlType = controlType;
                 point1.ControlFirstLocal = control2;
                 point1.ControlSecondLocal = control1;
-
-                if (hasFields) valuesField.SetValue(pointsMode == PointsModeEnum.Components ? ((BGCurvePointComponent) point1).Point : point1, fields2, null);
+                if (hasFields) SetFieldsValues(point1, pointsMode, fields2);
             }
 
             if (pointsCount%2 != 0)
@@ -814,12 +787,13 @@ namespace BansheeGz.BGSpline.Curve
         /// </summary>
         public int IndexOfFieldValue(string name)
         {
-            if (fieldsTree == null || !fieldsTree.Comply(fields)) UpdateFieldsValuesIndexes();
+            if (fieldsTree == null || !fieldsTree.Comply(fields)) PrivateUpdateFieldsValuesIndexes();
             return fieldsTree.GetIndex(name);
         }
 
+        /// <summary>all methods, prefixed with Private, are not meant to be called from outside of BGCurve package </summary>
         // updates indexes for custom fields values. See FieldsTree for details.
-        private void UpdateFieldsValuesIndexes()
+        public void PrivateUpdateFieldsValuesIndexes()
         {
             fieldsTree = fieldsTree ?? new FieldsTree();
             fieldsTree.Update(fields);
@@ -1163,6 +1137,26 @@ namespace BansheeGz.BGSpline.Curve
             return pointsMode == PointsModeEnum.GameObjectsNoTransform || pointsMode == PointsModeEnum.GameObjectsTransform;
         }
 
+        // ============================================== Point's transforms
+        /// <summary>all methods, prefixed with Private, are not meant to be called from outside of BGCurve package </summary>
+        //if a transform was added to a point
+        public void PrivateTransformForPointAdded(int index)
+        {
+            if (index < 0 || PointsCount >= index) return;
+            if (pointsWithTransforms == null) pointsWithTransforms = new List<int>();
+
+            if (pointsWithTransforms.IndexOf(index) == -1) pointsWithTransforms.Add(index);
+        }
+
+        /// <summary>all methods, prefixed with Private, are not meant to be called from outside of BGCurve package </summary>
+        //if a transform was removed from a point
+        public void PrivateTransformForPointRemoved(int index)
+        {
+            if (pointsWithTransforms == null || pointsWithTransforms.IndexOf(index) == -1) return;
+
+            pointsWithTransforms.Remove(index);
+        }
+
         #endregion
 
         #region Private Functions
@@ -1211,9 +1205,8 @@ namespace BansheeGz.BGSpline.Curve
             //fields
             if (FieldsCount > 0)
             {
-                var fieldValues = GetFieldValues(pointsMode, result);
-                var fieldAddedMethod = GetFieldAddedMethod();
-                foreach (var field in fields) fieldAddedMethod.Invoke(null, new[] {field, fieldValues});
+                var fieldValues = GetFieldsValues(result, pointsMode);
+                foreach (var field in fields) BGCurvePoint.PrivateFieldAdded(field, fieldValues);
             }
 
             //point transforms
@@ -1222,6 +1215,48 @@ namespace BansheeGz.BGSpline.Curve
             FireChange(BGCurveChangedArgs.GetInstance(this, BGCurveChangedArgs.ChangeTypeEnum.Point, EventAddPoint));
 
             return result;
+        }
+
+        //retrieve fields values from point
+        private BGCurvePoint.FieldsValues GetFieldsValues(BGCurvePointI point, PointsModeEnum pointsMode)
+        {
+            BGCurvePoint.FieldsValues fieldValues;
+            switch (pointsMode)
+            {
+                case PointsModeEnum.Inlined:
+                    fieldValues = ((BGCurvePoint) point).PrivateValuesForFields;
+                    break;
+                case PointsModeEnum.Components:
+                    fieldValues = ((BGCurvePointComponent) point).Point.PrivateValuesForFields;
+                    break;
+                case PointsModeEnum.GameObjectsNoTransform:
+                case PointsModeEnum.GameObjectsTransform:
+                    fieldValues = ((BGCurvePointGO) point).PrivateValuesForFields;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("pointsMode");
+            }
+            return fieldValues;
+        }
+
+        //set fields values for point
+        private void SetFieldsValues(BGCurvePointI point, PointsModeEnum pointsMode, BGCurvePoint.FieldsValues fieldsValues)
+        {
+            switch (pointsMode)
+            {
+                case PointsModeEnum.Inlined:
+                    ((BGCurvePoint) point).PrivateValuesForFields = fieldsValues;
+                    break;
+                case PointsModeEnum.Components:
+                    ((BGCurvePointComponent) point).Point.PrivateValuesForFields = fieldsValues;
+                    break;
+                case PointsModeEnum.GameObjectsNoTransform:
+                case PointsModeEnum.GameObjectsTransform:
+                    ((BGCurvePointGO) point).PrivateValuesForFields = fieldsValues;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("pointsMode");
+            }
         }
 
         // add several points. this method is not meant to be public, Editor uses it via reflection
@@ -1388,8 +1423,8 @@ namespace BansheeGz.BGSpline.Curve
                 switch (pointsMode)
                 {
                     case PointsModeEnum.Components:
-                case PointsModeEnum.GameObjectsNoTransform:
-                case PointsModeEnum.GameObjectsTransform:
+                    case PointsModeEnum.GameObjectsNoTransform:
+                    case PointsModeEnum.GameObjectsTransform:
                         pointsList.Add(oldPoints[indexToRemove]);
                         break;
                 }
@@ -1425,8 +1460,8 @@ namespace BansheeGz.BGSpline.Curve
                             case PointsModeEnum.GameObjectsNoTransform:
                             case PointsModeEnum.GameObjectsTransform:
                                 DestroyIt(((BGCurvePointGO) toDelete).gameObject);
-                    break;
-                default:
+                                break;
+                            default:
                                 throw new ArgumentOutOfRangeException("pointsMode");
                         }
                     }
@@ -1616,7 +1651,7 @@ namespace BansheeGz.BGSpline.Curve
                             //---------- To components
 
                             result = provider == null ? point.Curve.gameObject.AddComponent<BGCurvePointComponent>() : (BGCurvePointComponent) provider();
-                            GetPointInitMethod(to).Invoke(result, new object[] {point});
+                            ((BGCurvePointComponent) result).PrivateInit((BGCurvePoint) point);
                             break;
                         case PointsModeEnum.GameObjectsNoTransform:
                         case PointsModeEnum.GameObjectsTransform:
@@ -1666,12 +1701,11 @@ namespace BansheeGz.BGSpline.Curve
                             //---------- To Component
 
                             result = provider != null ? (BGCurvePointComponent) provider() : point.Curve.gameObject.AddComponent<BGCurvePointComponent>();
-                            GetPointInitMethod(to).Invoke(result, new object[] {ConvertGoToInline((BGCurvePointGO) point, from)});
-
+                            ((BGCurvePointComponent) result).PrivateInit(ConvertGoToInline((BGCurvePointGO) point, from));
                             break;
                         case PointsModeEnum.GameObjectsNoTransform:
                         case PointsModeEnum.GameObjectsTransform:
-                            GetPointInitMethod(to).Invoke(point, new object[] {null, to});
+                            ((BGCurvePointGO) point).PrivateInit(null, to);
                             result = point;
                             break;
                         default:
@@ -1722,10 +1756,11 @@ namespace BansheeGz.BGSpline.Curve
                 pointGO = gameObjectForPoint.AddComponent<BGCurvePointGO>();
             }
 
-            GetPointInitMethod(to).Invoke(pointGO, new object[] {point, to});
+            pointGO.PrivateInit(point, to);
 
             //transfer fields
-            GetFieldValuesProperty(PointsModeEnum.GameObjectsNoTransform).SetValue(pointGO, GetFieldValuesProperty(PointsModeEnum.Inlined).GetValue(point, null), null);
+            pointGO.PrivateValuesForFields = point.PrivateValuesForFields;
+
             return pointGO;
         }
 
@@ -1750,8 +1785,7 @@ namespace BansheeGz.BGSpline.Curve
 
 
             //transfer fields
-            if (pointGO.Curve.FieldsCount > 0)
-                GetFieldValuesProperty(PointsModeEnum.Inlined).SetValue(result, GetFieldValuesProperty(PointsModeEnum.GameObjectsNoTransform).GetValue(pointGO, null), null);
+            if (pointGO.Curve.FieldsCount > 0) result.PrivateValuesForFields = pointGO.PrivateValuesForFields;
 
             return result;
         }
@@ -1827,11 +1861,10 @@ namespace BansheeGz.BGSpline.Curve
         //add fields to provided points
         private void AddFields(PointsModeEnum pointsMode, BGCurvePointI[] addedPoints)
         {
-            var fieldAddedMethod = GetFieldAddedMethod();
             foreach (var point in addedPoints)
             {
-                var fieldsValues = GetFieldValues(pointsMode, point);
-                foreach (var field in fields) fieldAddedMethod.Invoke(null, new[] {field, fieldsValues});
+                var fieldsValues = GetFieldsValues(point, pointsMode);
+                foreach (var field in fields) BGCurvePoint.PrivateFieldAdded(field, fieldsValues);
             }
         }
 
@@ -1851,14 +1884,13 @@ namespace BansheeGz.BGSpline.Curve
 
             fields = Insert(fields, fields.Length, field);
 
-            UpdateFieldsValuesIndexes();
+            PrivateUpdateFieldsValuesIndexes();
 
             if (PointsCount > 0)
             {
                 //update all points
                 var points = Points;
-                var fieldAddedMethod = GetFieldAddedMethod();
-                foreach (var point in points) fieldAddedMethod.Invoke(null, new[] {field, GetFieldValues(pointsMode, point)});
+                foreach (var point in points) BGCurvePoint.PrivateFieldAdded(field, GetFieldsValues(point, pointsMode));
             }
 
             FireChange(BGCurveChangedArgs.GetInstance(this, BGCurveChangedArgs.ChangeTypeEnum.Fields, EventAddField));
@@ -1883,14 +1915,13 @@ namespace BansheeGz.BGSpline.Curve
             fields = Remove(fields, deletedIndex);
 
             //update fields values indexes. See  FieldsTree commments for more details
-            UpdateFieldsValuesIndexes();
+            PrivateUpdateFieldsValuesIndexes();
 
             if (PointsCount > 0)
             {
                 //update all points
                 var points = Points;
-                var fieldDeletedMethod = GetFieldDeletedMethod();
-                foreach (var point in points) fieldDeletedMethod.Invoke(null, new object[] {field, indexOfField, GetFieldValues(pointsMode, point)});
+                foreach (var point in points) BGCurvePoint.PrivateFieldDeleted(field, indexOfField, GetFieldsValues(point, pointsMode));
             }
 
             //destroy field component
@@ -1901,102 +1932,7 @@ namespace BansheeGz.BGSpline.Curve
             FireChange(BGCurveChangedArgs.GetInstance(this, BGCurveChangedArgs.ChangeTypeEnum.Fields, EventDeleteField));
         }
 
-        // ============================================== Private methods and props accessors
-        //get private method via reflection
-        private static MethodInfo GetPointInitMethod(PointsModeEnum pointsMode)
-        {
-            switch (pointsMode)
-            {
-                case PointsModeEnum.Components:
-                    return GetPointMethod(pointsMode, MethodPointInit, ref pointComponentInitMethod);
-                case PointsModeEnum.GameObjectsNoTransform:
-                case PointsModeEnum.GameObjectsTransform:
-                    return GetPointMethod(pointsMode, MethodPointInit, ref pointGoInitMethod);
-                default:
-                    throw new ArgumentOutOfRangeException("pointsMode", pointsMode, null);
-            }
-        }
-
-
-        //get private fieldValues via private method
-        private static object GetFieldValues(PointsModeEnum pointsMode, BGCurvePointI point)
-        {
-            var targetPoint = pointsMode == PointsModeEnum.Components ? ((BGCurvePointComponent) point).Point : point;
-            return GetFieldValuesProperty(pointsMode).GetValue(targetPoint, null);
-        }
-
-        //get private method via reflection
-        private static PropertyInfo GetFieldValuesProperty(PointsModeEnum pointsMode)
-        {
-            if (IsGoMode(pointsMode)) return GetPointProperty(true, PropertyPointFieldsValues, ref fieldValuesGOProperty);
-            return GetPointProperty(false, PropertyPointFieldsValues, ref fieldValuesProperty);
-        }
-
-        //get private method via reflection
-        private static MethodInfo GetFieldDeletedMethod()
-        {
-            return GetPointMethod(PointsModeEnum.Inlined, MethodPointFieldDeleted, ref fieldDeletedMethod);
-        }
-
-        //get private method via reflection
-        private static MethodInfo GetFieldAddedMethod()
-        {
-            return GetPointMethod(PointsModeEnum.Inlined, MethodPointFieldAdded, ref fieldAddedMethod);
-        }
-
-        //init(if it's not inited) and returns a private point method 
-        private static MethodInfo GetPointMethod(PointsModeEnum pointsMode, string name, ref MethodInfo method)
-        {
-            if (method != null) return method;
-
-            Type type;
-            switch (pointsMode)
-            {
-                case PointsModeEnum.Inlined:
-                    type = typeof(BGCurvePoint);
-                    break;
-                case PointsModeEnum.Components:
-                    type = typeof(BGCurvePointComponent);
-                    break;
-                case PointsModeEnum.GameObjectsNoTransform:
-                case PointsModeEnum.GameObjectsTransform:
-                    type = typeof(BGCurvePointGO);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException("pointsMode", pointsMode, null);
-            }
-            method = type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            return method;
-        }
-
-        //init(if it's not inited) and returns a private point field 
-        private static PropertyInfo GetPointProperty(bool useGo, string name, ref PropertyInfo field)
-        {
-            if (field != null) return field;
-
-            var type = useGo ? typeof(BGCurvePointGO) : typeof(BGCurvePoint);
-            field = type.GetProperty(name, BindingFlags.NonPublic | BindingFlags.Instance);
-            return field;
-        }
-
         // ============================================== Point's transforms
-        //if a transform was added to a point
-        private void TransformForPointAdded(int index)
-        {
-            if (index < 0) return;
-            if (pointsWithTransforms == null) pointsWithTransforms = new List<int>();
-
-            if (pointsWithTransforms.IndexOf(index) == -1) pointsWithTransforms.Add(index);
-        }
-
-        //if a transform was removed from a point
-        private void TransformForPointRemoved(int index)
-        {
-            if (pointsWithTransforms == null) return;
-
-            pointsWithTransforms.Remove(index);
-        }
-
         //find points with Transforms attached
         private void CachePointsWithTransforms()
         {

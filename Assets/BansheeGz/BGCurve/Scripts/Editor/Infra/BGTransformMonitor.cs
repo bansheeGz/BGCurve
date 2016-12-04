@@ -23,7 +23,13 @@ namespace BansheeGz.BGSpline.Editor
 
         public static BGTransformMonitor GetMonitor(Transform transform, Action<Transform> changed)
         {
-            return Pool.Count == 0 ? new BGTransformMonitor(transform, changed) : Pool.Dequeue();
+            if (Pool.Count == 0) return new BGTransformMonitor(transform, changed);
+
+            var monitor = Pool.Dequeue();
+            monitor.transform = transform;
+            monitor.changed = changed;
+
+            return monitor;
         }
 
         public static BGTransformMonitor GetMonitor(BGCurve curve)

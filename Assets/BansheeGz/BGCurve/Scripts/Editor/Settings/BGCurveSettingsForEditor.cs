@@ -34,12 +34,14 @@ namespace BansheeGz.BGSpline.Editor
         private const string HandleColorForAddAndSnap2DKey = "BansheeGZ.BGCurve.handleColorForAddAndSnap2D";
         private const string ColorForRectangularSelectionKey = "BansheeGZ.BGCurve.colorForRectangularSelection";
         private const string ColorForLabelBackgroundKey = "BansheeGZ.BGCurve.colorForLabelBackground";
+        private const string ColorForNewSectionPreviewKey = "BansheeGZ.BGCurve.colorForNewSectionPreview";
 
         //Default values
         private static readonly Color32 HandleColorForAddAndSnap3DDefault = new Color32(46, 143, 168, 20);
         private static readonly Color32 HandleColorForAddAndSnap2DDefault = new Color32(255, 255, 255, 10);
         private static readonly Color32 ColorForRectangularSelectionDefault = new Color32(46, 143, 168, 25);
         private static readonly Color32 ColorForLabelBackgroundDefault = new Color32(255, 255, 255, 25);
+        private static readonly Color32 ColorForNewSectionPreviewDefault = new Color32(255, 0, 0, 255);
 
         private static CoordinateSpaceEnum inspectorPointCoordinateSpace;
         private static CoordinateSpaceEnum inspectorControlCoordinateSpace;
@@ -55,6 +57,7 @@ namespace BansheeGz.BGSpline.Editor
         private static Color32 handleColorForAddAndSnap2D;
         private static Color32 colorForRectangularSelection;
         private static Color32 colorForLabelBackground;
+        private static Color32 colorForNewSectionPreview;
 
         private static int currentTab;
 
@@ -152,6 +155,12 @@ namespace BansheeGz.BGSpline.Editor
             set { SaveColor(ref colorForLabelBackground, value, ColorForLabelBackgroundKey); }
         }
 
+        public static Color32 ColorForNewSectionPreview
+        {
+            get { return colorForNewSectionPreview; }
+            set { SaveColor(ref colorForNewSectionPreview, value, ColorForNewSectionPreviewKey); }
+        }
+
         static BGCurveSettingsForEditor()
         {
             Init();
@@ -197,6 +206,7 @@ namespace BansheeGz.BGSpline.Editor
             handleColorForAddAndSnap2D = StringToColor(EditorPrefs.GetString(HandleColorForAddAndSnap2DKey), HandleColorForAddAndSnap2DDefault);
             colorForRectangularSelection = StringToColor(EditorPrefs.GetString(ColorForRectangularSelectionKey), ColorForRectangularSelectionDefault);
             colorForLabelBackground = StringToColor(EditorPrefs.GetString(ColorForLabelBackgroundKey), ColorForLabelBackgroundDefault);
+            colorForNewSectionPreview = StringToColor(EditorPrefs.GetString(ColorForNewSectionPreviewKey), ColorForNewSectionPreviewDefault);
         }
 
         //resets to default

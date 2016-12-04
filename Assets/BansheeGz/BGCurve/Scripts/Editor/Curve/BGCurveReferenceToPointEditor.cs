@@ -1,5 +1,7 @@
-﻿using BansheeGz.BGSpline.Curve;
+﻿using System.Linq;
+using BansheeGz.BGSpline.Curve;
 using UnityEditor;
+using UnityEngine;
 
 namespace BansheeGz.BGSpline.Editor
 {
@@ -7,6 +9,13 @@ namespace BansheeGz.BGSpline.Editor
     public class BGCurveReferenceToPointEditor : BGCurvePointGOEditor
     {
         private BGCurveReferenceToPoint pointReference;
+
+        private BGTransformMonitor transformMonitor;
+
+        protected override BGCurvePointI Point
+        {
+            get { return pointReference.Point; }
+        }
 
         protected override void OnEnable()
         {
@@ -21,25 +30,24 @@ namespace BansheeGz.BGSpline.Editor
             }
 
             var allComponents = pointReference.GetComponents<BGCurveReferenceToPoint>();
-            if (allComponents.Length > 0)
+            if (allComponents.Any(component => component != pointReference && component.Point == pointReference.Point))
             {
-                foreach (var component in allComponents)
-                {
-                    if (component == pointReference || component.Point!= pointReference.Point) continue;
-
-                    //duplicate
-                    DestroyImmediate(pointReference);
-                    return;
-                }
+                DestroyImmediate(pointReference);
+                return;
             }
+
+            transformMonitor = BGTransformMonitor.GetMonitor(pointReference.transform, transform => point.Curve.FireChange(null));
 
             base.OnEnable();
         }
 
-        protected override BGCurvePointI GetPoint()
+        public void OnDestroy()
         {
-            return pointReference.Point;
+            if (transformMonitor != null) transformMonitor.Release();
+            transformMonitor = null;
+            pointReference = null;
         }
+
 
         private static bool IsValid(BGCurvePointI point)
         {
@@ -48,6 +56,8 @@ namespace BansheeGz.BGSpline.Editor
 
         public override void OnInspectorGUI()
         {
+            transformMonitor.CheckForChange();
+
             var point = pointReference.Point;
 
             if (!IsValid(point)) return;
@@ -62,6 +72,8 @@ namespace BansheeGz.BGSpline.Editor
             var point = pointReference.Point;
 
             if (!IsValid(point)) return;
+
+            transformMonitor.CheckForChange();
 
             base.OnSceneGUI();
         }

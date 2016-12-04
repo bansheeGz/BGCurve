@@ -105,6 +105,11 @@ namespace BansheeGz.BGSpline.Editor
                         BGEditorUtility.ColorField("Points labels back color", BGCurveSettingsForEditor.ColorForLabelBackground, b => BGCurveSettingsForEditor.ColorForLabelBackground = b);
                         EditorGUILayout.HelpBox("Background color for points labels in Scene View.", MessageType.Info);
                     });
+                    BGEditorUtility.VerticalBox(() =>
+                    {
+                        BGEditorUtility.ColorField("New section preview color", BGCurveSettingsForEditor.ColorForNewSectionPreview, b => BGCurveSettingsForEditor.ColorForNewSectionPreview = b);
+                        EditorGUILayout.HelpBox("Color for new section preview in Scene View.", MessageType.Info);
+                    });
                 });
             });
         }

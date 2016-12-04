@@ -175,8 +175,9 @@ namespace BansheeGz.BGSpline.Curve
             get { return point; }
         }
 
+        /// <summary>all methods, prefixed with Private, are not meant to be called from outside of BGCurve package </summary>
         // this should be called once at creating time
-        private void Init(BGCurvePoint point)
+        public void PrivateInit(BGCurvePoint point)
         {
             this.point = point;
             hideFlags = HideFlags.HideInInspector;

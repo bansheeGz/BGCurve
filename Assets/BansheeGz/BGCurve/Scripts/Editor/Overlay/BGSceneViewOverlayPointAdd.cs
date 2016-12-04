@@ -55,15 +55,16 @@ namespace BansheeGz.BGSpline.Editor
 
             if (curve.PointsCount == 0) return;
 
-            // last To new
-            DrawSection(curve[curve.PointsCount - 1], newPoint, settings.Sections);
+            BGEditorUtility.SwapHandlesColor(BGCurveSettingsForEditor.ColorForNewSectionPreview, () =>
+            {
+                // last To new
+                DrawSection(curve[curve.PointsCount - 1], newPoint, settings.Sections);
 
-            AdditionalPreview(newPoint);
+                AdditionalPreview(newPoint);
 
-            if (!curve.Closed) return;
-
-            // new To zero
-            DrawSection(newPoint, curve[0], settings.Sections);
+                // new To zero
+                if (curve.Closed) DrawSection(newPoint, curve[0], settings.Sections);
+            });
         }
 
         protected virtual void AdditionalPreview(BGCurvePoint newPoint)

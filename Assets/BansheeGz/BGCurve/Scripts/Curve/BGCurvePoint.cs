@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 
 namespace BansheeGz.BGSpline.Curve
@@ -10,15 +9,6 @@ namespace BansheeGz.BGSpline.Curve
     [Serializable]
     public class BGCurvePoint : BGCurvePointI
     {
-        #region static
-
-        public const string MethodCurveTransformForPointAdded = "TransformForPointAdded";
-        public const string MethodCurveTransformForPointRemoved = "TransformForPointRemoved";
-
-        private static MethodInfo curveTransformForPointAddedMethod;
-        private static MethodInfo curveTransformForPointAddedRemoved;
-
-        #endregion
 
         #region enums
 
@@ -117,8 +107,9 @@ namespace BansheeGz.BGSpline.Curve
             get { return curve; }
         }
 
+        /// <summary>This field is not meant for use outside of BGCurve package </summary>
         //all fields values
-        private FieldsValues ValuesForFields
+        public FieldsValues PrivateValuesForFields
         {
             get
             {
@@ -265,8 +256,8 @@ namespace BansheeGz.BGSpline.Curve
 
                 curve.FireBeforeChange(BGCurve.EventPointTransform);
 
-                var oldTransformNull = pointTransform == null;
-                var newTransformNull = value == null;
+                var oldTransformNull = pointTransform == null && value != null;
+                var newTransformNull = value == null && pointTransform != null;
 
                 //we need to transfer system fields 
                 var control1 = ControlFirstLocalTransformed;
@@ -291,8 +282,8 @@ namespace BansheeGz.BGSpline.Curve
 
 
                 // inform curve
-                if (oldTransformNull) GetCurveTransformForPointAddedMethod().Invoke(curve, new object[] {curve.IndexOf(this)});
-                else if (newTransformNull) GetCurveTransformForPointRemovedMethod().Invoke(curve, new object[] {curve.IndexOf(this)});
+                if (oldTransformNull) curve.PrivateTransformForPointAdded(curve.IndexOf(this));
+                else if (newTransformNull) curve.PrivateTransformForPointRemoved(curve.IndexOf(this));
 
                 curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointTransform) : null, sender: this);
             }
@@ -316,42 +307,42 @@ namespace BansheeGz.BGSpline.Curve
 
         public float GetFloat(string name)
         {
-            return ValuesForFields.floatValues[curve.IndexOfFieldValue(name)];
+            return PrivateValuesForFields.floatValues[curve.IndexOfFieldValue(name)];
         }
 
         public bool GetBool(string name)
         {
-            return ValuesForFields.boolValues[curve.IndexOfFieldValue(name)];
+            return PrivateValuesForFields.boolValues[curve.IndexOfFieldValue(name)];
         }
 
         public int GetInt(string name)
         {
-            return ValuesForFields.intValues[curve.IndexOfFieldValue(name)];
+            return PrivateValuesForFields.intValues[curve.IndexOfFieldValue(name)];
         }
 
         public Vector3 GetVector3(string name)
         {
-            return ValuesForFields.vector3Values[curve.IndexOfFieldValue(name)];
+            return PrivateValuesForFields.vector3Values[curve.IndexOfFieldValue(name)];
         }
 
         public Quaternion GetQuaternion(string name)
         {
-            return ValuesForFields.quaternionValues[curve.IndexOfFieldValue(name)];
+            return PrivateValuesForFields.quaternionValues[curve.IndexOfFieldValue(name)];
         }
 
         public Bounds GetBounds(string name)
         {
-            return ValuesForFields.boundsValues[curve.IndexOfFieldValue(name)];
+            return PrivateValuesForFields.boundsValues[curve.IndexOfFieldValue(name)];
         }
 
         public Color GetColor(string name)
         {
-            return ValuesForFields.colorValues[curve.IndexOfFieldValue(name)];
+            return PrivateValuesForFields.colorValues[curve.IndexOfFieldValue(name)];
         }
 
         public object GetField(string name, Type type)
         {
-            return FieldTypes.GetField(curve, type, name, ValuesForFields);
+            return FieldTypes.GetField(curve, type, name, PrivateValuesForFields);
         }
 
         //----------------------------------- Setters
@@ -364,7 +355,7 @@ namespace BansheeGz.BGSpline.Curve
         {
             curve.FireBeforeChange(BGCurve.EventPointField);
 
-            FieldTypes.SetField(curve, type, name, value, ValuesForFields);
+            FieldTypes.SetField(curve, type, name, value, PrivateValuesForFields);
 
             curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
         }
@@ -373,7 +364,7 @@ namespace BansheeGz.BGSpline.Curve
         {
             curve.FireBeforeChange(BGCurve.EventPointField);
 
-            ValuesForFields.floatValues[curve.IndexOfFieldValue(name)] = value;
+            PrivateValuesForFields.floatValues[curve.IndexOfFieldValue(name)] = value;
 
             curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
         }
@@ -382,7 +373,7 @@ namespace BansheeGz.BGSpline.Curve
         {
             curve.FireBeforeChange(BGCurve.EventPointField);
 
-            ValuesForFields.boolValues[curve.IndexOfFieldValue(name)] = value;
+            PrivateValuesForFields.boolValues[curve.IndexOfFieldValue(name)] = value;
 
             curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
         }
@@ -391,7 +382,7 @@ namespace BansheeGz.BGSpline.Curve
         {
             curve.FireBeforeChange(BGCurve.EventPointField);
 
-            ValuesForFields.intValues[curve.IndexOfFieldValue(name)] = value;
+            PrivateValuesForFields.intValues[curve.IndexOfFieldValue(name)] = value;
 
             curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
         }
@@ -400,7 +391,7 @@ namespace BansheeGz.BGSpline.Curve
         {
             curve.FireBeforeChange(BGCurve.EventPointField);
 
-            ValuesForFields.vector3Values[curve.IndexOfFieldValue(name)] = value;
+            PrivateValuesForFields.vector3Values[curve.IndexOfFieldValue(name)] = value;
 
             curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
         }
@@ -409,7 +400,7 @@ namespace BansheeGz.BGSpline.Curve
         {
             curve.FireBeforeChange(BGCurve.EventPointField);
 
-            ValuesForFields.quaternionValues[curve.IndexOfFieldValue(name)] = value;
+            PrivateValuesForFields.quaternionValues[curve.IndexOfFieldValue(name)] = value;
 
             curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
         }
@@ -418,7 +409,7 @@ namespace BansheeGz.BGSpline.Curve
         {
             curve.FireBeforeChange(BGCurve.EventPointField);
 
-            ValuesForFields.boundsValues[curve.IndexOfFieldValue(name)] = value;
+            PrivateValuesForFields.boundsValues[curve.IndexOfFieldValue(name)] = value;
 
             curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
         }
@@ -427,7 +418,7 @@ namespace BansheeGz.BGSpline.Curve
         {
             curve.FireBeforeChange(BGCurve.EventPointField);
 
-            ValuesForFields.colorValues[curve.IndexOfFieldValue(name)] = value;
+            PrivateValuesForFields.colorValues[curve.IndexOfFieldValue(name)] = value;
 
             curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointField) : null, sender: this);
         }
@@ -552,27 +543,9 @@ namespace BansheeGz.BGSpline.Curve
             curve.FireChange(curve.UseEventsArgs ? BGCurveChangedArgs.GetInstance(Curve, this, BGCurve.EventPointControl) : null, sender: this);
         }
 
-        //get curve's private method
-        private MethodInfo GetCurveTransformForPointAddedMethod()
-        {
-            if (curveTransformForPointAddedMethod != null) return curveTransformForPointAddedMethod;
-
-            curveTransformForPointAddedMethod = typeof(BGCurve).GetMethod(MethodCurveTransformForPointAdded, BindingFlags.NonPublic | BindingFlags.Instance);
-            return curveTransformForPointAddedMethod;
-        }
-
-        //get curve's private method
-        private MethodInfo GetCurveTransformForPointRemovedMethod()
-        {
-            if (curveTransformForPointAddedRemoved != null) return curveTransformForPointAddedRemoved;
-
-            curveTransformForPointAddedRemoved = typeof(BGCurve).GetMethod(MethodCurveTransformForPointAdded, BindingFlags.NonPublic | BindingFlags.Instance);
-            return curveTransformForPointAddedRemoved;
-        }
-
-
-        // do not remove (it's used via reflection). Field was deleted callback.
-        private static void FieldDeleted(BGCurvePointField field, int indexOfField, FieldsValues fieldsValues)
+        /// <summary>all methods, prefixed with Private, are not meant to be called from outside of BGCurve package </summary>
+        // field deleted callback
+        public static void PrivateFieldDeleted(BGCurvePointField field, int indexOfField, FieldsValues fieldsValues)
         {
             switch (field.Type)
             {
@@ -637,8 +610,9 @@ namespace BansheeGz.BGSpline.Curve
             }
         }
 
-        // do not remove it (it's used via reflection). Field was added callback.
-        private static void FieldAdded(BGCurvePointField field, FieldsValues fieldsValues)
+        /// <summary>all methods, prefixed with Private, are not meant to be called from outside of BGCurve package </summary>
+        // field added callback
+        public static void PrivateFieldAdded(BGCurvePointField field, FieldsValues fieldsValues)
         {
             var type = FieldTypes.GetType(field.Type);
             var item = type.IsValueType ? Activator.CreateInstance(type) : null;

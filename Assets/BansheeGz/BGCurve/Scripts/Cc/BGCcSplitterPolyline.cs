@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using BansheeGz.BGSpline.Curve;
 using UnityEngine;
+using BansheeGz.BGSpline.Curve;
 
 namespace BansheeGz.BGSpline.Components
 {

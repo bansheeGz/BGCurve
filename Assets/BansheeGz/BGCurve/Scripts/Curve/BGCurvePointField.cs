@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using UnityEngine;
 
 namespace BansheeGz.BGSpline.Curve
@@ -8,10 +7,6 @@ namespace BansheeGz.BGSpline.Curve
     [Serializable]
     public class BGCurvePointField : MonoBehaviour
     {
-        //this is BGCurve.UpdateFieldsValuesIndexes method reference
-        private static MethodInfo updateFieldsIndexesMethod;
-
-
         // all possible types for the field's value. 
         // Note, even if your desired type is not supported, 
         // you still can use it via Unity's standard Component type (assign any MonoBehaviour derived script to it) or via GameObject
@@ -67,9 +62,10 @@ namespace BansheeGz.BGSpline.Curve
                 CheckName(curve, value, true);
 
                 curve.FireBeforeChange(BGCurve.EventFieldName);
+
                 fieldName = value;
-                if (updateFieldsIndexesMethod == null) updateFieldsIndexesMethod = typeof(BGCurve).GetMethod(BGCurve.MethodUpdateFieldsValuesIndexes, BindingFlags.NonPublic | BindingFlags.Instance);
-                updateFieldsIndexesMethod.Invoke(curve, null);
+                curve.PrivateUpdateFieldsValuesIndexes();
+
                 curve.FireChange(BGCurveChangedArgs.GetInstance(curve, BGCurveChangedArgs.ChangeTypeEnum.Fields, BGCurve.EventFieldName), sender: this);
             }
         }
