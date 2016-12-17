@@ -269,7 +269,7 @@ namespace BansheeGz.BGSpline.Components
         //===============================================================================================
         public override void Start()
         {
-            Curve.Changed += CreateMath;
+            Curve.Changed += SendEventsIfMathIsNotCreated;
         }
 
         public override void OnDestroy()
@@ -433,11 +433,13 @@ namespace BansheeGz.BGSpline.Components
         //===============================================================================================
         //                                                    Private Functions
         //===============================================================================================
-        //create underlying math implementation
-        private void CreateMath(object sender, BGCurveChangedArgs e)
+        //we do not have to create a math implementation until it's needed, but we have to trace spline's changes and fire events
+        private void SendEventsIfMathIsNotCreated(object sender, BGCurveChangedArgs e)
             {
-            Curve.Changed -= CreateMath;
-            if (math == null) InitMath(sender, e);
+            //no more need to trace changes, since math is tracing it by itself
+            if (math != null) Curve.Changed -= SendEventsIfMathIsNotCreated;
+            //implementation is not created yet, but we need to fire events to indicate math 'would be' changed if it is created
+            else MathWasChanged(sender, e);
         }
 
         //init math with current params
