@@ -65,7 +65,7 @@ namespace BansheeGz.BGSpline.Example
             var lineRenderer = gameObject.GetComponent<LineRenderer>();
             lineRenderer.sharedMaterial = LineRendererMaterial;
             var color = new Color(.2f, .2f, .2f, 1f);
-#if UNITY_5_5
+#if UNITY_5_5 || UNITY_5_6
             lineRenderer.startWidth = lineRenderer.endWidth = .03f;
             lineRenderer.startColor = lineRenderer.endColor = color;
 #else

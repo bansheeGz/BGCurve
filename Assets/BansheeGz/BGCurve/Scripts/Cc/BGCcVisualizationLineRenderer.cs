@@ -148,7 +148,7 @@ namespace BansheeGz.BGSpline.Components
             if (math.SectionsCount == 0)
             {
                 //not enough points
-#if UNITY_5_5
+#if UNITY_5_5 || UNITY_5_6
                 lineRenderer.numPositions = 0;
 #else
                 lineRenderer.SetVertexCount(0);
@@ -167,7 +167,7 @@ namespace BansheeGz.BGSpline.Components
                 var count = newPositions.Count;
                 if (count > 0)
                 {
-#if UNITY_5_5
+#if UNITY_5_5 || UNITY_5_6
                     lineRenderer.numPositions = count;
 #else
                     lineRenderer.SetVertexCount(count);
@@ -177,7 +177,7 @@ namespace BansheeGz.BGSpline.Components
                 }
                 else
                 {
-#if UNITY_5_5
+#if UNITY_5_5 || UNITY_5_6
                     lineRenderer.numPositions = 0;
 #else
                     lineRenderer.SetVertexCount(0);

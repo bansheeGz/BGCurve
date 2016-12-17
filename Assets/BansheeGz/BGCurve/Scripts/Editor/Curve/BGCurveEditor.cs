@@ -493,7 +493,7 @@ namespace BansheeGz.BGSpline.Editor
                 //curve is not selected in hierarchy
                 var painter = BGEditorUtility.Ensure(curve2Painter, curve, () => new BGCurvePainterGizmo(NewMath(curve, settings), true));
                 AdjustMath(settings, painter.Math);
-                if (curve.ForceChangedEventMode != BGCurve.ForceChangedEventModeEnum.Off) painter.Math.Recalculate();
+                if (curve.ForceChangedEventMode != BGCurve.ForceChangedEventModeEnum.Off && !Application.isPlaying) painter.Math.Recalculate();
                 painter.DrawCurve();
             }
         }

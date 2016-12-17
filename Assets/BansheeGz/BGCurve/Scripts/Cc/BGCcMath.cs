@@ -242,12 +242,6 @@ namespace BansheeGz.BGSpline.Components
         // Reusable array for 2 points for visibility check (AabbVisible mode)
         private readonly Vector3[] vertices = new Vector3[2];
 
-        // This variable trace the state of ForceUpdateAtEveryFrame couroutine (for UpdateModeEnum.ForceEveryFrame update mode)
-        private bool forceUpdateAtEveryFrameRunning;
-
-        //at which frame math was updated last time
-        private int updatedAtFrame;
-
         /// <summary>Underlying math solver. You should not cache it, unless you are sure, mathType can not be changed at runtime.</summary>
         public BGCurveBaseMath Math
         {
@@ -275,7 +269,7 @@ namespace BansheeGz.BGSpline.Components
         //===============================================================================================
         public override void Start()
         {
-            CheckForceUpdateAtEveryFrame();
+            Curve.Changed += CreateMath;
         }
 
         public override void OnDestroy()
@@ -288,17 +282,6 @@ namespace BansheeGz.BGSpline.Components
             }
             ChangedParams -= InitMath;
         }
-
-        void OnEnable()
-        {
-            CheckForceUpdateAtEveryFrame();
-        }
-
-        void OnDisable()
-        {
-            if (Curve.ForceChangedEventMode == BGCurve.ForceChangedEventModeEnum.EditorAndRuntime && forceUpdateAtEveryFrameRunning && Application.isPlaying) forceUpdateAtEveryFrameRunning = false;
-        }
-
 
         //===============================================================================================
         //                                                    Public Functions
@@ -317,8 +300,6 @@ namespace BansheeGz.BGSpline.Components
         /// <param name="force">Ignore all checks and force recalculation at any rate</param>
         public void Recalculate(bool force = false)
         {
-            updatedAtFrame = Time.frameCount;
-
             Math.Recalculate(force);
         }
 
@@ -452,29 +433,11 @@ namespace BansheeGz.BGSpline.Components
         //===============================================================================================
         //                                                    Private Functions
         //===============================================================================================
-
-        //check if we need to launch courotine for updating math at every frame
-        private void CheckForceUpdateAtEveryFrame()
-        {
-            if (Curve.ForceChangedEventMode ==BGCurve.ForceChangedEventModeEnum.EditorAndRuntime && !forceUpdateAtEveryFrameRunning && Application.isPlaying)
+        //create underlying math implementation
+        private void CreateMath(object sender, BGCurveChangedArgs e)
             {
-                EnsureMathIsCreated();
-
-                if (gameObject.activeSelf) StartCoroutine(ForceUpdateAtEveryFrame());
-            }
-        }
-
-
-        //this courotine is forcing math's recalculation every frame
-        private IEnumerator ForceUpdateAtEveryFrame()
-        {
-            forceUpdateAtEveryFrameRunning = true;
-            while (Curve.ForceChangedEventMode==BGCurve.ForceChangedEventModeEnum.EditorAndRuntime)
-            {
-                if (Time.frameCount != updatedAtFrame) Recalculate(true);
-                yield return null;
-            }
-            forceUpdateAtEveryFrameRunning = false;
+            Curve.Changed -= CreateMath;
+            if (math == null) InitMath(sender, e);
         }
 
         //init math with current params
@@ -543,9 +506,6 @@ namespace BansheeGz.BGSpline.Components
 
             //init AABB
             if (updateMode == UpdateModeEnum.AabbVisible) InitAabbVisibleAfter();
-
-            //check if we need to force math to update at every frame
-            CheckForceUpdateAtEveryFrame();
         }
 
         //before math was created (or inited)
@@ -693,8 +653,6 @@ namespace BansheeGz.BGSpline.Components
         //math was changed callback
         private void MathWasChanged(object sender, EventArgs e)
         {
-            updatedAtFrame = Time.frameCount;
-
             if (ChangedMath != null) ChangedMath(this, null);
 
             if (mathChangedEvent.GetPersistentEventCount() > 0) mathChangedEvent.Invoke();

@@ -67,11 +67,8 @@ namespace BansheeGz.BGSpline.Editor
                                 for (var i = 0; i < possibleParents.Length; i++)
                                 {
                                     var possibleParent = possibleParents[i];
-                                    if (possibleParent == myParent)
-                                    {
-                                        index = i;
-                                    }
-                                    options[i] = "" + possibleParent.GetInstanceID();
+                                    if (possibleParent == myParent) index = i;
+                                    options[i] = ((BGCc)possibleParent).CcName;
                                 }
 
                                 //show popup

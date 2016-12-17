@@ -615,7 +615,7 @@ namespace BansheeGz.BGSpline.Curve
         public static void PrivateFieldAdded(BGCurvePointField field, FieldsValues fieldsValues)
         {
             var type = FieldTypes.GetType(field.Type);
-            var item = type.IsValueType ? Activator.CreateInstance(type) : null;
+            var item = BGReflectionAdapter.IsValueType(type) ? Activator.CreateInstance(type) : null;
 
             switch (field.Type)
             {

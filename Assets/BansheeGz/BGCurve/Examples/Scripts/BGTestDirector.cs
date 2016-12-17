@@ -34,10 +34,10 @@ namespace BansheeGz.BGSpline.Example
                     break;
                 case 1:
                     SunLight.intensity = 1;
-                    Stars.transform.localScale = Vector3.zero;
+                    Stars.transform.localPosition += new Vector3(0, -20);
                     break;
                 case 3:
-                    Stars.transform.localScale = Vector3.one;
+                    Stars.transform.localPosition -= new Vector3(0, -20);
                     SunLight.intensity = 0;
                     SunParticles.Stop();
                     break;

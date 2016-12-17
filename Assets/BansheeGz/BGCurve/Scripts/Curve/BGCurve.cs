@@ -20,7 +20,7 @@ namespace BansheeGz.BGSpline.Curve
         //===============================================================================================
 
         //Package version
-        public const float Version = 1.21f;
+        public const float Version = 1.22f;
         //Epsilon value (very small value, that can be ignored). Assuming 1=1 meter (Unity's recommendation), it equals to (1*10^-5)=10 micrometers 
         public const float Epsilon = 0.00001f;
 
@@ -1797,7 +1797,7 @@ namespace BansheeGz.BGSpline.Curve
         {
             var transformChanged = transform.hasChanged;
 
-            bool forceUpdateEveryFrame = forceChangedEventMode == ForceChangedEventModeEnum.EditorAndRuntime;
+            var forceUpdateEveryFrame = forceChangedEventMode == ForceChangedEventModeEnum.EditorAndRuntime;
 
             if (!transformChanged && immediateChangeEvents && !forceUpdateEveryFrame) return;
 
@@ -1809,13 +1809,13 @@ namespace BansheeGz.BGSpline.Curve
                 for (var i = 0; i < length; i++)
                 {
                     var point = points[i];
-                    if (point.gameObject.transform.hasChanged)
-                    {
-                        point.gameObject.transform.hasChanged = false;
-                        changed = true;
-                        lastEventType = BGCurveChangedArgs.ChangeTypeEnum.Points;
-                        lastEventMessage = EventPointPosition;
-                    }
+                    var pointTransform = point.gameObject.transform;
+                    if (!pointTransform.hasChanged) continue;
+
+                    pointTransform.hasChanged = false;
+                    changed = true;
+                    lastEventType = BGCurveChangedArgs.ChangeTypeEnum.Points;
+                    lastEventMessage = EventPointPosition;
                 }
             }
 
@@ -1830,18 +1830,16 @@ namespace BansheeGz.BGSpline.Curve
                     for (var i = 0; i < pointsWithTransformsCount; i++)
                     {
                         var index = pointsWithTransforms[i];
-                        if (index < pointCount)
-                        {
-                            var point = points[index];
-                            var pointTransform = point.PointTransform;
-                            if (pointTransform != null && pointTransform.hasChanged)
-                            {
-                                pointTransform.hasChanged = false;
-                                changed = true;
-                                lastEventType = BGCurveChangedArgs.ChangeTypeEnum.Points;
-                                lastEventMessage = EventPointPosition;
-                            }
-                        }
+                        if (index >= pointCount) continue;
+
+                        var point = points[index];
+                        var pointTransform = point.PointTransform;
+                        if (pointTransform == null || !pointTransform.hasChanged) continue;
+
+                        pointTransform.hasChanged = false;
+                        changed = true;
+                        lastEventType = BGCurveChangedArgs.ChangeTypeEnum.Points;
+                        lastEventMessage = EventPointPosition;
                     }
                 }
             }

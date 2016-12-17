@@ -571,7 +571,7 @@ namespace BansheeGz.BGSpline.Curve
         //print a message to console if condition is met and calls callback method
         protected virtual void Warning(string message, bool condition = true, Action callback = null)
         {
-            if (!condition || Application.isEditor) return;
+            if (!condition || !Application.isPlaying) return;
 
             if (!SuppressWarning) Debug.Log("BGCurve[BGCurveBaseMath] Warning! " + message + ". You can suppress all warnings by using BGCurveBaseMath.SuppressWarning=true;");
 

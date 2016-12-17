@@ -198,7 +198,7 @@ namespace BansheeGz.BGSpline.Curve
         public static Type GetParentClass(Type ccType)
         {
             //gather required
-            var requiredList = ccType.GetCustomAttributes(typeof (RequireComponent), true);
+            var requiredList =  BGReflectionAdapter.GetCustomAttributes(ccType, typeof (RequireComponent), true);
             if (requiredList.Length == 0) return null;
 
             var result = new List<Type>();
@@ -218,7 +218,7 @@ namespace BansheeGz.BGSpline.Curve
         //add class if it's not abstract and a child of BGCc
         private static void CheckRequired(Type type, List<Type> result)
         {
-            if (type == null || type.IsAbstract || !type.IsClass || !type.IsSubclassOf(typeof (BGCc))) return;
+            if (type == null || BGReflectionAdapter.IsAbstract(type) || !BGReflectionAdapter.IsClass(type) || !BGReflectionAdapter.IsSubclassOf(type,typeof (BGCc)))return;
 
             result.Add(type);
         }
@@ -226,7 +226,7 @@ namespace BansheeGz.BGSpline.Curve
         /// <summary> Check standard Unity's DisallowMultipleComponent attribute </summary>
         public static bool IsSingle(Type ccType)
         {
-            return ccType.GetCustomAttributes(typeof (DisallowMultipleComponent), true).Length > 0;
+            return BGReflectionAdapter.GetCustomAttributes(ccType, typeof(DisallowMultipleComponent), true).Length > 0;
         }
 
         /// <summary> This is used to group events. Use it to change several params and fire one single event</summary>
@@ -262,7 +262,7 @@ namespace BansheeGz.BGSpline.Curve
         /// <summary>Retrieves the descriptor from "type"</summary>
         public static CcDescriptor GetDescriptor(Type type)
         {
-            var propertyInfos = type.GetCustomAttributes(typeof (CcDescriptor), false);
+            var propertyInfos = BGReflectionAdapter.GetCustomAttributes(type, typeof(CcDescriptor), false);
             if (propertyInfos.Length > 0) return (CcDescriptor) propertyInfos[0];
             return null;
         }
@@ -270,14 +270,14 @@ namespace BansheeGz.BGSpline.Curve
         // get Unity's HelpURLAttribute attrubute
         private static HelpURLAttribute GetHelpUrl(Type type)
         {
-            var propertyInfos = type.GetCustomAttributes(typeof (HelpURLAttribute), false);
+            var propertyInfos = BGReflectionAdapter.GetCustomAttributes(type,typeof (HelpURLAttribute), false);
             if (propertyInfos.Length > 0) return (HelpURLAttribute) propertyInfos[0];
             return null;
         }
 
         //======================== Exception
         /// <summary>Exception if something is wrong with Cc related stuff</summary>
-        public class CcException : UnityException
+        public class CcException :Exception
         {
             public CcException(string message) : base(message)
             {

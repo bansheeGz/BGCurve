@@ -97,7 +97,7 @@ namespace BansheeGz.BGSpline.Example
                 //add lineRenderer
                 lineRenderer = gameObject.AddComponent<LineRenderer>();
                 lineRenderer.material = lineRendererMaterial;
-#if UNITY_5_5
+#if UNITY_5_5 || UNITY_5_6
                 lineRenderer.startWidth = lineRenderer.endWidth = 0.05f;
                 lineRenderer.startColor = lineRenderer.endColor = color;
 #else
@@ -118,7 +118,7 @@ namespace BansheeGz.BGSpline.Example
                     var distanceRatio = i/countMinusOne;
                     positions[i] = Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, distanceRatio);
                 }
-#if UNITY_5_5
+#if UNITY_5_5 || UNITY_5_6
                 lineRenderer.numPositions = count;
 #else
                 lineRenderer.SetVertexCount(count);
@@ -216,7 +216,7 @@ namespace BansheeGz.BGSpline.Example
                 }
                 UpdateObjects(DistanceRatios);
 
-                curves.ForEach(data => data.Update());
+                foreach (var data in curves) data.Update();
             }
 
             public bool IsCurrent(CurveData curve)

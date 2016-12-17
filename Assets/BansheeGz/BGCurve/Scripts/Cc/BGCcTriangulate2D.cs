@@ -72,6 +72,14 @@ namespace BansheeGz.BGSpline.Components
             }
         }
 
+        /// <summary>Generate triangles for backside</summary>
+        public bool DoubleSided
+        {
+            get { return doubleSided; }
+            set { ParamChanged(ref doubleSided, value); }
+        }
+
+        /// <summary>Should triangulation occur every frame even if curve is not changed </summary>
         public bool UpdateEveryFrame
         {
             get { return updateEveryFrame; }

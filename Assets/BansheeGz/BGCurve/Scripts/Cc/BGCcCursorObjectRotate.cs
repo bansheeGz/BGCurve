@@ -163,6 +163,13 @@ namespace BansheeGz.BGSpline.Components
             set { ParamChanged(ref revolutionsClockwise, value); }
         }
 
+        /// <summary>offset to apply to final rotation </summary>
+        public Vector3 OffsetAngle
+        {
+            get { return offsetAngle; }
+            set { ParamChanged(ref offsetAngle, value); }
+        }
+
         //===============================================================================================
         //                                                    Editor stuff
         //===============================================================================================
