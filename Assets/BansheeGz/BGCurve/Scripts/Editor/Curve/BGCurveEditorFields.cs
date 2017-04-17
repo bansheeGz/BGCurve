@@ -17,8 +17,8 @@ namespace BansheeGz.BGSpline.Editor
         private readonly Texture2D addIcon;
 
 
-        private TableUi systemUi;
-        private TableUi customUi;
+        private BGTableView systemUi;
+        private BGTableView customUi;
 
         private SystemField[] systemFields;
         private PointField[] customFields;
@@ -43,8 +43,59 @@ namespace BansheeGz.BGSpline.Editor
 
             BGEditorUtility.HelpBox("Curve UI is disabled in settings. All handles are disabled too.", MessageType.Warning, !settings.ShowCurve);
 
-            BGEditorUtility.Assign(ref customUi, () => new TableUi("Custom fields", new[] {"#", "Name", "Type", "?", "Delete"}, new[] {5, 40, 40, 5, 10}));
-            BGEditorUtility.Assign(ref systemUi, () => new TableUi("System fields", new[] {"Name", "Value"}, new[] {LabelWidth, 100 - LabelWidth}));
+            // Custom fields
+            var warning = "";
+            BGEditorUtility.Assign(ref customUi, () => new BGTableView("Custom fields", new[] {"#", "Name", "Type", "?", "Delete"}, new[] {5, 40, 40, 5, 10}, () =>
+            {
+                //add row
+                customUi.NextColumn(rect => EditorGUI.LabelField(rect, "Name"), 12);
+                customUi.NextColumn(rect => newFieldName = EditorGUI.TextField(rect, newFieldName), 28);
+                customUi.NextColumn(rect => BGEditorUtility.PopupField(rect, newFieldType, @enum => newFieldType = (BGCurvePointField.TypeEnum)@enum), 50);
+                customUi.NextColumn(rect =>
+                {
+                    if (!GUI.Button(rect, addIcon)) return;
+
+                    if (NameHasError(Curve, newFieldName)) return;
+
+                    BGPrivateField.Invoke(Curve, BGCurve.MethodAddField, newFieldName, newFieldType, (Func<BGCurvePointField>)(() => Undo.AddComponent<BGCurvePointField>(Curve.gameObject)));
+                    GUIUtility.hotControl = 0;
+                    GUIUtility.ExitGUI();
+                }, 10);
+
+                customUi.NextRow();
+
+                if (customFields == null || customFields.Length == 0) customUi.NextRow("Name should be 16 chars max, starts with a letter and contain English chars and numbers only.");
+                else
+                {
+                    //header
+                    customUi.DrawHeaders();
+
+                    //fields
+                    var quaternionWithHandlesCount = 0;
+
+                    BGEditorUtility.ChangeCheck(() =>
+                    {
+                        foreach (var customField in customFields)
+                        {
+                            if (customField.Field.Type == BGCurvePointField.TypeEnum.Quaternion && BGPrivateField.GetHandlesType(customField.Field) != 0) quaternionWithHandlesCount++;
+                            customField.Ui(customUi);
+                        }
+                    }, SceneView.RepaintAll);
+
+                    if (quaternionWithHandlesCount > 1) warning = "You have more than one Quaternion field with Handles enabled. Only first field will be shown in Scene View";
+                    //footer
+                    customUi.NextRow("?- Show in Points Menu/Scene View");
+                }
+            }));
+
+            // System fields
+            BGEditorUtility.Assign(ref systemUi, () => new BGTableView("System fields", new[] {"Name", "Value"}, new[] {LabelWidth, 100 - LabelWidth}, () =>
+            {
+                BGEditorUtility.ChangeCheck(() =>
+                {
+                    foreach (var field in systemFields) field.Ui(systemUi);
+                }, SceneView.RepaintAll);
+            }));
 
             BGEditorUtility.Assign(ref systemFields, () => new[]
             {
@@ -70,62 +121,13 @@ namespace BansheeGz.BGSpline.Editor
             BGEditorUtility.HelpBox("All handles for controls are disabled.", MessageType.Warning, settings.ControlHandlesSettings.Disabled);
 
             //====================== Custom fields
-            customUi.Init();
-            //add row
-            customUi.NextColumn(rect => EditorGUI.LabelField(rect, "Name"), 12);
-            customUi.NextColumn(rect => newFieldName = EditorGUI.TextField(rect, newFieldName), 28);
-            customUi.NextColumn(rect => BGEditorUtility.PopupField(rect, newFieldType, @enum => newFieldType = (BGCurvePointField.TypeEnum) @enum), 50);
-            customUi.NextColumn(rect =>
-            {
-                if (!GUI.Button(rect, addIcon)) return;
-
-                if (NameHasError(Curve, newFieldName)) return;
-
-                BGPrivateField.Invoke(Curve, BGCurve.MethodAddField, newFieldName, newFieldType, (Func<BGCurvePointField>) (() => Undo.AddComponent<BGCurvePointField>(Curve.gameObject)));
-                GUIUtility.hotControl = 0;
-                GUIUtility.ExitGUI();
-            }, 10);
-
-            customUi.NextRow();
-            var warning = "";
-
-            if (customFields == null || customFields.Length == 0) customUi.NextRow("Name should be 16 chars max, starts with a letter and contain English chars and numbers only.");
-            else
-            {
-                //header
-                customUi.DrawHeaders();
-
-                //fields
-                var quaternionWithHandlesCount = 0;
-
-                BGEditorUtility.ChangeCheck(() =>
-                {
-                    foreach (var customField in customFields)
-                    {
-                        if (customField.Field.Type == BGCurvePointField.TypeEnum.Quaternion && BGPrivateField.GetHandlesType(customField.Field) != 0) quaternionWithHandlesCount++;
-                        customField.Ui(customUi);
-                    }
-                }, SceneView.RepaintAll);
-
-                if (quaternionWithHandlesCount > 1) warning = "You have more than one Quaternion field with Handles enabled. Only first field will be shown in Scene View";
-                //footer
-                customUi.NextRow("?- Show in Points Menu/Scene View");
-            }
-            //inform layout manager
-            GUILayoutUtility.GetRect(customUi.Width, customUi.Height);
-
+            customUi.OnGui();
+            
+            //warnings
             BGEditorUtility.HelpBox(warning, MessageType.Warning, warning.Length > 0);
 
             //====================== System fields
-            systemUi.Init();
-
-            BGEditorUtility.ChangeCheck(() =>
-            {
-                foreach (var field in systemFields) field.Ui(systemUi);
-            }, SceneView.RepaintAll);
-
-            //inform layout manager
-            GUILayoutUtility.GetRect(systemUi.Width, systemUi.Height);
+            systemUi.OnGui();
             GUILayout.Space(4);
         }
 
@@ -154,142 +156,6 @@ namespace BansheeGz.BGSpline.Editor
         }
 
         //===================================================   UI Builder (idea.. refactor it later)
-        private sealed class TableUi
-        {
-            private const float Offset = 10;
-            private const int TitleOffset = 10;
-
-            private readonly string[] headers; //headers
-            private readonly int[] sizes; //column sizes percentages
-            private readonly float height; //line height
-
-            private readonly GUIStyle headerStyle;
-            private readonly GUIStyle cellStyle;
-            private readonly GUIStyle titleStyle;
-            private readonly GUIStyle centeredLabelStyle;
-
-            private readonly string title;
-
-            public GUIStyle CenteredLabelStyle
-            {
-                get { return centeredLabelStyle; }
-            }
-
-
-            private Rect lastRect; //last rect from Layout manager
-
-            public float Width { get; private set; }
-
-            public float Height
-            {
-                get { return rows*height + Offset; }
-            }
-
-            public int[] Sizes
-            {
-                get { return sizes; }
-            }
-
-            private float rows; //not data, but ui lines 
-            private Vector2 cursor;
-            private int currentColumn;
-
-            public TableUi(string title, string[] headers, int[] sizes)
-            {
-                this.headers = headers;
-                this.sizes = sizes;
-                this.title = title;
-
-                headerStyle = new GUIStyle(GetStyle(BGEditorUtility.Image.BGBoxWithBorder123));
-                centeredLabelStyle = new GUIStyle("Label") {alignment = TextAnchor.MiddleCenter};
-
-                cellStyle = GetStyle(BGEditorUtility.Image.BGTableCell123);
-                titleStyle = GetStyle(BGEditorUtility.Image.BGTableTitle123);
-                titleStyle.border = titleStyle.padding = new RectOffset(TitleOffset, TitleOffset, 2, 2);
-
-                height = cellStyle.CalcSize(new GUIContent("Test")).y;
-
-                Init();
-            }
-
-            public void Init()
-            {
-                //---------------------------------- init sizes
-                lastRect = GUILayoutUtility.GetLastRect();
-                Width = lastRect.width;
-                cursor = new Vector2(lastRect.xMin, lastRect.yMax + Offset);
-                rows = 0;
-                currentColumn = 0;
-
-                //---------------------------------- title
-                EditorGUI.LabelField(new Rect(cursor.x, cursor.y, titleStyle.CalcSize(new GUIContent(title)).x + TitleOffset*2, height), title, titleStyle);
-                NextRow();
-            }
-
-            //---------------------------------- headers
-            public void DrawHeaders()
-            {
-                for (var i = 0; i < headers.Length; i++) NextColumn(rect => EditorGUI.LabelField(rect, headers[i]), sizes[i], true);
-                NextRow();
-            }
-
-            private static GUIStyle GetStyle(BGEditorUtility.Image background)
-            {
-                return new GUIStyle("Label")
-                {
-                    padding = new RectOffset(2, 2, 2, 2),
-                    border = new RectOffset(2, 2, 2, 2),
-                    normal = new GUIStyleState
-                    {
-                        background = BGEditorUtility.LoadTexture2D(background)
-                    }
-                };
-            }
-
-            public void NextColumn(string label, Action<Rect> action, int widthInPercent = 0, GUIStyle labelStyle = null, bool header = false)
-            {
-                var columnWidth = Width*(widthInPercent > 0 ? widthInPercent : sizes[currentColumn])/100f;
-
-                var rect = new Rect(cursor.x, cursor.y, columnWidth, height);
-                EditorGUI.LabelField(rect, "", header ? headerStyle : cellStyle);
-
-                if (label != null)
-                {
-                    rect.width /= 2;
-                    EditorGUI.LabelField(rect, label, labelStyle ?? GUI.skin.label);
-                    rect.x += rect.width;
-                }
-
-                if (action != null) action(rect);
-
-                cursor.x += columnWidth;
-                currentColumn++;
-            }
-
-            public void NextColumn(Action<Rect> action, int widthInPercent = 0, bool header = false)
-            {
-                NextColumn(null, action, widthInPercent, header: header);
-            }
-
-            public void NextColumn(string label, string description, int widthInPercent = 0, bool header = false)
-            {
-                NextColumn(rect => EditorGUI.LabelField(rect, new GUIContent(label, description)), widthInPercent, header);
-            }
-
-            public void NextRow()
-            {
-                cursor.x = lastRect.xMin;
-                cursor.y += height;
-                currentColumn = 0;
-                rows++;
-            }
-
-            public void NextRow(string message)
-            {
-                EditorGUI.LabelField(new Rect(cursor.x, cursor.y, Width, height), message, cellStyle);
-                NextRow();
-            }
-        }
 
         //===========================================================================================  Custom fields
         private sealed class PointField
@@ -363,7 +229,7 @@ namespace BansheeGz.BGSpline.Editor
                 this.deleteIcon = deleteIcon;
             }
 
-            public void Ui(TableUi ui)
+            public void Ui(BGTableView ui)
             {
                 var cursor = 0;
 
@@ -437,7 +303,7 @@ namespace BansheeGz.BGSpline.Editor
                 return Type2SupportHandles.ContainsKey(typeEnum);
             }
 
-            private static int GetWidth(TableUi ui, ref int cursor)
+            private static int GetWidth(BGTableView ui, ref int cursor)
             {
                 var widthInPercent = ui.Sizes[cursor];
                 cursor++;
@@ -593,7 +459,7 @@ namespace BansheeGz.BGSpline.Editor
                 //styles
                 var labelColor = settings.LabelColor;
                 var selectedColor = settings.LabelColorSelected;
-                var backColor = BGCurveSettingsForEditor.ColorForLabelBackground;
+                var backColor = BGCurveSettingsForEditor.I.Get<Color32>(BGCurveSettingsForEditor.ColorForLabelBackgroundKey);
 
                 if (labelStyle == null || labelStyle.normal.textColor != labelColor || labelStyle.normal.background == null
                     || latestLabelBackColor.r != backColor.r || latestLabelBackColor.g != backColor.g || latestLabelBackColor.b != backColor.b || latestLabelBackColor.a != backColor.a)
@@ -676,7 +542,7 @@ namespace BansheeGz.BGSpline.Editor
                 Settings = settings;
             }
 
-            public virtual void Ui(TableUi ui)
+            public virtual void Ui(BGTableView ui)
             {
                 ui.NextColumn(rect => EditorGUI.LabelField(rect, title), 100, true);
                 ui.NextRow();
@@ -685,28 +551,28 @@ namespace BansheeGz.BGSpline.Editor
                 NextBoolRow(ui, "Show in Points Menu", "Show in Points Menu (Points Tab)", ShowInPointsMenu, newValue => ShowInPointsMenu = newValue);
             }
 
-            protected void NextBoolRow(TableUi ui, string label, string tooltip, bool value, Action<bool> valueSetter)
+            protected void NextBoolRow(BGTableView ui, string label, string tooltip, bool value, Action<bool> valueSetter)
             {
                 ui.NextColumn(label, tooltip);
                 ui.NextColumn(rect => BGEditorUtility.ToggleField(rect, value, valueSetter));
                 ui.NextRow();
             }
 
-            protected void NextEnumRow(TableUi ui, string label, string tooltip, Enum value, Action<Enum> valueSetter)
+            protected void NextEnumRow(BGTableView ui, string label, string tooltip, Enum value, Action<Enum> valueSetter)
             {
                 ui.NextColumn(label, tooltip);
                 ui.NextColumn(rect => BGEditorUtility.PopupField(rect, value, valueSetter));
                 ui.NextRow();
             }
 
-            protected void NextSliderRow(TableUi ui, string label, string tooltip, float value, float from, float to, Action<float> valueSetter)
+            protected void NextSliderRow(BGTableView ui, string label, string tooltip, float value, float from, float to, Action<float> valueSetter)
             {
                 ui.NextColumn(label, tooltip);
                 ui.NextColumn(rect => BGEditorUtility.SliderField(rect, value, @from, to, valueSetter));
                 ui.NextRow();
             }
 
-            protected void NextColorRow(TableUi ui, string label, string tooltip, Color color, Action<Color> func)
+            protected void NextColorRow(BGTableView ui, string label, string tooltip, Color color, Action<Color> func)
             {
                 ui.NextColumn(label, tooltip);
                 ui.NextColumn(rect => BGEditorUtility.ColorField(rect, color, func));
@@ -735,7 +601,7 @@ namespace BansheeGz.BGSpline.Editor
             {
             }
 
-            private void Next3BoolRow(TableUi ui, string label, string tooltip,
+            private void Next3BoolRow(BGTableView ui, string label, string tooltip,
                 string xLabel, string yLabel, string zLabel,
                 bool xValue, bool yValue, bool zValue,
                 Action<bool> xSetter, Action<bool> ySetter, Action<bool> zSetter)
@@ -748,7 +614,7 @@ namespace BansheeGz.BGSpline.Editor
                 ui.NextRow();
             }
 
-            public override void Ui(TableUi ui)
+            public override void Ui(BGTableView ui)
             {
                 base.Ui(ui);
 
@@ -787,7 +653,7 @@ namespace BansheeGz.BGSpline.Editor
                 }
             }
 
-            protected virtual void AdditionalLabelFields(TableUi ui)
+            protected virtual void AdditionalLabelFields(BGTableView ui)
             {
             }
         }
@@ -865,12 +731,12 @@ namespace BansheeGz.BGSpline.Editor
             {
             }
 
-            protected override void AdditionalLabelFields(TableUi ui)
+            protected override void AdditionalLabelFields(BGTableView ui)
             {
                 NextColorRow(ui, "Labels color for selected", "Color for labels in Scene View, when they are selected", LabelColorSelected, newValue => LabelColorSelected = newValue);
             }
 
-            public override void Ui(TableUi ui)
+            public override void Ui(BGTableView ui)
             {
                 base.Ui(ui);
 
@@ -940,7 +806,7 @@ namespace BansheeGz.BGSpline.Editor
             {
             }
 
-            public override void Ui(TableUi ui)
+            public override void Ui(BGTableView ui)
             {
                 base.Ui(ui);
 

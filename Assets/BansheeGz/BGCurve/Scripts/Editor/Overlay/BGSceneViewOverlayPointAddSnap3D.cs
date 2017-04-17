@@ -21,7 +21,7 @@ namespace BansheeGz.BGSpline.Editor
         {
             //show rect
             var verts = GetVertsByPlaneAndDistance(new Vector3(swayTransition.Value, swayTransition.Value, swayTransition.Value), point, distanceToCamera, plane);
-            var color = BGCurveSettingsForEditor.HandleColorForAddAndSnap3D;
+            var color = BGCurveSettingsForEditor.I.Get<Color32>(BGCurveSettingsForEditor.HandleColorForAddAndSnap3DKey);
             Handles.DrawSolidRectangleWithOutline(verts, color, new Color32(color.r, color.g, color.b, 255));
         }
 

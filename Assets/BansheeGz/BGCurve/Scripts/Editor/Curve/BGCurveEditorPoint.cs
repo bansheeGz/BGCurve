@@ -139,7 +139,7 @@ namespace BansheeGz.BGSpline.Editor
             Vector3 pos;
             string tooltipDetails, details;
             Action<Vector3> newValueAction;
-            switch (BGCurveSettingsForEditor.InspectorControlCoordinateSpace)
+            switch ((BGCurveSettingsForEditor.CoordinateSpaceEnum) BGCurveSettingsForEditor.I.Get<int>(BGCurveSettingsForEditor.InspectorControlsCoordinatesKey))
             {
                 case BGCurveSettingsForEditor.CoordinateSpaceEnum.Local:
                     tooltipDetails = "local";
@@ -207,7 +207,7 @@ namespace BansheeGz.BGSpline.Editor
             Action<Vector3> newValueAction;
             string tooltipDetails;
             string details;
-            switch (BGCurveSettingsForEditor.InspectorPointCoordinateSpace)
+            switch ((BGCurveSettingsForEditor.CoordinateSpaceEnum) BGCurveSettingsForEditor.I.Get<int>(BGCurveSettingsForEditor.InspectorPointsCoordinatesKey))
             {
                 case BGCurveSettingsForEditor.CoordinateSpaceEnum.World:
                     pos = math == null ? point.PositionWorld : math.GetPosition(index);

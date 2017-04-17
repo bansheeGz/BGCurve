@@ -112,97 +112,10 @@ namespace BansheeGz.BGSpline.Curve
                 Array.Resize(ref excludedSections, sectionsCount);
                 Array.Resize(ref minSectionDistances, sectionsCount);
 
-                var minBounds = new Bounds();
                 var minAabbDistance = float.MaxValue;
                 for (var i = 0; i < sectionsCount; i++)
                 {
-                    var section = sections[i];
-
-
-                    var fromAbsent = section.OriginalFromControlType == BGCurvePoint.ControlTypeEnum.Absent;
-                    var toAbsent = section.OriginalToControlType == BGCurvePoint.ControlTypeEnum.Absent;
-
-                    var originalFrom = section.OriginalFrom;
-                    var originalTo = section.OriginalTo;
-                    var originalToControl = section.OriginalToControl;
-
-                    var fromToMinX = originalFrom.x > originalTo.x ? originalTo.x : originalFrom.x;
-                    var fromToMinY = originalFrom.y > originalTo.y ? originalTo.y : originalFrom.y;
-                    var fromToMinZ = originalFrom.z > originalTo.z ? originalTo.z : originalFrom.z;
-
-                    var fromToMaxX = originalFrom.x < originalTo.x ? originalTo.x : originalFrom.x;
-                    var fromToMaxY = originalFrom.y < originalTo.y ? originalTo.y : originalFrom.y;
-                    var fromToMaxZ = originalFrom.z < originalTo.z ? originalTo.z : originalFrom.z;
-
-                    float minX, minY, minZ, maxX, maxY, maxZ;
-                    if (fromAbsent)
-                    {
-                        if (toAbsent)
-                        {
-                            //No controls
-                            minX = fromToMinX;
-                            minY = fromToMinY;
-                            minZ = fromToMinZ;
-                            maxX = fromToMaxX;
-                            maxY = fromToMaxY;
-                            maxZ = fromToMaxZ;
-                        }
-                        else
-                        {
-                            //To Control Present
-                            minX = fromToMinX > originalToControl.x ? originalToControl.x : fromToMinX;
-                            minY = fromToMinY > originalToControl.y ? originalToControl.y : fromToMinY;
-                            minZ = fromToMinZ > originalToControl.z ? originalToControl.z : fromToMinZ;
-
-                            maxX = fromToMaxX < originalToControl.x ? originalToControl.x : fromToMaxX;
-                            maxY = fromToMaxY < originalToControl.y ? originalToControl.y : fromToMaxY;
-                            maxZ = fromToMaxZ < originalToControl.z ? originalToControl.z : fromToMaxZ;
-                        }
-                    }
-                    else
-                    {
-                        var originalFromControl = section.OriginalFromControl;
-                        if (toAbsent)
-                        {
-                            //From Control Present
-                            minX = fromToMinX > originalFromControl.x ? originalFromControl.x : fromToMinX;
-                            minY = fromToMinY > originalFromControl.y ? originalFromControl.y : fromToMinY;
-                            minZ = fromToMinZ > originalFromControl.z ? originalFromControl.z : fromToMinZ;
-
-                            maxX = fromToMaxX < originalFromControl.x ? originalFromControl.x : fromToMaxX;
-                            maxY = fromToMaxY < originalFromControl.y ? originalFromControl.y : fromToMaxY;
-                            maxZ = fromToMaxZ < originalFromControl.z ? originalFromControl.z : fromToMaxZ;
-                        }
-                        else
-                        {
-                            //Both Controls
-                            var fromToControlToMinX = fromToMinX > originalToControl.x ? originalToControl.x : fromToMinX;
-                            var fromToControlToMinY = fromToMinY > originalToControl.y ? originalToControl.y : fromToMinY;
-                            var fromToControlToMinZ = fromToMinZ > originalToControl.z ? originalToControl.z : fromToMinZ;
-
-                            var fromToControlToMaxX = fromToMaxX < originalToControl.x ? originalToControl.x : fromToMaxX;
-                            var fromToControlToMaxY = fromToMaxY < originalToControl.y ? originalToControl.y : fromToMaxY;
-                            var fromToControlToMaxZ = fromToMaxZ < originalToControl.z ? originalToControl.z : fromToMaxZ;
-
-                            minX = fromToControlToMinX > originalFromControl.x ? originalFromControl.x : fromToControlToMinX;
-                            minY = fromToControlToMinY > originalFromControl.y ? originalFromControl.y : fromToControlToMinY;
-                            minZ = fromToControlToMinZ > originalFromControl.z ? originalFromControl.z : fromToControlToMinZ;
-
-                            maxX = fromToControlToMaxX < originalFromControl.x ? originalFromControl.x : fromToControlToMaxX;
-                            maxY = fromToControlToMaxY < originalFromControl.y ? originalFromControl.y : fromToControlToMaxY;
-                            maxZ = fromToControlToMaxZ < originalFromControl.z ? originalFromControl.z : fromToControlToMaxZ;
-                        }
-                    }
-
-                    var deltaX = maxX - minX;
-                    var deltaY = maxY - minY;
-                    var deltaZ = maxZ - minZ;
-                    var extents = new Vector3(deltaX*.5f, deltaY*.5f, deltaZ*.5f);
-                    minBounds.extents = extents;
-                    minBounds.center = new Vector3(minX + extents.x, minY + extents.y, minZ + extents.z);
-
-
-                    var sqrDistance = minBounds.SqrDistance(targetPoint);
+                    var sqrDistance = math.GetBoundingBox(i, sections[i]).SqrDistance(targetPoint);
                     excludedSections[i] = false;
                     minSectionDistances[i] = sqrDistance;
 

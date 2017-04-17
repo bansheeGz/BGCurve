@@ -295,7 +295,7 @@ namespace BansheeGz.BGSpline.Editor
                     new GUIContent("Turn Off", "Click to turn this mode off"),
                     new GUIContent("Turn On", "Click to turn this mode on"));
 
-                if (GUILayout.Button(settingsTexture, GUILayout.MaxWidth(24), GUILayout.MaxHeight(24))) BGCurveSettingsForEditorWindow.Open();
+                if (GUILayout.Button(settingsTexture, GUILayout.MaxWidth(24), GUILayout.MaxHeight(24))) BGCurveSettingsForEditorWindow.Open(BGCurveSettingsForEditor.I);
             });
 
             //warning
@@ -303,13 +303,14 @@ namespace BansheeGz.BGSpline.Editor
                 BGCurveSettingsForEditor.LockView, () => GUILayout.Space(8));
 
             // =========== Tabs
-            if (BGCurveSettingsForEditor.CurrentTab < 0 || BGCurveSettingsForEditor.CurrentTab > headers.Length - 1) BGCurveSettingsForEditor.CurrentTab = 0;
-            var newTab = GUILayout.Toolbar(BGCurveSettingsForEditor.CurrentTab, headers, GUILayout.Height(ToolBarHeight));
+            var currentTab = BGCurveSettingsForEditor.CurrentTab;
+            if (currentTab < 0 || currentTab > headers.Length - 1) currentTab = 0;
+            var newTab = GUILayout.Toolbar(currentTab, headers, GUILayout.Height(ToolBarHeight));
             //do not move this method(GUILayoutUtility.GetLastRect() is used) 
             ShowStickers();
-            if (BGCurveSettingsForEditor.CurrentTab != newTab) GUI.FocusControl("");
+            if (currentTab != newTab) GUI.FocusControl("");
             BGCurveSettingsForEditor.CurrentTab = newTab;
-            editors[BGCurveSettingsForEditor.CurrentTab].OnInspectorGui();
+            editors[newTab].OnInspectorGui();
 
             if (!GUI.changed) return; // if no change- return
 

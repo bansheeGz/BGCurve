@@ -11,6 +11,15 @@ namespace BansheeGz.BGSpline.Editor
 
         private static readonly BGTransition.SwayTransition swayTransition = new BGTransition.SwayTransition(.8f, 1.2f, .6);
 
+        protected virtual bool VisualizingSections
+        {
+            get { return true; }
+        }
+
+        protected virtual bool ShowingDistance
+        {
+            get { return true; }
+        }
 
         protected BGSceneViewOverlayPointAdd(BGSceneViewOverlay overlay) : base(overlay)
         {
@@ -48,23 +57,31 @@ namespace BansheeGz.BGSpline.Editor
             BGEditorUtility.SwapHandlesColor(settings.SphereColor, () => Handles.SphereCap(0, position, Quaternion.identity, BGEditorUtility.GetHandleSize(position, ScalePreviewPoint)));
 
             //create a point
-            var newPoint = BGNewPointPositionManager.CreatePoint(position, curve, settings.ControlType, settings.Sections, out toLast, out toFirst, false);
+            var newPoint = CreatePointForPreview(position, curve, out toLast, out toFirst, settings);
 
             //show controls
             if (newPoint.ControlType != BGCurvePoint.ControlTypeEnum.Absent) PreviewControls(settings, position, newPoint.ControlFirstWorld, newPoint.ControlSecondWorld);
 
             if (curve.PointsCount == 0) return;
 
-            BGEditorUtility.SwapHandlesColor(BGCurveSettingsForEditor.ColorForNewSectionPreview, () =>
+            if (VisualizingSections)
             {
-                // last To new
-                DrawSection(curve[curve.PointsCount - 1], newPoint, settings.Sections);
+                BGEditorUtility.SwapHandlesColor(BGCurveSettingsForEditor.I.Get<Color32>(BGCurveSettingsForEditor.ColorForNewSectionPreviewKey), () =>
+                {
+                    // last To new
+                    DrawSection(curve[curve.PointsCount - 1], newPoint, settings.Sections);
 
-                AdditionalPreview(newPoint);
+                    AdditionalPreview(newPoint);
 
-                // new To zero
-                if (curve.Closed) DrawSection(newPoint, curve[0], settings.Sections);
-            });
+                    // new To zero
+                    if (curve.Closed) DrawSection(newPoint, curve[0], settings.Sections);
+                });
+            }
+        }
+
+        protected virtual BGCurvePoint CreatePointForPreview(Vector3 position, BGCurve curve, out float toLast, out float toFirst, BGCurveSettings settings)
+        {
+            return BGNewPointPositionManager.CreatePoint(position, curve, settings.ControlType, settings.Sections, out toLast, out toFirst, false);
         }
 
         protected virtual void AdditionalPreview(BGCurvePoint newPoint)
@@ -94,9 +111,7 @@ namespace BansheeGz.BGSpline.Editor
                 else
                 {
                     position = intersectionPosition;
-                    BGCurveEditor.AddPoint(curve, 
-                        BGNewPointPositionManager.CreatePoint(intersectionPosition, curve, settings.ControlType, settings.Sections, true),
-                        curve.PointsCount);
+                    AddPoint(curve, intersectionPosition, settings);
                 }
                 overlay.EventCanceller = new BGEditorUtility.EventCanceller();
                 return true;
@@ -119,12 +134,24 @@ namespace BansheeGz.BGSpline.Editor
             Preview(intersectionPosition, overlay.Editor.Curve, ref toLast, ref toFirst);
 
             //distance
-            message = BGSceneViewOverlay.ToOk("MouseClick to add a point\r\n") +
-                      //to last
-                      (toLast < 0 ? "First point is ready to go!" : "Distance to last=" + toLast) +
-                      //to first
-                      (toFirst < 0 ? "" : ", to first=" + toFirst);
+            message = BGSceneViewOverlay.ToOk("MouseClick to add a point\r\n")
+                      + (!ShowingDistance
+                          ? ""
+                          :
+                          //to last
+                          (toLast < 0 ? "First point is ready to go!" : "Distance to last=" + toLast) +
+                          //to first
+                          (toFirst < 0 ? "" : ", to first=" + toFirst));
             return true;
+        }
+
+
+        //default implementation adds a point to the spline's end
+        protected virtual void AddPoint(BGCurve curve, Vector3 intersectionPosition, BGCurveSettings settings)
+        {
+            BGCurveEditor.AddPoint(curve,
+                BGNewPointPositionManager.CreatePoint(intersectionPosition, curve, settings.ControlType, settings.Sections, true),
+                curve.PointsCount);
         }
 
         protected virtual void Animation(Plane plane, Ray ray, BGTransition.SwayTransition transition)
@@ -148,7 +175,7 @@ namespace BansheeGz.BGSpline.Editor
         {
             var m = Matrix4x4.TRS(point, Quaternion.LookRotation(plane.normal), scale);
             var verts = new[]
-            {GetRectVector(-1, -1, distanceToCamera, m), GetRectVector(-1, 1, distanceToCamera, m), GetRectVector(1, 1, distanceToCamera, m), GetRectVector(1, -1, distanceToCamera, m)};
+                {GetRectVector(-1, -1, distanceToCamera, m), GetRectVector(-1, 1, distanceToCamera, m), GetRectVector(1, 1, distanceToCamera, m), GetRectVector(1, -1, distanceToCamera, m)};
             return verts;
         }
 

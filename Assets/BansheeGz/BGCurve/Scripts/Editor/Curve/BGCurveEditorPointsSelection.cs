@@ -371,7 +371,7 @@ namespace BansheeGz.BGSpline.Editor
                         var cancelEvent = Tools.viewTool != ViewTool.FPS && Tools.current != Tool.View /*&& Tools.current != Tool.None*/ && !currentEvent.isKey;
                         if (cancelEvent) eventCanceller = new BGEditorUtility.EventCanceller();
 
-                        if (currentEvent.shift && !BGCurveSettingsForEditor.DisableRectangularSelection) selectionRectangle.On();
+                        if (currentEvent.shift && !BGCurveSettingsForEditor.I.Get<bool>(BGCurveSettingsForEditor.DisableRectangularSelectionKey)) selectionRectangle.On();
                         else if (cancelEvent) BGCurveEditor.OverlayMessage.Display("The Scene view is locked.\r\n Set 'Lock View' (in the BGCurve Editor) to false to unlock.");
                     }
                 }

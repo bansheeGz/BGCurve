@@ -14,7 +14,7 @@ namespace BansheeGz.BGSpline.Curve
     /// 
     /// Cc stands for "Curve's component" 
     /// </summary>
-    [RequireComponent(typeof (BGCurve))]
+    [RequireComponent(typeof(BGCurve))]
     public abstract class BGCc : MonoBehaviour
     {
         /// <summary>if component's parameters changed </summary>
@@ -44,6 +44,15 @@ namespace BansheeGz.BGSpline.Curve
 #pragma warning disable 0414
         //should CC's handles be shown in SceneView
         [SerializeField] private bool showHandles = true;
+
+        [SerializeField] private bool hidden;
+
+        public bool Hidden
+        {
+            get { return hidden; }
+            set { hidden = value; }
+        }
+
 #pragma warning restore 0414
 #endif
 
@@ -55,6 +64,11 @@ namespace BansheeGz.BGSpline.Curve
 
         /// <summary>Does this Cc supports some adjustable settings for handles in SceneView?</summary>
         public virtual bool SupportHandlesSettings
+        {
+            get { return false; }
+        }
+
+        public virtual bool HideHandlesInInspector
         {
             get { return false; }
         }
@@ -84,7 +98,7 @@ namespace BansheeGz.BGSpline.Curve
 
         public T GetParent<T>() where T : BGCc
         {
-            return (T) GetParent(typeof (T));
+            return (T) GetParent(typeof(T));
         }
 
         public BGCc GetParent(Type type)
@@ -102,7 +116,7 @@ namespace BansheeGz.BGSpline.Curve
         public string CcName
         {
             get { return string.IsNullOrEmpty(ccName) ? "" + GetInstanceID() : ccName; }
-            set { ccName = value; }
+            set { ParamChanged(ref ccName, value); }
         }
 
         //=============================================== Transaction
@@ -133,6 +147,7 @@ namespace BansheeGz.BGSpline.Curve
                 return helpUrl == null ? null : helpUrl.URL;
             }
         }
+
 
         //=================================================== Unity Methods
         public virtual void Start()
@@ -198,7 +213,7 @@ namespace BansheeGz.BGSpline.Curve
         public static Type GetParentClass(Type ccType)
         {
             //gather required
-            var requiredList =  BGReflectionAdapter.GetCustomAttributes(ccType, typeof (RequireComponent), true);
+            var requiredList = BGReflectionAdapter.GetCustomAttributes(ccType, typeof(RequireComponent), true);
             if (requiredList.Length == 0) return null;
 
             var result = new List<Type>();
@@ -218,7 +233,7 @@ namespace BansheeGz.BGSpline.Curve
         //add class if it's not abstract and a child of BGCc
         private static void CheckRequired(Type type, List<Type> result)
         {
-            if (type == null || BGReflectionAdapter.IsAbstract(type) || !BGReflectionAdapter.IsClass(type) || !BGReflectionAdapter.IsSubclassOf(type,typeof (BGCc)))return;
+            if (type == null || BGReflectionAdapter.IsAbstract(type) || !BGReflectionAdapter.IsClass(type) || !BGReflectionAdapter.IsSubclassOf(type, typeof(BGCc))) return;
 
             result.Add(type);
         }
@@ -254,11 +269,20 @@ namespace BansheeGz.BGSpline.Curve
         {
             /// <summary>Component's name</summary>
             public string Name { get; set; }
+
             /// <summary>Component's desciption</summary>
             public string Description { get; set; }
+
             /// <summary>Component's icon</summary>
             public string Image { get; set; }
         }
+
+        /// <summary>Component will be excluded from Cc menu and Inspector menu</summary>
+        [AttributeUsage(AttributeTargets.Class)]
+        public class CcExcludeFromMenu : Attribute
+        {
+        }
+
         /// <summary>Retrieves the descriptor from "type"</summary>
         public static CcDescriptor GetDescriptor(Type type)
         {
@@ -270,14 +294,14 @@ namespace BansheeGz.BGSpline.Curve
         // get Unity's HelpURLAttribute attrubute
         private static HelpURLAttribute GetHelpUrl(Type type)
         {
-            var propertyInfos = BGReflectionAdapter.GetCustomAttributes(type,typeof (HelpURLAttribute), false);
+            var propertyInfos = BGReflectionAdapter.GetCustomAttributes(type, typeof(HelpURLAttribute), false);
             if (propertyInfos.Length > 0) return (HelpURLAttribute) propertyInfos[0];
             return null;
         }
 
         //======================== Exception
         /// <summary>Exception if something is wrong with Cc related stuff</summary>
-        public class CcException :Exception
+        public class CcException : Exception
         {
             public CcException(string message) : base(message)
             {

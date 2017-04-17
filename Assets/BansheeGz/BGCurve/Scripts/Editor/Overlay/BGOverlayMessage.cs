@@ -43,10 +43,7 @@ namespace BansheeGz.BGSpline.Editor
                 normal = {textColor = Color.white, background = BGEditorUtility.Texture1X1(new Color32(0, 0, 0, 100))}
             });
 
-
-            Handles.BeginGUI();
-            GUI.Label(rect, message, style);
-            Handles.EndGUI();
+            BGEditorUtility.HandlesGui(() => GUI.Label(rect, message, style));
         }
     }
 }

@@ -68,7 +68,9 @@ namespace BansheeGz.BGSpline.Editor
             BGHandlesOn123,
             BGHandlesOff123,
             BGCopy123,
-            BGPaste123
+            BGPaste123,
+            BGHiddenOn123,
+            BGHiddenOff123
         }
 
         private static readonly DragSession dragSession = new DragSession();
@@ -310,6 +312,17 @@ namespace BansheeGz.BGSpline.Editor
             var newValue = EditorGUILayout.FloatField(label, value);
             if (Math.Abs(value - newValue) > BGCurve.Epsilon) action(newValue);
         }
+        public static void FloatField(GUIContent label, float value, Action<float> action)
+        {
+            var newValue = EditorGUILayout.FloatField(label, value);
+            if (Math.Abs(value - newValue) > BGCurve.Epsilon) action(newValue);
+        }
+        public static void FloatField(Rect rect, float value, Action<float> action)
+        {
+            var newValue = EditorGUI.FloatField(rect, value);
+            if (Math.Abs(value - newValue) > BGCurve.Epsilon) action(newValue);
+        }
+
 
         public static void BoundsField(string label, Bounds value, Action<Bounds> action)
         {
@@ -527,8 +540,14 @@ namespace BansheeGz.BGSpline.Editor
 
 
         // ==============================================  Textures
-        //loads a texture2d
         public static Texture2D LoadTexture2D(Image image, string path = DefaultIconPath, string ext = ".png", bool critical = true)
+        {
+            return LoadTexture2D(image.ToString(), path, ext, critical);
+
+        }
+
+        //loads a texture2d
+        public static Texture2D LoadTexture2D(string image, string path = DefaultIconPath, string ext = ".png", bool critical = true)
         {
             if (String.Equals(path, DefaultIconPath)) path = currentIconPath;
 
@@ -643,14 +662,18 @@ namespace BansheeGz.BGSpline.Editor
             }
         }
 
-
         // texture is not getting scaled!
         public static bool ButtonWithIcon(Texture2D icon, string tooltip, int width = 16, int height = 16)
         {
-            return GUI.Button(
+            return ButtonWithIcon(
                 GUILayoutUtility.GetRect(width, width, height, height,
                     new GUIStyle {fixedWidth = width, fixedHeight = height, stretchWidth = false, stretchHeight = false}),
-                new GUIContent(icon, tooltip), GUIStyle.none);
+                icon, tooltip, width, height);
+        }
+
+        public static bool ButtonWithIcon(Rect rect, Texture2D icon, string tooltip, int width = 16, int height = 16)
+        {
+            return GUI.Button(rect, new GUIContent(icon, tooltip), GUIStyle.none);
         }
 
         public static Texture2D Texture1X1(Color color)
@@ -1095,6 +1118,38 @@ namespace BansheeGz.BGSpline.Editor
             var distance = 0f;
             Split(@from, to, parts, (fromPos, toPos) => distance += Vector3.Distance(fromPos, toPos));
             return distance;
+        }
+
+        public static bool IsMouseInsideSceneView()
+        {
+            var mousePosition = Event.current.mousePosition;
+            var pixelHeight = SceneView.currentDrawingSceneView.camera.pixelHeight;
+            var pixelWidth = SceneView.currentDrawingSceneView.camera.pixelWidth;
+            mousePosition.y = pixelHeight - mousePosition.y;
+            return !(mousePosition.x < 0) && !(mousePosition.y < 0) && !(mousePosition.x > pixelWidth) && !(mousePosition.y > pixelHeight);
+        }
+
+        public static void SwapHandlesMatrix(Matrix4x4 matrix, Action action)
+        {
+            var oldMatrix = Handles.matrix;
+            Handles.matrix = matrix;
+            action();
+            Handles.matrix = oldMatrix;
+        }
+
+        public static void HandlesGui(Action action)
+        {
+            Handles.BeginGUI();
+            action();
+            Handles.EndGUI();
+        }
+
+        public static void SwapGuiMatrix(Matrix4x4 matrix, Action action)
+        {
+            var oldMatrix = GUI.matrix;
+            GUI.matrix = matrix;
+            action();
+            GUI.matrix = oldMatrix;
         }
 
         // ============================================= Helper classes

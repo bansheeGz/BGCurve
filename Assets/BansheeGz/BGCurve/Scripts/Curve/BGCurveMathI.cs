@@ -5,7 +5,6 @@ namespace BansheeGz.BGSpline.Curve
     /// <summary> This is an interface for curve's Math solver</summary>
     public interface BGCurveMathI
     {
-
         //===============================================================================================
         //                                                    Generic (position or tangent)
         //===============================================================================================
@@ -120,10 +119,11 @@ namespace BansheeGz.BGSpline.Curve
         Vector3 CalcPositionByClosestPoint(Vector3 point, out float distance, out Vector3 tangent, bool skipSectionsOptimization = false, bool skipPointsOptimization = false);
 
         //===============================================================================================
-        //                                                    Total spline's length
+        //                                                  Total spline's length or distance to a point
         //===============================================================================================
-        /// <summary>Get spline's approximate total distance</summary>
+        /// <summary>Get spline's approximate total distance or distance from start to point</summary>
+        /// <param name="pointIndex">Point's index</param>
         /// <returns>Spline's total distance</returns>
-        float GetDistance();
+        float GetDistance(int pointIndex = -1);
     }
 }

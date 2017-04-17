@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using BansheeGz.BGSpline.Curve;
 
@@ -70,7 +71,7 @@ namespace BansheeGz.BGSpline.Editor
                 newPoint.ControlSecondLocal = Vector3.zero;
             }
 
-            if(curve.Mode2DOn) curve.Apply2D(newPoint);
+            if (curve.Mode2DOn) curve.Apply2D(newPoint);
 
             //adjacent points
             var previousPoint = curve[curve.PointsCount - 1];
@@ -113,7 +114,6 @@ namespace BansheeGz.BGSpline.Editor
             tangent = curve.ToLocalDirection(tangent);
 
 
-
             newPoint.ControlSecondLocal = tangent*length;
 
             newPoint.ControlFirstLocal = -newPoint.ControlSecondLocal;
@@ -152,6 +152,15 @@ namespace BansheeGz.BGSpline.Editor
             return CreatePointBetween(curve, curve[index], index == pointsCount - 1 ? curve[0] : curve[index + 1], parts, controlType);
         }
 
+        public static BGCurvePoint CreatePointBetween(BGCurve curve, BGCurvePointI previousPoint, BGCurvePointI nextPoint, int parts, BGCurvePoint.ControlTypeEnum controlType, 
+            Vector3 position, Vector3 tangent)
+        {
+            var scaledTangent = tangent * DistanceToTangentMultiplier * BGEditorUtility.CalculateDistance(previousPoint, nextPoint, parts);
+
+            return curve.CreatePointFromLocalPosition(curve.ToLocal(position), controlType, curve.ToLocalDirection(-scaledTangent), curve.ToLocalDirection(scaledTangent));
+        }
+
+
         private static BGCurvePoint CreatePointByPointsCount(BGCurve curve, BGCurvePoint.ControlTypeEnum controlType)
         {
             var pointsCount = curve.PointsCount;
@@ -181,9 +190,8 @@ namespace BansheeGz.BGSpline.Editor
             var newPos = BGEditorUtility.CalculatePosition(previousPoint, nextPoint, .5f);
             var tangent = BGEditorUtility.CalculateTangent(previousPoint, nextPoint, .5f);
 
-            var scaledTangent = tangent*DistanceToTangentMultiplier*BGEditorUtility.CalculateDistance(previousPoint, nextPoint, parts);
-
-            return curve.CreatePointFromLocalPosition(curve.ToLocal(newPos), controlType, curve.ToLocalDirection(-scaledTangent), curve.ToLocalDirection(scaledTangent));
+            return CreatePointBetween(curve, previousPoint, nextPoint, parts, controlType, newPos, tangent);
         }
+
     }
 }

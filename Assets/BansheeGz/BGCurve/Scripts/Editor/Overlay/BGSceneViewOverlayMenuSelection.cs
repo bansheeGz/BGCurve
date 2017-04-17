@@ -19,7 +19,7 @@ namespace BansheeGz.BGSpline.Editor
 
         protected override bool Process(Event @event, BGCurveBaseMath math, float sceneViewHeight, ref Vector3 position, ref string message)
         {
-            if (BGCurveSettingsForEditor.DisableSceneViewSelectionMenu || !menu.EditorSelection.HasSelected()) return false;
+            if (BGCurveSettingsForEditor.I.Get<bool>(BGCurveSettingsForEditor.DisableSceneViewSelectionMenuKey) || !menu.EditorSelection.HasSelected()) return false;
 
 
             var selectedPos = menu.EditorSelection.GetAveragePosition();

@@ -23,6 +23,8 @@ namespace BansheeGz.BGSpline.Editor
         //some kind of standard trick
         public BGEditorUtility.EventCanceller EventCanceller;
 
+        private bool On;
+
         public BGSceneViewOverlay(BGCurveEditorPoints editor, BGCurveEditorPointsSelection editorSelection)
         {
             Editor = editor;
@@ -31,9 +33,10 @@ namespace BansheeGz.BGSpline.Editor
             {
                 new BGSceneViewOverlayMenuSelection(this, editorSelection),
                 new BGSceneViewOverlayMenuPoint(this, editorSelection),
+                new BGSceneViewOverlayPointInsert(this),
                 new BGSceneViewOverlayPointAddAtDistance(this),
                 new BGSceneViewOverlayPointAddSnap3D(this),
-                new BGSceneViewOverlayPointAddSnap2D(this)
+                new BGSceneViewOverlayPointAddSnap2D(this),
             };
         }
 
@@ -58,17 +61,17 @@ namespace BansheeGz.BGSpline.Editor
 
         public void Process(Event currentEvent)
         {
+            if (!On && currentEvent.control) On = true;
+
+            if (!On) return;
+
+            if (On && !currentEvent.control) On = false;
+
             if (currentEvent.type == EventType.mouseUp) BGEditorUtility.Release(ref EventCanceller);
 
             if (currentEvent.shift && !currentEvent.control) return;
 
-            Vector3 mousePosition = Event.current.mousePosition;
-
-            var pixelHeight = SceneView.currentDrawingSceneView.camera.pixelHeight;
-            var pixelWidth = SceneView.currentDrawingSceneView.camera.pixelWidth;
-            mousePosition.y = pixelHeight - mousePosition.y;
-            if (mousePosition.x < 0 || mousePosition.y < 0 || mousePosition.x > pixelWidth || mousePosition.y > pixelHeight) return;
-
+            if(!BGEditorUtility.IsMouseInsideSceneView()) return;
 
             BGEditorUtility.Assign(ref style, () => new GUIStyle("Label")
             {
@@ -89,8 +92,7 @@ namespace BansheeGz.BGSpline.Editor
                 var position = Vector3.zero;
                 string message = null;
 
-                var seized = action.Seize(currentEvent, ref position, ref message);
-                if (!seized) continue;
+                if (!action.Seize(currentEvent, ref position, ref message)) continue;
 
                 if (message != null) Message(action, position, message);
                 break;
@@ -131,13 +133,12 @@ namespace BansheeGz.BGSpline.Editor
 
             var shift = pointIndicatorTransition.Value*.5f;
 
-            Handles.BeginGUI();
-
-            GUI.DrawTexture(
-                new Rect(screenPoint - new Vector2(shift, shift), new Vector2(pointIndicatorTransition.Value, pointIndicatorTransition.Value)),
-                pointSelectedTexture, ScaleMode.StretchToFill);
-
-            Handles.EndGUI();
+            BGEditorUtility.HandlesGui(() =>
+            {
+                GUI.DrawTexture(
+                    new Rect(screenPoint - new Vector2(shift, shift), new Vector2(pointIndicatorTransition.Value, pointIndicatorTransition.Value)),
+                    pointSelectedTexture, ScaleMode.StretchToFill);
+            });
         }
     }
 }

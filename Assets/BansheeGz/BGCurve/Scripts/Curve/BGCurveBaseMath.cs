@@ -427,9 +427,12 @@ namespace BansheeGz.BGSpline.Curve
 
         //=========================================== Total Distance
         //see interface for comments
-        public virtual float GetDistance()
+        public virtual float GetDistance(int pointIndex = -1)
         {
-            return cachedLength;
+            if (pointIndex < 0) return cachedLength;
+            if (pointIndex == 0) return 0;
+
+            return cachedSectionInfos[pointIndex - 1].DistanceFromEndToOrigin;
         }
 
         //=========================================== Curve's point world coordinates (faster then using point.positionWord etc.)
@@ -486,6 +489,97 @@ namespace BansheeGz.BGSpline.Curve
             poolSectionInfos.Clear();
         }
 
+        /// <summary>returns BoundingBox for a section </summary>
+        public Bounds GetBoundingBox(int sectionIndex, SectionInfo section)
+        {
+            var fromAbsent = section.OriginalFromControlType == BGCurvePoint.ControlTypeEnum.Absent;
+            var toAbsent = section.OriginalToControlType == BGCurvePoint.ControlTypeEnum.Absent;
+
+            var originalFrom = section.OriginalFrom;
+            var originalTo = section.OriginalTo;
+            var originalToControl = section.OriginalToControl;
+
+            var fromToMinX = originalFrom.x > originalTo.x ? originalTo.x : originalFrom.x;
+            var fromToMinY = originalFrom.y > originalTo.y ? originalTo.y : originalFrom.y;
+            var fromToMinZ = originalFrom.z > originalTo.z ? originalTo.z : originalFrom.z;
+
+            var fromToMaxX = originalFrom.x < originalTo.x ? originalTo.x : originalFrom.x;
+            var fromToMaxY = originalFrom.y < originalTo.y ? originalTo.y : originalFrom.y;
+            var fromToMaxZ = originalFrom.z < originalTo.z ? originalTo.z : originalFrom.z;
+
+            float minX, minY, minZ, maxX, maxY, maxZ;
+            if (fromAbsent)
+            {
+                if (toAbsent)
+                {
+                    //No controls
+                    minX = fromToMinX;
+                    minY = fromToMinY;
+                    minZ = fromToMinZ;
+                    maxX = fromToMaxX;
+                    maxY = fromToMaxY;
+                    maxZ = fromToMaxZ;
+                }
+                else
+                {
+                    //To Control Present
+                    minX = fromToMinX > originalToControl.x ? originalToControl.x : fromToMinX;
+                    minY = fromToMinY > originalToControl.y ? originalToControl.y : fromToMinY;
+                    minZ = fromToMinZ > originalToControl.z ? originalToControl.z : fromToMinZ;
+
+                    maxX = fromToMaxX < originalToControl.x ? originalToControl.x : fromToMaxX;
+                    maxY = fromToMaxY < originalToControl.y ? originalToControl.y : fromToMaxY;
+                    maxZ = fromToMaxZ < originalToControl.z ? originalToControl.z : fromToMaxZ;
+                }
+            }
+            else
+            {
+                var originalFromControl = section.OriginalFromControl;
+                if (toAbsent)
+                {
+                    //From Control Present
+                    minX = fromToMinX > originalFromControl.x ? originalFromControl.x : fromToMinX;
+                    minY = fromToMinY > originalFromControl.y ? originalFromControl.y : fromToMinY;
+                    minZ = fromToMinZ > originalFromControl.z ? originalFromControl.z : fromToMinZ;
+
+                    maxX = fromToMaxX < originalFromControl.x ? originalFromControl.x : fromToMaxX;
+                    maxY = fromToMaxY < originalFromControl.y ? originalFromControl.y : fromToMaxY;
+                    maxZ = fromToMaxZ < originalFromControl.z ? originalFromControl.z : fromToMaxZ;
+                }
+                else
+                {
+                    //Both Controls
+                    var fromToControlToMinX = fromToMinX > originalToControl.x ? originalToControl.x : fromToMinX;
+                    var fromToControlToMinY = fromToMinY > originalToControl.y ? originalToControl.y : fromToMinY;
+                    var fromToControlToMinZ = fromToMinZ > originalToControl.z ? originalToControl.z : fromToMinZ;
+
+                    var fromToControlToMaxX = fromToMaxX < originalToControl.x ? originalToControl.x : fromToMaxX;
+                    var fromToControlToMaxY = fromToMaxY < originalToControl.y ? originalToControl.y : fromToMaxY;
+                    var fromToControlToMaxZ = fromToMaxZ < originalToControl.z ? originalToControl.z : fromToMaxZ;
+
+                    minX = fromToControlToMinX > originalFromControl.x ? originalFromControl.x : fromToControlToMinX;
+                    minY = fromToControlToMinY > originalFromControl.y ? originalFromControl.y : fromToControlToMinY;
+                    minZ = fromToControlToMinZ > originalFromControl.z ? originalFromControl.z : fromToControlToMinZ;
+
+                    maxX = fromToControlToMaxX < originalFromControl.x ? originalFromControl.x : fromToControlToMaxX;
+                    maxY = fromToControlToMaxY < originalFromControl.y ? originalFromControl.y : fromToControlToMaxY;
+                    maxZ = fromToControlToMaxZ < originalFromControl.z ? originalFromControl.z : fromToControlToMaxZ;
+                }
+            }
+
+            var deltaX = maxX - minX;
+            var deltaY = maxY - minY;
+            var deltaZ = maxZ - minZ;
+            var extents = new Vector3(deltaX * .5f, deltaY * .5f, deltaZ * .5f);
+
+            var bounds = new Bounds
+            {
+                extents = extents,
+                center = new Vector3(minX + extents.x, minY + extents.y, minZ + extents.z)
+            };
+
+            return bounds;
+        }
 
         //=========================================== Calculate and cache required data
 

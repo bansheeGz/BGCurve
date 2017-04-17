@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using BansheeGz.BGSpline.Curve;
 
 namespace BansheeGz.BGSpline.Components
 {
@@ -119,7 +118,7 @@ namespace BansheeGz.BGSpline.Components
                 {
                     case SplitModeEnum.PartsTotal:
 
-                        var curvedSectionsCount = math.Math.SectionsCount - (DoNotOptimizeStraightLines ? 0 : CountStraightLines(Math.Math, null));
+                        var curvedSectionsCount = math.Math.SectionsCount - (DoNotOptimizeStraightLines ? 0 : BGPolylineSplitter.CountStraightLines(Math.Math, null));
                         var partsForCurved = curvedSectionsCount == 0 ? 0 : PartsTotal/curvedSectionsCount;
 
                         if (partsForCurved > math.SectionParts)
@@ -185,12 +184,9 @@ namespace BansheeGz.BGSpline.Components
         protected readonly List<Vector3> positions = new List<Vector3>();
         //if current data valid?
         private bool dataValid;
-        //reusable array, storing if section is straight. 
-        private bool[] straightBits;
 
-
-        //different providers for different modes
-        private PositionsProvider positionsProvider;
+        private BGPolylineSplitter splitter;
+        private BGPolylineSplitter.Config config;
 
 
         /// <summary> latest points count. It's not getting updated until it's queried </summary>
@@ -253,9 +249,9 @@ namespace BansheeGz.BGSpline.Components
         {
             try
             {
-            Math.ChangedMath -= UpdateRequested;
-            ChangedParams -= UpdateRequested;
-        }
+                Math.ChangedMath -= UpdateRequested;
+                ChangedParams -= UpdateRequested;
+            }
             catch (MissingReferenceException)
             {
             }
@@ -297,28 +293,17 @@ namespace BansheeGz.BGSpline.Components
             positions.Clear();
             if (noData) return;
 
-            var baseMath = Math.Math;
-            var sectionsCount = baseMath.SectionsCount;
+            if (splitter == null) splitter = new BGPolylineSplitter();
+            if (config == null) config = new BGPolylineSplitter.Config();
 
-            //count number of straight lines
-            var straightLinesCount = 0;
-            if (!doNotOptimizeStraightLines)
-            {
-                //resize only if length < sectionsCount to reduce GC
-                if (straightBits == null || straightBits.Length < sectionsCount) Array.Resize(ref straightBits, sectionsCount);
-                straightLinesCount = CountStraightLines(baseMath, straightBits);
-            }
+            config.DoNotOptimizeStraightLines = doNotOptimizeStraightLines;
+            config.SplitMode = splitMode;
+            config.PartsTotal = partsTotal;
+            config.PartsPerSection = partsPerSection;
+            config.UseLocal = UseLocal;
+            config.Transform = myTransform;
 
-            //recalculate points
-            InitProvider(ref positionsProvider, this).Build(positions, straightLinesCount, straightBits);
-
-
-            if (!UseLocal) return;
-
-            //slow convertion (world->local)
-            var matrix = myTransform.worldToLocalMatrix;
-            var count = positions.Count;
-            for (var i = 0; i < count; i++) positions[i] = matrix.MultiplyPoint(positions[i]);
+            splitter.Bind(positions, Math, config);
         }
 
 
@@ -328,240 +313,6 @@ namespace BansheeGz.BGSpline.Components
             InvalidateData();
         }
 
-        //init required provider. Each mode has it's own provider
-        private static PositionsProvider InitProvider(ref PositionsProvider positionsProvider, BGCcSplitterPolyline cc)
-        {
-            //assign positions provider if needed
-            var mode = cc.splitMode;
-            var providerObsolete = positionsProvider == null || !positionsProvider.Comply(mode);
-            switch (mode)
-            {
-                case SplitModeEnum.PartsTotal:
-                    if (providerObsolete) positionsProvider = new PositionsProviderTotalParts();
-                    ((PositionsProviderTotalParts) positionsProvider).Init(cc.Math, cc.PartsTotal);
-                    break;
-                case SplitModeEnum.PartsPerSection:
-                    if (providerObsolete) positionsProvider = new PositionsProviderPartsPerSection();
-                    ((PositionsProviderPartsPerSection) positionsProvider).Init(cc.Math, cc.PartsPerSection);
-                    break;
-                default:
-                    //                    case SplitModeEnum.UseMathData:
-                    if (providerObsolete) positionsProvider = new PositionsProviderMath();
-                    ((PositionsProviderMath) positionsProvider).Init(cc.Math);
-                    break;
-            }
-            return positionsProvider;
-        }
 
-        //count the number of straight lines
-        public static int CountStraightLines(BGCurveBaseMath math, bool[] straight)
-        {
-            var curve = math.Curve;
-            var points = curve.Points;
-            if (points.Length == 0) return 0;
-
-            var sections = math.SectionInfos;
-            var sectionsCount = sections.Count;
-            var fillArray = straight != null;
-
-            var straightLinesCount = 0;
-            var previousControlAbsent = points[0].ControlType == BGCurvePoint.ControlTypeEnum.Absent;
-            for (var i = 0; i < sectionsCount; i++)
-            {
-                var nextPoint = curve.Closed && i == sectionsCount - 1 ? points[0] : points[i + 1];
-                var nextControlAbsent = nextPoint.ControlType == BGCurvePoint.ControlTypeEnum.Absent;
-
-                if (previousControlAbsent && nextControlAbsent)
-                {
-                    if (fillArray) straight[i] = true;
-                    straightLinesCount++;
-                }
-                else if (fillArray) straight[i] = false;
-
-                previousControlAbsent = nextControlAbsent;
-            }
-            return straightLinesCount;
-        }
-
-
-        //===============================================================================================
-        //                                                    Helper classes
-        //===============================================================================================
-
-        //============================================= Abstract provider
-        /// <summary>Abstract provider</summary>
-        public abstract class PositionsProvider
-        {
-            //used math
-            protected BGCcMath Math;
-
-            protected virtual void InitInner(BGCcMath math)
-            {
-                Math = math;
-            }
-
-            /// <summary>if this provider can build points for the given mode </summary>
-            public abstract bool Comply(SplitModeEnum splitMode);
-
-            /// <summary>calculate points fro polyline</summary>
-            public virtual void Build(List<Vector3> positions, int straightLinesCount, bool[] straightBits)
-            {
-                var math = Math.Math;
-
-                var sections = math.SectionInfos;
-                var sectionsCount = sections.Count;
-
-
-                //first point always present
-                positions.Add(math[0][0].Position);
-
-                //fill in points
-                if (straightLinesCount == 0) for (var i = 0; i < sectionsCount; i++) FillInSplitSection(sections[i], positions);
-                else
-                {
-                    for (var i = 0; i < sectionsCount; i++)
-                    {
-                        var section = sections[i];
-
-                        if (straightBits[i]) positions.Add(section[section.PointsCount - 1].Position);
-                        else FillInSplitSection(section, positions);
-                    }
-                }
-            }
-
-            // add points for a section by a given number of points
-            protected static void FillIn(BGCurveBaseMath.SectionInfo section, List<Vector3> result, int parts)
-            {
-                var onePartDistance = section.Distance/parts;
-                for (var j = 1; j <= parts; j++)
-                {
-                    Vector3 tangent;
-                    Vector3 pos;
-                    section.CalcByDistance(onePartDistance*j, out pos, out tangent, true, false);
-                    result.Add(pos);
-                }
-            }
-
-            // add points for a split section 
-            protected abstract void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result);
-        }
-
-        //============================================= Provider for total parts mode
-        /// <summary>Provider for total parts mode</summary>
-        public sealed class PositionsProviderTotalParts : PositionsProvider
-        {
-            private int parts;
-            private int reminderForCurved;
-            private int partsPerSectionFloor;
-
-
-            public void Init(BGCcMath math, int parts)
-            {
-                InitInner(math);
-
-                this.parts = parts;
-            }
-
-            public override bool Comply(SplitModeEnum splitMode)
-            {
-                return splitMode == SplitModeEnum.PartsTotal;
-            }
-
-            public override void Build(List<Vector3> positions, int straightLinesCount, bool[] straightBits)
-            {
-                var curve = Math.Curve;
-                var sections = Math.Math.SectionInfos;
-                var sectionsCount = sections.Count;
-
-                //at least one section is curved (maxParts>=sectionsCount, so floatParts >=1)
-                var floatParts = (parts - straightLinesCount)/(float) (sectionsCount - straightLinesCount);
-
-                reminderForCurved = (int) ((parts - straightLinesCount)%(float) (sectionsCount - straightLinesCount));
-                partsPerSectionFloor = Mathf.FloorToInt(floatParts);
-
-
-                if (parts < sectionsCount)
-                {
-                    if (parts == 1)
-                    {
-                        //only one part per whole curve (one->last)
-                        positions.Add(sections[0][0].Position);
-                        positions.Add(curve.Closed ? Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, .5f) : sections[sectionsCount - 1][sections[sectionsCount - 1].PointsCount - 1].Position);
-                    }
-                    else if (parts == 2 && curve.Closed)
-                    {
-                        positions.Add(sections[0][0].Position);
-                        positions.Add(Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, .3333f));
-                        positions.Add(Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, .6667f));
-                    }
-                    else for (var i = 0; i <= parts; i++) positions.Add(Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, i/(float) parts));
-                }
-                else base.Build(positions, straightLinesCount, straightBits);
-            }
-
-            // add points for a split section 
-            protected override void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result)
-            {
-                //curved
-                var partsForSection = partsPerSectionFloor;
-                if (reminderForCurved > 0)
-                {
-                    partsForSection++;
-                    reminderForCurved--;
-                }
-
-                FillIn(section, result, partsForSection);
-            }
-        }
-
-        //============================================= Provider for parts per section mode
-
-        /// <summary>Provider for parts per section mode</summary>
-        public sealed class PositionsProviderPartsPerSection : PositionsProvider
-        {
-            private int parts;
-
-            public void Init(BGCcMath math, int partsPerSection)
-            {
-                InitInner(math);
-                parts = partsPerSection;
-            }
-
-            public override bool Comply(SplitModeEnum splitMode)
-            {
-                return splitMode == SplitModeEnum.PartsPerSection;
-            }
-
-            // add points for a split section 
-            protected override void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result)
-            {
-                FillIn(section, result, parts);
-            }
-        }
-
-        //============================================= Provider for useMath mode
-
-        /// <summary>Provider for useMath mode</summary>
-        public sealed class PositionsProviderMath : PositionsProvider
-        {
-            public void Init(BGCcMath ccMath)
-            {
-                InitInner(ccMath);
-            }
-
-            public override bool Comply(SplitModeEnum splitMode)
-            {
-                return splitMode == SplitModeEnum.UseMathData;
-            }
-
-            // add points for a split section 
-            protected override void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result)
-            {
-                var sectionPoints = section.Points;
-                var count = sectionPoints.Count;
-
-                for (var j = 1; j < count; j++) result.Add(sectionPoints[j].Position);
-            }
-        }
     }
 }

@@ -22,7 +22,7 @@ namespace BansheeGz.BGSpline.Editor
         private bool selectionWasMade;
         public bool IsOn { get; private set; }
 
-        private Color backColor = BGCurveSettingsForEditor.ColorForRectangularSelection;
+        private Color backColor = BGCurveSettingsForEditor.I.Get<Color32>(BGCurveSettingsForEditor.ColorForRectangularSelectionKey);
 
         public BGRectangularSelection(BGCurveEditor editor, BGCurveEditorPointsSelection selection)
         {
@@ -59,9 +59,10 @@ namespace BansheeGz.BGSpline.Editor
             SceneView.RepaintAll();
 
             //colors and texture
-            if (back == null || backColor != BGCurveSettingsForEditor.ColorForRectangularSelection)
+            var currentColor = BGCurveSettingsForEditor.I.Get<Color32>(BGCurveSettingsForEditor.ColorForRectangularSelectionKey);
+            if (back == null || backColor != currentColor)
             {
-                backColor = BGCurveSettingsForEditor.ColorForRectangularSelection;
+                backColor = currentColor;
                 back = BGEditorUtility.Texture1X1(backColor);
             }
         }
@@ -125,32 +126,31 @@ namespace BansheeGz.BGSpline.Editor
 
         private void Ui(Rect rect)
         {
-            Handles.BeginGUI();
+            BGEditorUtility.HandlesGui(() =>
+            {
+                var size = rect.size;
+                var width = Mathf.FloorToInt(Math.Abs(size.x));
+                var height = Mathf.FloorToInt(Math.Abs(size.y));
+                if (width == 0 || height == 0) return;
 
-            var size = rect.size;
-            var width = Mathf.FloorToInt(Math.Abs(size.x));
-            var height = Mathf.FloorToInt(Math.Abs(size.y));
-            if (width == 0 || height == 0) return;
+                //------ back
+                GUI.DrawTexture(rect, back, ScaleMode.StretchToFill);
 
-            //------ back
-            GUI.DrawTexture(rect, back, ScaleMode.StretchToFill);
+                //------ borders
+                //top
+                DrawBorder(new Rect(rect) { width = width, height = height == 1 ? 1 : 2 }, false);
+                if (height <= 2) return;
 
-            //------ borders
-            //top
-            DrawBorder(new Rect(rect) {width = width, height = height == 1 ? 1 : 2}, false);
-            if (height <= 2) return;
+                //bottom
+                DrawBorder(new Rect(rect) { y = rect.yMax - 2, width = width, height = 2 }, false);
 
-            //bottom
-            DrawBorder(new Rect(rect) {y = rect.yMax - 2, width = width, height = 2}, false);
+                if (width <= 4 || height <= 4) return;
 
-            if (width <= 4 || height <= 4) return;
-
-            //left
-            DrawBorder(new Rect(rect) {width = 2}, true);
-            //right
-            DrawBorder(new Rect(rect) {x = rect.xMax - 2, width = 2}, true);
-
-            Handles.EndGUI();
+                //left
+                DrawBorder(new Rect(rect) { width = 2 }, true);
+                //right
+                DrawBorder(new Rect(rect) { x = rect.xMax - 2, width = 2 }, true);
+            });
         }
 
         private void DrawBorder(Rect rect, bool vertical)

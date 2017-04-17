@@ -67,7 +67,7 @@ namespace BansheeGz.BGSpline.Editor
             var verts = GetVertsByPlaneAndDistance(new Vector3(rectTransition.Value, rectTransition.Value, rectTransition.Value), point, distanceToCamera, plane);
 
 
-            var color = BGCurveSettingsForEditor.HandleColorForAddAndSnap2D;
+            var color = BGCurveSettingsForEditor.I.Get<Color32>(BGCurveSettingsForEditor.HandleColorForAddAndSnap2DKey);
             Handles.DrawSolidRectangleWithOutline(verts, color, new Color32(color.r, color.g, color.b, 255));
             Handles.DrawWireDisc(point, Vector3.Cross(verts[1] - verts[0], verts[2] - verts[0]), swayTransition.Value*distanceToCamera/24);
         }

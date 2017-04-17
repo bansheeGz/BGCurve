@@ -85,7 +85,12 @@ namespace BansheeGz.BGSpline.Editor
                 GUILayout.FlexibleSpace();
 
                 // turn on/off handles
-                if (BGEditorUtility.ButtonWithIcon(BGCurveSettingsForEditor.CcInspectorHandlesOff ? handlesOffTexture : handlesOnTexture, "Turn on/off handles settings in Inspector"))
+                var handlesOff = BGCurveSettingsForEditor.CcInspectorHandlesOff;
+                if (BGEditorUtility.ButtonWithIcon(
+                    handlesOff
+                        ? handlesOffTexture
+                        : handlesOnTexture,
+                    "Turn on/off handles settings in Inspector"))
                 {
                     BGCurveSettingsForEditor.CcInspectorHandlesOff = !BGCurveSettingsForEditor.CcInspectorHandlesOff;
                 }
@@ -154,7 +159,7 @@ namespace BansheeGz.BGSpline.Editor
             if (hasError ^ HasError || hasWarning ^ HasWarning) EditorApplication.RepaintHierarchyWindow();
         }
 
-        private static BGCc AddComponent(BGCurve curve, Type type)
+        public static BGCc AddComponent(BGCurve curve, Type type)
         {
             var newCc = Undo.AddComponent(curve.gameObject, type);
             if (newCc == null) return null;
@@ -304,6 +309,8 @@ namespace BansheeGz.BGSpline.Editor
                     count = components.Length;
                     foreach (var cc in components)
                     {
+                        if (BGReflectionAdapter.GetCustomAttributes(cc.GetType(), typeof(BGCc.CcExcludeFromMenu), true).Length > 0) continue;
+
                         var node = new CcNode(this, cc);
 
                         if (instanceId2Collapsed.ContainsKey(cc.GetInstanceID())) node.Collapsed = true;
@@ -406,6 +413,8 @@ namespace BansheeGz.BGSpline.Editor
                 private readonly Texture2D deleteTexture;
                 private readonly Texture2D addTexture;
                 private readonly Texture2D changeNameTexture;
+                private readonly Texture2D hiddenOnTexture;
+                private readonly Texture2D hiddenOffTexture;
 
                 private GUIStyle headerFoldoutStyle;
                 private GUIStyle headerFoldoutStyleDisabled;
@@ -447,6 +456,8 @@ namespace BansheeGz.BGSpline.Editor
                     deleteTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGDelete123);
                     addTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGAdd123);
                     changeNameTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGCcEditName123);
+                    hiddenOnTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHiddenOn123);
+                    hiddenOffTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHiddenOff123);
 
                     parentType = cc.GetParentClass();
                 }
@@ -499,7 +510,7 @@ namespace BansheeGz.BGSpline.Editor
                     HeaderUi(level, !String.IsNullOrEmpty(Cc.Error));
 
 
-                    if (!Collapsed)
+                    if (!Collapsed && !Cc.Hidden)
                     {
                         BGEditorUtility.VerticalBox(() =>
                         {
@@ -550,6 +561,10 @@ namespace BansheeGz.BGSpline.Editor
                                 EditorGUILayout.Separator();
                             }
 
+                            //change visibility
+                            if (BGEditorUtility.ButtonWithIcon(Cc.Hidden ? hiddenOnTexture : hiddenOffTexture, "Hide/Show properties")) Cc.Hidden = !Cc.Hidden;
+                            EditorGUILayout.Separator();
+
                             //change name
                             if (BGEditorUtility.ButtonWithIcon(changeNameTexture, "Change the name")) BGCcChangeNameWindow.Open(Cc);
                             EditorGUILayout.Separator();
@@ -571,7 +586,7 @@ namespace BansheeGz.BGSpline.Editor
                                     var parentClass = addedCc.GetParentClass();
                                     var recursionLimit = 16;
                                     var cc = addedCc;
-                                    while (parentClass!=null && recursionLimit-- > 0)
+                                    while (parentClass != null && recursionLimit-- > 0)
                                     {
                                         if (currentCcType == parentClass)
                                         {
@@ -625,6 +640,7 @@ namespace BansheeGz.BGSpline.Editor
 
                     if (ccEditor != null)
                     {
+                        ccEditor.OnDelete();
                         ccEditor.ChangedParent -= ChangedParent;
                         Object.DestroyImmediate(ccEditor);
                     }

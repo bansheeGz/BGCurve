@@ -13,7 +13,7 @@ namespace BansheeGz.BGSpline.Editor
         private Type parentClass;
 
         //=================================================================  Unity callbacks
-        protected virtual void OnEnable()
+        public virtual void OnEnable()
         {
             cc = (BGCc) target;
 
@@ -33,7 +33,7 @@ namespace BansheeGz.BGSpline.Editor
         }
 
 
-        protected virtual void OnDestroy()
+        public virtual void OnDestroy()
         {
             Undo.undoRedoPerformed -= InternalOnUndoRedo;
             cc.ChangedParams -= ChangedParams;
@@ -88,7 +88,7 @@ namespace BansheeGz.BGSpline.Editor
 
 
             //--------------  handles
-            if (cc.SupportHandles && !BGCurveSettingsForEditor.CcInspectorHandlesOff)
+            if (cc.SupportHandles && !BGCurveSettingsForEditor.CcInspectorHandlesOff && !cc.HideHandlesInInspector)
             {
                 BGEditorUtility.Horizontal(() =>
                 {
@@ -131,7 +131,7 @@ namespace BansheeGz.BGSpline.Editor
         }
 
 
-        private void ChangedParams(object sender, EventArgs e)
+        protected virtual void ChangedParams(object sender, EventArgs e)
         {
             Repaint();
         }
@@ -143,6 +143,9 @@ namespace BansheeGz.BGSpline.Editor
             InternalOnSceneGUI();
         }
 
+        public virtual void OnDelete()
+        {
+        }
 
         //=================================================================  Internal to override
 
@@ -169,5 +172,6 @@ namespace BansheeGz.BGSpline.Editor
         protected virtual void InternalOnUndoRedo()
         {
         }
+
     }
 }

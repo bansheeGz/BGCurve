@@ -20,7 +20,7 @@ namespace BansheeGz.BGSpline.Editor
 
         protected override bool Process(Event @event, BGCurveBaseMath math, float sceneViewHeight, ref Vector3 position, ref string message)
         {
-            if (BGCurveSettingsForEditor.DisableSceneViewPointMenu) return false;
+            if (BGCurveSettingsForEditor.I.Get<bool>(BGCurveSettingsForEditor.DisableSceneViewPointMenuKey)) return false;
 
             var minDistanceToCamera = float.MaxValue;
             var mousePosition = @event.mousePosition;

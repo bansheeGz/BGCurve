@@ -1,13 +1,12 @@
 ﻿using System;
 using UnityEngine;
-using System.Linq;
-using System.Reflection;
-using UnityEditor;
 
 namespace BansheeGz.BGSpline.Editor
 {
-    public static class BGCurveSettingsForEditor
+    public class BGCurveSettingsForEditor : BGAbstractSettingsForEditor
     {
+        public static readonly BGCurveSettingsForEditor I = new BGCurveSettingsForEditor();
+
         public enum CoordinateSpaceEnum
         {
             Local = 0,
@@ -17,232 +16,141 @@ namespace BansheeGz.BGSpline.Editor
 
 
         //Keys
-        private const string InspectorPointsCoordinatesKey = "BansheeGZ.BGCurve.inspectorPointsCoordinates";
-        private const string InspectorControlsCoordinatesKey = "BansheeGZ.BGCurve.inspectorControlsCoordinates";
+        public const string InspectorPointsCoordinatesKey = "BansheeGZ.BGCurve.inspectorPointsCoordinates";
+        public const string InspectorControlsCoordinatesKey = "BansheeGZ.BGCurve.inspectorControlsCoordinates";
 
-        private const string DisableRectangularSelectionKey = "BansheeGZ.BGCurve.disableRectangularSelection";
-        private const string DisableSceneViewPointMenuKey = "BansheeGZ.BGCurve.disableSceneViewPointMenu";
-        private const string DisableSceneViewSelectionMenuKey = "BansheeGZ.BGCurve.disableSceneViewSelectionMenu";
-        private const string DisableInspectorPointMenuKey = "BansheeGZ.BGCurve.disableInspectorPointMenu";
+        public const string DisableRectangularSelectionKey = "BansheeGZ.BGCurve.disableRectangularSelection";
+        public const string DisableSceneViewPointMenuKey = "BansheeGZ.BGCurve.disableSceneViewPointMenu";
+        public const string DisableSceneViewSelectionMenuKey = "BansheeGZ.BGCurve.disableSceneViewSelectionMenu";
+
         private const string CcInspectorHandlesOffKey = "BansheeGZ.BGCurve.inspectorHandlesOff";
-
+        private const string DisableInspectorPointMenuKey = "BansheeGZ.BGCurve.disableInspectorPointMenu";
         private const string LockViewKey = "BansheeGZ.BGCurve.lockView";
         private const string CurrentTabKey = "BansheeGZ.BGCurve.currentTab";
 
         //colors
-        private const string HandleColorForAddAndSnap3DKey = "BansheeGZ.BGCurve.handleColorForAddAndSnap3D";
-        private const string HandleColorForAddAndSnap2DKey = "BansheeGZ.BGCurve.handleColorForAddAndSnap2D";
-        private const string ColorForRectangularSelectionKey = "BansheeGZ.BGCurve.colorForRectangularSelection";
-        private const string ColorForLabelBackgroundKey = "BansheeGZ.BGCurve.colorForLabelBackground";
-        private const string ColorForNewSectionPreviewKey = "BansheeGZ.BGCurve.colorForNewSectionPreview";
+        public const string HandleColorForAddAndSnap3DKey = "BansheeGZ.BGCurve.handleColorForAddAndSnap3D";
+        public const string HandleColorForAddAndSnap2DKey = "BansheeGZ.BGCurve.handleColorForAddAndSnap2D";
+        public const string ColorForRectangularSelectionKey = "BansheeGZ.BGCurve.colorForRectangularSelection";
+        public const string ColorForLabelBackgroundKey = "BansheeGZ.BGCurve.colorForLabelBackground";
+        public const string ColorForNewSectionPreviewKey = "BansheeGZ.BGCurve.colorForNewSectionPreview";
 
-        //Default values
-        private static readonly Color32 HandleColorForAddAndSnap3DDefault = new Color32(46, 143, 168, 20);
-        private static readonly Color32 HandleColorForAddAndSnap2DDefault = new Color32(255, 255, 255, 10);
-        private static readonly Color32 ColorForRectangularSelectionDefault = new Color32(46, 143, 168, 25);
-        private static readonly Color32 ColorForLabelBackgroundDefault = new Color32(255, 255, 255, 25);
-        private static readonly Color32 ColorForNewSectionPreviewDefault = new Color32(255, 0, 0, 255);
-
-        private static CoordinateSpaceEnum inspectorPointCoordinateSpace;
-        private static CoordinateSpaceEnum inspectorControlCoordinateSpace;
-
-        private static bool disableRectangularSelection;
-        private static bool disableSceneViewPointMenu;
-        private static bool disableSceneViewSelectionMenu;
-        private static bool disableInspectorPointMenu;
-        private static bool lockView;
-        private static bool ccInspectorHandlesOff;
-
-        private static Color32 handleColorForAddAndSnap3D;
-        private static Color32 handleColorForAddAndSnap2D;
-        private static Color32 colorForRectangularSelection;
-        private static Color32 colorForLabelBackground;
-        private static Color32 colorForNewSectionPreview;
-
-        private static int currentTab;
-
-        public static int CurrentTab
+        public override string Name
         {
-            get { return currentTab; }
-            set { SaveInt(ref currentTab, value, CurrentTabKey); }
+            get { return "BG Curve Editor Settings"; }
         }
 
-        public static CoordinateSpaceEnum InspectorPointCoordinateSpace
-        {
-            get { return inspectorPointCoordinateSpace; }
-            set
-            {
-                if (value == inspectorPointCoordinateSpace) return;
-
-                var val = (int) inspectorPointCoordinateSpace;
-                SaveInt(ref val, (int) value, InspectorPointsCoordinatesKey);
-                inspectorPointCoordinateSpace = value;
-            }
-        }
-
-        public static CoordinateSpaceEnum InspectorControlCoordinateSpace
-        {
-            get { return inspectorControlCoordinateSpace; }
-            set
-            {
-                if (value == inspectorControlCoordinateSpace) return;
-
-                var val = (int) inspectorControlCoordinateSpace;
-                SaveInt(ref val, (int) value, InspectorControlsCoordinatesKey);
-                inspectorControlCoordinateSpace = value;
-            }
-        }
 
         public static bool CcInspectorHandlesOff
         {
-            get { return ccInspectorHandlesOff; }
-            set { SaveBool(ref ccInspectorHandlesOff, value, CcInspectorHandlesOffKey); }
+            get { return I.Get<bool>(CcInspectorHandlesOffKey); }
+            set { I.Set(CcInspectorHandlesOffKey, value); }
+        }
+        public static bool DisableInspectorPointMenu
+        {
+            get { return I.Get<bool>(DisableInspectorPointMenuKey); }
+            set { I.Set(DisableInspectorPointMenuKey, value); }
         }
 
         public static bool LockView
         {
-            get { return lockView; }
-            set { SaveBool(ref lockView, value, LockViewKey); }
+            get { return I.Get<bool>(LockViewKey); }
+            set { I.Set(LockViewKey, value); }
+        }
+        public static int CurrentTab
+        {
+            get { return I.Get<int>(CurrentTabKey); }
+            set { I.Set(CurrentTabKey, value); }
         }
 
 
-        public static bool DisableRectangularSelection
+        private BGCurveSettingsForEditor()
         {
-            get { return disableRectangularSelection; }
-            set { SaveBool(ref disableRectangularSelection, value, DisableRectangularSelectionKey); }
-        }
+            AddSetting(new SettingEnum(InspectorPointsCoordinatesKey,
+                "Point's Coordinate Space",
+                "Coordinate Space for points (for Inspector's fields inder Points tab.)",
+                (int) CoordinateSpaceEnum.World,
+                oldValue =>
+                {
+                    var newValue1 = oldValue;
+                    BGEditorUtility.PopupField((CoordinateSpaceEnum) oldValue, "Point's Coordinate Space", b => newValue1 = Convert.ToInt32(b));
+                    return newValue1;
+                }
+            ));
+            AddSetting(new SettingEnum(InspectorControlsCoordinatesKey,
+                "Point Controls Coordinates Space",
+                "Coordinate Space for points controls (for Inspector's fields inder Points tab.)",
+                (int) CoordinateSpaceEnum.Local,
+                oldValue =>
+                {
+                    var newValue1 = oldValue;
+                    BGEditorUtility.PopupField((CoordinateSpaceEnum)oldValue, "Point Controls Coordinates Space", b => newValue1 = Convert.ToInt32(b));
+                    return newValue1;
+                }
+            ));
 
-        public static bool DisableSceneViewPointMenu
-        {
-            get { return disableSceneViewPointMenu; }
-            set { SaveBool(ref disableSceneViewPointMenu, value, DisableSceneViewPointMenuKey); }
-        }
+            AddSetting(new SettingBool(DisableRectangularSelectionKey,
+                "Disable Rectangular Selection",
+                "Disable rectangular selection in Scene View, which is activated by holding shift and mouse dragging.",
+                false
+            ));
+            AddSetting(new SettingBool(DisableSceneViewPointMenuKey,
+                "Disable SV Point Menu",
+                "Disable point's menu, which is activated in Scene View by holding Ctrl over a point.",
+                false
+            ));
+            AddSetting(new SettingBool(DisableSceneViewSelectionMenuKey,
+                "Disable SV Selection Menu",
+                "Disable selection's menu, which is activated in Scene View by holding Ctrl over a selection handles.",
+                false
+            ));
 
-        public static bool DisableSceneViewSelectionMenu
-        {
-            get { return disableSceneViewSelectionMenu; }
-            set { SaveBool(ref disableSceneViewSelectionMenu, value, DisableSceneViewSelectionMenuKey); }
-        }
+            AddSetting(new SettingBool(CcInspectorHandlesOffKey,
+                null,
+                null,
+                false
+            ));
+            AddSetting(new SettingBool(DisableInspectorPointMenuKey,
+                null,
+                null,
+                false
+            ));
+            AddSetting(new SettingBool(LockViewKey,
+                null,
+                null,
+                false
+            ));
+            AddSetting(new SettingInt(CurrentTabKey,
+                null,
+                null,
+                0
+            ));
 
-        public static bool DisableInspectorPointMenu
-        {
-            get { return disableInspectorPointMenu; }
-            set { SaveBool(ref disableInspectorPointMenu, value, DisableInspectorPointMenuKey); }
-        }
-
-
-        public static Color32 HandleColorForAddAndSnap3D
-        {
-            get { return handleColorForAddAndSnap3D; }
-            set { SaveColor(ref handleColorForAddAndSnap3D, value, HandleColorForAddAndSnap3DKey); }
-        }
-
-        public static Color32 HandleColorForAddAndSnap2D
-        {
-            get { return handleColorForAddAndSnap2D; }
-            set { SaveColor(ref handleColorForAddAndSnap2D, value, HandleColorForAddAndSnap2DKey); }
-        }
-
-        public static Color32 ColorForRectangularSelection
-        {
-            get { return colorForRectangularSelection; }
-            set { SaveColor(ref colorForRectangularSelection, value, ColorForRectangularSelectionKey); }
-        }
-
-        public static Color32 ColorForLabelBackground
-        {
-            get { return colorForLabelBackground; }
-            set { SaveColor(ref colorForLabelBackground, value, ColorForLabelBackgroundKey); }
-        }
-
-        public static Color32 ColorForNewSectionPreview
-        {
-            get { return colorForNewSectionPreview; }
-            set { SaveColor(ref colorForNewSectionPreview, value, ColorForNewSectionPreviewKey); }
-        }
-
-        static BGCurveSettingsForEditor()
-        {
-            Init();
-        }
-
-        private static void SaveBool(ref bool oldValue, bool newValue, string key)
-        {
-            CheckAndSave(ref oldValue, newValue, () => EditorPrefs.SetBool(key, newValue));
-        }
-
-        private static void SaveInt(ref int oldValue, int newValue, string key)
-        {
-            CheckAndSave(ref oldValue, newValue, () => EditorPrefs.SetInt(key, newValue));
-        }
-
-        private static void SaveColor(ref Color32 oldValue, Color32 newValue, string key)
-        {
-            CheckAndSave(ref oldValue, newValue, () => EditorPrefs.SetString(key, ColorToString(newValue)));
-        }
-
-        private static void CheckAndSave<T>(ref T oldValue, T newValue, Action notEqualAction)
-        {
-            if (oldValue.Equals(newValue)) return;
-            oldValue = newValue;
-            notEqualAction();
-        }
-
-        private static void Init()
-        {
-            inspectorPointCoordinateSpace = (CoordinateSpaceEnum) EditorPrefs.GetInt(InspectorPointsCoordinatesKey, (int) CoordinateSpaceEnum.World);
-            inspectorControlCoordinateSpace = (CoordinateSpaceEnum) EditorPrefs.GetInt(InspectorControlsCoordinatesKey);
-
-            disableRectangularSelection = EditorPrefs.GetBool(DisableRectangularSelectionKey);
-            disableSceneViewPointMenu = EditorPrefs.GetBool(DisableSceneViewPointMenuKey);
-            disableSceneViewSelectionMenu = EditorPrefs.GetBool(DisableSceneViewSelectionMenuKey);
-            disableInspectorPointMenu = EditorPrefs.GetBool(DisableInspectorPointMenuKey);
-
-            lockView = EditorPrefs.GetBool(LockViewKey);
-            currentTab = EditorPrefs.GetInt(CurrentTabKey);
-
-
-            handleColorForAddAndSnap3D = StringToColor(EditorPrefs.GetString(HandleColorForAddAndSnap3DKey), HandleColorForAddAndSnap3DDefault);
-            handleColorForAddAndSnap2D = StringToColor(EditorPrefs.GetString(HandleColorForAddAndSnap2DKey), HandleColorForAddAndSnap2DDefault);
-            colorForRectangularSelection = StringToColor(EditorPrefs.GetString(ColorForRectangularSelectionKey), ColorForRectangularSelectionDefault);
-            colorForLabelBackground = StringToColor(EditorPrefs.GetString(ColorForLabelBackgroundKey), ColorForLabelBackgroundDefault);
-            colorForNewSectionPreview = StringToColor(EditorPrefs.GetString(ColorForNewSectionPreviewKey), ColorForNewSectionPreviewDefault);
-        }
-
-        //resets to default
-        public static void Reset()
-        {
-            var constants = typeof(BGCurveSettingsForEditor).GetFields(
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy)
-                .Where(c => c.IsLiteral && !c.IsInitOnly && c.Name.EndsWith("Key")).ToList();
-
-            foreach (var constant in constants) EditorPrefs.DeleteKey((string) constant.GetValue(null));
-
-            Init();
-        }
-
-        private static string ColorToString(Color32 color)
-        {
-            return color.r + "," + color.g + "," + color.b + "," + color.a;
-        }
-
-        private static Color32 StringToColor(string colorString, Color32 defaultColor)
-        {
-            if (string.IsNullOrEmpty(colorString)) return defaultColor;
-
-            var parts = colorString.Split(',');
-            if (parts.Length != 4) return defaultColor;
-
-
-            try
-            {
-                return new Color32(byte.Parse(parts[0]), byte.Parse(parts[1]), byte.Parse(parts[2]), byte.Parse(parts[3]));
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-                return defaultColor;
-            }
+            AddSetting(new SettingColor(HandleColorForAddAndSnap3DKey,
+                "Add and Snap 3D Handles Color",
+                "Color for handles, shown for 3D curve in Scene View when new point is previewed.",
+                new Color32(46, 143, 168, 20)
+            ));
+            AddSetting(new SettingColor(HandleColorForAddAndSnap2DKey,
+                "Add and Snap 2D Handles Color",
+                "Color for handles, shown for 2D curve in Scene View when new point is previewed.",
+                new Color32(255, 255, 255, 10)
+            ));
+            AddSetting(new SettingColor(ColorForRectangularSelectionKey,
+                "Rectangular Selection Color",
+                "Color for Rectangular Selection background",
+                new Color32(46, 143, 168, 25)
+            ));
+            AddSetting(new SettingColor(ColorForLabelBackgroundKey,
+                "Points labels back color",
+                "Background color for points labels in Scene View.",
+                new Color32(255, 255, 255, 25)
+            ));
+            AddSetting(new SettingColor(ColorForNewSectionPreviewKey,
+                "New section preview color",
+                "Color for new section preview in Scene View.",
+                new Color32(255, 0, 0, 255)
+            ));
         }
     }
 }

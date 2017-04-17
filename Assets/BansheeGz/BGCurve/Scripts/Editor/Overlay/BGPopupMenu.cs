@@ -101,57 +101,56 @@ namespace BansheeGz.BGSpline.Editor
                 },
             });
 
-            Handles.BeginGUI();
-
-            if (onTransition != null && !onTransition.Tick())
+            BGEditorUtility.HandlesGui(() =>
             {
-                //animating transition
-                GUI.DrawTexture(new Rect(Vector2.Lerp(Point2DPosition, targetRect.position, onTransition.Ratio), targetRect.size*onTransition.Ratio), backTexture, ScaleMode.StretchToFill);
-            }
-            else
-            {
-                //ready
-                onTransition = null;
-
-                GUI.DrawTexture(targetRect, backTexture, ScaleMode.StretchToFill);
-                GUI.Label(new Rect(targetRect) {height = HeaderHeight}, title, titleStyle);
-
-                ActiveItem = null;
-                var cursor = targetRect.x;
-
-                foreach (var item in items.Where(item => !item.Disabled))
+                if (onTransition != null && !onTransition.Tick())
                 {
-                    var itemRect = new Rect(cursor, targetRect.y + HeaderHeight, item.Size.x, item.Size.y);
-                    var selected = itemRect.Contains(mousePosition);
-
-                    //if not separator
-                    if (selected && item.Description != null)
-                    {
-                        ActiveItem = item;
-
-                        if (!currentEvent.control && item is MenuItemButton) ((MenuItemButton) item).Action();
-                    }
-
-                    //icon
-                    if (item.Icon != null)
-                    {
-                        GUI.DrawTexture(itemRect, menuItemBackgroundTexture, ScaleMode.StretchToFill);
-
-                        if (selected) GUI.DrawTexture(itemRect, selectedTexture, ScaleMode.StretchToFill);
-
-                        GUI.DrawTexture(itemRect, item.Icon, ScaleMode.StretchToFill);
-                    }
-
-                    if (item.Current)
-                    {
-                        GUI.DrawTexture(itemRect, currentTexture, ScaleMode.StretchToFill);
-                    }
-
-                    cursor += itemRect.width;
+                    //animating transition
+                    GUI.DrawTexture(new Rect(Vector2.Lerp(Point2DPosition, targetRect.position, onTransition.Ratio), targetRect.size*onTransition.Ratio), backTexture, ScaleMode.StretchToFill);
                 }
-            }
+                else
+                {
+                    //ready
+                    onTransition = null;
 
-            Handles.EndGUI();
+                    GUI.DrawTexture(targetRect, backTexture, ScaleMode.StretchToFill);
+                    GUI.Label(new Rect(targetRect) {height = HeaderHeight}, title, titleStyle);
+
+                    ActiveItem = null;
+                    var cursor = targetRect.x;
+
+                    foreach (var item in items.Where(item => !item.Disabled))
+                    {
+                        var itemRect = new Rect(cursor, targetRect.y + HeaderHeight, item.Size.x, item.Size.y);
+                        var selected = itemRect.Contains(mousePosition);
+
+                        //if not separator
+                        if (selected && item.Description != null)
+                        {
+                            ActiveItem = item;
+
+                            if (!currentEvent.control && item is MenuItemButton) ((MenuItemButton) item).Action();
+                        }
+
+                        //icon
+                        if (item.Icon != null)
+                        {
+                            GUI.DrawTexture(itemRect, menuItemBackgroundTexture, ScaleMode.StretchToFill);
+
+                            if (selected) GUI.DrawTexture(itemRect, selectedTexture, ScaleMode.StretchToFill);
+
+                            GUI.DrawTexture(itemRect, item.Icon, ScaleMode.StretchToFill);
+                        }
+
+                        if (item.Current)
+                        {
+                            GUI.DrawTexture(itemRect, currentTexture, ScaleMode.StretchToFill);
+                        }
+
+                        cursor += itemRect.width;
+                    }
+                }
+            });
 
             if (!currentEvent.control) Active = false;
         }

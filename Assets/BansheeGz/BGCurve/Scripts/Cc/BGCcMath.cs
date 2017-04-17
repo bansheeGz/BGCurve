@@ -322,9 +322,9 @@ namespace BansheeGz.BGSpline.Components
 
         //================================ Total Distance
         //see interface for comments
-        public float GetDistance()
+        public float GetDistance(int pointIndex = -1)
         {
-            return Math.GetDistance();
+            return Math.GetDistance(pointIndex);
         }
 
 
@@ -435,7 +435,7 @@ namespace BansheeGz.BGSpline.Components
         //===============================================================================================
         //we do not have to create a math implementation until it's needed, but we have to trace spline's changes and fire events
         private void SendEventsIfMathIsNotCreated(object sender, BGCurveChangedArgs e)
-            {
+        {
             //no more need to trace changes, since math is tracing it by itself
             if (math != null) Curve.Changed -= SendEventsIfMathIsNotCreated;
             //implementation is not created yet, but we need to fire events to indicate math 'would be' changed if it is created
