@@ -480,6 +480,12 @@ namespace BansheeGz.BGSpline.Components
             // we are still delayed 
             if (!(Time.time - delayStarted > delayValue)) return false;
 
+            var currentSpeed = speed;
+            if (speedField != null)
+            {
+                //we need to retrieve speed from a field value
+                currentSpeed = Curve[currentSectionIndex].GetFloat(speedField.FieldName);
+            }
 
             // delay is over, start moving
             delayStarted = -1;
@@ -487,21 +493,21 @@ namespace BansheeGz.BGSpline.Components
             {
                 //                if (delayAtLastPoint) cursor.Distance = 0;
                 //                else cursor.Distance += BGCurve.Epsilon;
-                cursor.Distance += BGCurve.Epsilon;
+                cursor.Distance += Mathf.Abs(currentSpeed * Time.deltaTime);
             }
             else
             {
                 if (currentSectionIndex > 0)
                 {
                     currentSectionIndex--;
-                    cursor.Distance -= BGCurve.Epsilon;
+                    cursor.Distance -= Mathf.Abs(currentSpeed * Time.deltaTime);
                 }
                 else
                 {
                     if (!skipZeroPoint)
                     {
                         currentSectionIndex = pointsCountMinusOne;
-                        cursor.Distance = math.GetDistance() - BGCurve.Epsilon;
+                        cursor.Distance = math.GetDistance() - Mathf.Abs(currentSpeed * Time.deltaTime);
                     }
                 }
             }
