@@ -118,7 +118,9 @@ namespace BansheeGz.BGSpline.Example
                     var distanceRatio = i/countMinusOne;
                     positions[i] = Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, distanceRatio);
                 }
-#if UNITY_5_5 || UNITY_5_6
+#if UNITY_5_5
+                lineRenderer.numPositions = count;
+#elif UNITY_5_6_OR_NEWER
                 lineRenderer.positionCount = count;
 #else
                 lineRenderer.SetVertexCount(count);
