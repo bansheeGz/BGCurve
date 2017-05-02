@@ -49,7 +49,7 @@ namespace BansheeGz.BGSpline.Example
             }
 
 #if UNITY_5_5 || UNITY_5_6
-            lineRenderer.numPositions = points;
+            lineRenderer.positionCount = points;
 #else
             lineRenderer.SetVertexCount(points);
 #endif

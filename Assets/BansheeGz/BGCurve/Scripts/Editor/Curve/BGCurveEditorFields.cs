@@ -373,7 +373,16 @@ namespace BansheeGz.BGSpline.Editor
                             {
                                 case HandlesType.DistanceFromPoint:
                                     BGEditorUtility.SwapHandlesColor(color, () =>
-                                            Handles.CircleCap(0, pos, Quaternion.LookRotation(SceneView.currentDrawingSceneView.camera.transform.position - pos), point.GetField<float>(field.FieldName)));
+                                    {
+#if UNITY_5_6_OR_NEWER
+							Handles.CircleHandleCap(0, pos, Quaternion.LookRotation(SceneView.currentDrawingSceneView.camera.transform.position - pos),
+								point.GetField<float>(field.FieldName), EventType.Repaint);
+#else
+							Handles.CircleCap(0, pos, Quaternion.LookRotation(SceneView.currentDrawingSceneView.camera.transform.position - pos),
+		                                    point.GetField<float>(field.FieldName));
+#endif
+                                    }
+							  );
                                     break;
                                 case HandlesType.BoundsAroundPoint:
                                     Bounds bounds;
@@ -402,7 +411,15 @@ namespace BansheeGz.BGSpline.Editor
                                 case HandlesType.Direction:
                                     var vector3Value = point.GetField<Vector3>(field.FieldName);
                                     if (vector3Value != Vector3.zero)
-                                        BGEditorUtility.SwapHandlesColor(color, () => Handles.ArrowCap(0, pos, Quaternion.LookRotation(vector3Value), vector3Value.magnitude));
+                                        BGEditorUtility.SwapHandlesColor(color, () =>
+                                        {
+#if UNITY_5_6_OR_NEWER
+	                                        Handles.ArrowHandleCap(0, pos, Quaternion.LookRotation(vector3Value),
+		                                        vector3Value.magnitude, EventType.Repaint);
+#else
+							    Handles.ArrowCap(0, pos, Quaternion.LookRotation(vector3Value), vector3Value.magnitude);
+#endif
+                                        });
                                     break;
                                 case HandlesType.Rotation:
                                     if (quanterionShown) break;
@@ -421,7 +438,11 @@ namespace BansheeGz.BGSpline.Editor
                                     {
                                         var rotated = newValue*Vector3.forward*BGEditorUtility.GetHandleSize(pos, 2);
                                         var toPos = pos + rotated;
-                                        Handles.ArrowCap(0, toPos, newValue, 1);
+#if UNITY_5_6_OR_NEWER
+							Handles.ArrowHandleCap(0, toPos, newValue, 1, EventType.Repaint);
+#else
+							Handles.ArrowCap(0, toPos, newValue, 1);
+#endif
                                         Handles.DrawDottedLine(pos, toPos, 10);
                                     });
                                     break;

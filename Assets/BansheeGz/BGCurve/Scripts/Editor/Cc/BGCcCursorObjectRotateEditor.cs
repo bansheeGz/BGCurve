@@ -127,7 +127,14 @@ namespace BansheeGz.BGSpline.Editor
             if (!ObjectRotate.TryToCalculateRotation(ref result)) return;
 
             var handleSize = BGEditorUtility.GetHandleSize(position, BGPrivateField.Get<float>(ObjectRotate, "handlesScale"));
-            BGEditorUtility.SwapHandlesColor(BGPrivateField.Get<Color>(ObjectRotate, "handlesColor"), () => { Handles.ArrowCap(0, position, result, handleSize); });
+            BGEditorUtility.SwapHandlesColor(BGPrivateField.Get<Color>(ObjectRotate, "handlesColor"), () =>
+            {
+#if UNITY_5_6_OR_NEWER
+			Handles.ArrowHandleCap(0, position, result, handleSize, EventType.Repaint);
+#else
+			Handles.ArrowCap(0, position, result, handleSize);
+#endif
+            });
         }
     }
 }

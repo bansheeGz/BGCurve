@@ -38,7 +38,11 @@ namespace BansheeGz.BGSpline.Editor
         {
             var size = BGEditorUtility.GetHandleSize(position, ScalePreviewPoint*.8f);
 
-            Handles.SphereCap(0, controlWorld, Quaternion.identity, size);
+#if UNITY_5_6_OR_NEWER
+		Handles.SphereHandleCap(0, controlWorld, Quaternion.identity, size, EventType.Repaint);
+#else
+		Handles.SphereCap(0, controlWorld, Quaternion.identity, size);
+#endif
             Handles.DrawLine(position, controlWorld);
         }
 
@@ -54,7 +58,14 @@ namespace BansheeGz.BGSpline.Editor
             var settings = overlay.Editor.Settings;
 
             //show point 
-            BGEditorUtility.SwapHandlesColor(settings.SphereColor, () => Handles.SphereCap(0, position, Quaternion.identity, BGEditorUtility.GetHandleSize(position, ScalePreviewPoint)));
+            BGEditorUtility.SwapHandlesColor(settings.SphereColor, () =>
+            {
+#if UNITY_5_6_OR_NEWER
+			Handles.SphereHandleCap(0, position, Quaternion.identity, BGEditorUtility.GetHandleSize(position, ScalePreviewPoint), EventType.Repaint);
+#else
+			Handles.SphereCap(0, position, Quaternion.identity, BGEditorUtility.GetHandleSize(position, ScalePreviewPoint));
+#endif
+            });
 
             //create a point
             var newPoint = CreatePointForPreview(position, curve, out toLast, out toFirst, settings);

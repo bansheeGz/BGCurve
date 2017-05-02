@@ -107,8 +107,12 @@ namespace BansheeGz.BGSpline.Editor
                     for (var j = 0; j < points.Count; j++)
                     {
                         var pos = points[j].Position;
-                        Handles.SphereCap(0, pos, Quaternion.identity, sphereScale*BGEditorUtility.GetHandleSize(pos, .07f));
-                        if (count-- <= 0) return;
+#if UNITY_5_6_OR_NEWER
+				Handles.SphereHandleCap(0, pos, Quaternion.identity, sphereScale * BGEditorUtility.GetHandleSize(pos, .07f), EventType.Repaint);
+#else
+				Handles.SphereCap(0, pos, Quaternion.identity, sphereScale*BGEditorUtility.GetHandleSize(pos, .07f));
+#endif
+				if (count-- <= 0) return;
                     }
                 }
             });

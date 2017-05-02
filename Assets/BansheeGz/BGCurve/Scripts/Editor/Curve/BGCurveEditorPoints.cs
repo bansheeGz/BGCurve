@@ -332,7 +332,14 @@ namespace BansheeGz.BGSpline.Editor
 
         private static void ShowTangent(Vector3 position, Vector3 tangent, float size)
         {
-            if (tangent.sqrMagnitude > 0.0001f) Handles.ArrowCap(0, position, Quaternion.LookRotation(tangent), BGEditorUtility.GetHandleSize(position, size));
+	        if (tangent.sqrMagnitude > 0.0001f)
+	        {
+#if UNITY_5_6_OR_NEWER
+				Handles.ArrowHandleCap(0, position, Quaternion.LookRotation(tangent), BGEditorUtility.GetHandleSize(position, size), EventType.Repaint);
+#else
+				Handles.ArrowCap(0, position, Quaternion.LookRotation(tangent), BGEditorUtility.GetHandleSize(position, size));
+#endif
+	        }
         }
 
         public static Quaternion GetRotation(Transform transform)

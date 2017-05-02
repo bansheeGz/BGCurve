@@ -93,7 +93,11 @@ namespace BansheeGz.BGSpline.Editor
                     var position = positions[i];
                     if (splitter.UseLocal) position = localToWorldMatrix.MultiplyPoint(position);
 
-                    Handles.SphereCap(0, position, Quaternion.identity, sphereScale*BGEditorUtility.GetHandleSize(position, .07f));
+#if UNITY_5_6_OR_NEWER
+				Handles.SphereHandleCap(0, position, Quaternion.identity, sphereScale * BGEditorUtility.GetHandleSize(position, .07f), EventType.Repaint);
+#else
+				Handles.SphereCap(0, position, Quaternion.identity, sphereScale*BGEditorUtility.GetHandleSize(position, .07f));
+#endif
                 }
             });
         }

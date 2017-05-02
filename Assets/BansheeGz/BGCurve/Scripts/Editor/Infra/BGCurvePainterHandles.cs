@@ -31,7 +31,11 @@ namespace BansheeGz.BGSpline.Editor
 
         public override void DrawSphere(BGCurveSettings settings, Vector3 pos, float sphereRadius)
         {
-            Handles.SphereCap(0, pos, Quaternion.identity, sphereRadius*2);
+#if UNITY_5_6_OR_NEWER
+			Handles.SphereHandleCap(0, pos, Quaternion.identity, sphereRadius * 2, EventType.Repaint);
+#else
+			Handles.SphereCap(0, pos, Quaternion.identity, sphereRadius*2);
+#endif
         }
 
         protected override void DrawLine(Vector3 @from, Vector3 to)
