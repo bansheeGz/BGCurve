@@ -40,9 +40,16 @@ namespace BansheeGz.BGSpline.Editor
             var handleSize = BGEditorUtility.GetHandleSize(position, BGPrivateField.Get<float>(cursor, "handlesScale"));
             BGEditorUtility.SwapHandlesColor(BGPrivateField.Get<Color>(cursor, "handlesColor"), () =>
             {
-                Handles.ArrowCap(0, position + Vector3.up*handleSize*1.2f, Quaternion.LookRotation(Vector3.down), handleSize);
-                Handles.SphereCap(0, position, Quaternion.LookRotation(Vector3.down), handleSize*.15f);
-            });
+#if UNITY_5_6_OR_NEWER
+                  Handles.ArrowHandleCap(0, position + Vector3.up * handleSize * 1.2f, Quaternion.LookRotation(Vector3.down), handleSize, EventType.Repaint);
+                  Handles.SphereHandleCap(0, position, Quaternion.LookRotation(Vector3.down), handleSize * .15f, EventType.Repaint);
+#else
+                  Handles.ArrowCap(0, position + Vector3.up*handleSize*1.2f, Quaternion.LookRotation(Vector3.down), handleSize);
+                  Handles.SphereCap(0, position, Quaternion.LookRotation(Vector3.down), handleSize*.15f);
+#endif
+
+
+		});
         }
     }
 }

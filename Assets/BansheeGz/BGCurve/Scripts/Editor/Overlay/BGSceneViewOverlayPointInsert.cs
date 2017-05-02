@@ -68,7 +68,14 @@ namespace BansheeGz.BGSpline.Editor
 
             BGEditorUtility.SwapHandlesColor(PointersColor, () =>
             {
-                foreach (var position in verts) Handles.ConeCap(0, position, Quaternion.LookRotation(point - position), size);
+	            foreach (var position in verts)
+	            {
+#if UNITY_5_6_OR_NEWER
+				Handles.ConeHandleCap(0, position, Quaternion.LookRotation(point - position), size, EventType.Repaint);
+#else
+				Handles.ConeCap(0, position, Quaternion.LookRotation(point - position), size);
+#endif
+	            }
             });
         }
 

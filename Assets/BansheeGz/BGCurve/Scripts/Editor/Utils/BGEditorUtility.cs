@@ -743,10 +743,15 @@ namespace BansheeGz.BGSpline.Editor
             {
                 Handles.color = Handles.centerColor;
                 GUI.SetNextControlName("FreeMoveAxis");
-                return Handles.FreeMoveHandle(position, rotation, handleSize*0.15f, new Vector3(xSnap, ySnap, zSnap), Handles.RectangleCap);
-            }
 
-            var axisSize = handleSize*handlesSettings.AxisScale;
+#if UNITY_5_6_OR_NEWER
+			return Handles.FreeMoveHandle(position, rotation, handleSize * 0.15f, new Vector3(xSnap, ySnap, zSnap), Handles.RectangleHandleCap);
+#else
+			return Handles.FreeMoveHandle(position, rotation, handleSize * 0.15f, new Vector3(xSnap, ySnap, zSnap), Handles.RectangleCap);
+#endif
+		}
+
+			var axisSize = handleSize*handlesSettings.AxisScale;
 
             var color = Handles.color;
 
@@ -770,7 +775,11 @@ namespace BansheeGz.BGSpline.Editor
         {
             Handles.color = new Color(color.r, color.g, color.b, alpha);
             GUI.SetNextControlName(controlName);
-            return Handles.Slider(position, rotation*direction, handleSize, Handles.ArrowCap, snap);
+#if UNITY_5_6_OR_NEWER
+			return Handles.Slider(position, rotation * direction, handleSize, Handles.ArrowHandleCap, snap);
+#else
+			return Handles.Slider(position, rotation*direction, handleSize, Handles.ArrowCap, snap);
+#endif
         }
 
         // =======================================================================================
@@ -816,9 +825,12 @@ namespace BansheeGz.BGSpline.Editor
 
             GUI.SetNextControlName(name);
 
-            var newCenter = Handles.Slider2D(center, rotation*Vector3.Cross(direction1, direction2), rotation*direction1, rotation*direction2, size*.5f, Handles.RectangleCap, 0);
-
-            if (AnyChange(center, newCenter)) position = position + (newCenter - center);
+#if UNITY_5_6_OR_NEWER
+		var newCenter = Handles.Slider2D(center, rotation * Vector3.Cross(direction1, direction2), rotation * direction1, rotation * direction2, size * .5f, Handles.RectangleHandleCap, 0);
+#else
+		var newCenter = Handles.Slider2D(center, rotation*Vector3.Cross(direction1, direction2), rotation*direction1, rotation*direction2, size*.5f, Handles.RectangleCap, 0);
+#endif
+		if (AnyChange(center, newCenter)) position = position + (newCenter - center);
 
             Handles.color = c;
             return position;
@@ -1229,7 +1241,11 @@ namespace BansheeGz.BGSpline.Editor
             switch (type)
             {
                 case BGCurveSettings.HandlesTypeEnum.FreeMove:
-                    position = Handles.FreeMoveHandle(position, rotation, GetHandleSize(position, .2f), Vector3.zero, Handles.CircleCap);
+#if UNITY_5_6_OR_NEWER
+				position = Handles.FreeMoveHandle(position, rotation, GetHandleSize(position, .2f), Vector3.zero, Handles.CircleHandleCap);
+#else
+				position = Handles.FreeMoveHandle(position, rotation, GetHandleSize(position, .2f), Vector3.zero, Handles.CircleCap);
+#endif
                     break;
                 case BGCurveSettings.HandlesTypeEnum.Standard:
                     position = Handles.PositionHandle(position, rotation);
