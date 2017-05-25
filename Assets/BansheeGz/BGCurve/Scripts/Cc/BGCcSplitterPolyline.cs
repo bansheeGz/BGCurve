@@ -183,7 +183,7 @@ namespace BansheeGz.BGSpline.Components
         //do not remove readonly. Reusable positions list, storing last calculated positions
         protected readonly List<Vector3> positions = new List<Vector3>();
         //if current data valid?
-        private bool dataValid;
+        protected bool dataValid;
 
         private BGPolylineSplitter splitter;
         private BGPolylineSplitter.Config config;

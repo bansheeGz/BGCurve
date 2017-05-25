@@ -29,7 +29,7 @@ namespace BansheeGz.BGSpline.Example
             gameObject.AddComponent<BGCcVisualizationLineRenderer>();
             var lineRenderer = gameObject.GetComponent<LineRenderer>();
             lineRenderer.sharedMaterial = LineRendererMaterial;
-#if UNITY_5_5 || UNITY_5_6
+#if UNITY_5_5 || UNITY_5_6 || UNITY_5_6_OR_NEWER
             lineRenderer.startWidth = lineRenderer.endWidth = Width;
 #else
             lineRenderer.SetWidth(Width, Width);

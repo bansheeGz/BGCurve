@@ -176,6 +176,7 @@ namespace BansheeGz.BGSpline.Components
 
         public override void Start()
         {
+            useLocal = true;
             base.Start();
             if (MeshFilter.sharedMesh == null) UpdateUI();
         }
@@ -187,6 +188,11 @@ namespace BansheeGz.BGSpline.Components
         {
             if (Error != null) return;
 
+            if (!UseLocal)
+            {
+                useLocal = true;
+                dataValid = false;
+            }
             var positions = Positions;
             if (positions.Count < 2) return;
 
@@ -234,10 +240,10 @@ namespace BansheeGz.BGSpline.Components
                 var distance = 0f;
                 for (var i = 0; i < crossSectionCount - 1; i++)
                 {
-                    crossSectionList[i].U = uCoordinateStart + (distance / crossSectionDistance) * (uCoordinateEnd - uCoordinateStart);
+                    crossSectionList[i] = new PositionWithU {Position = crossSectionList[i].Position, U = uCoordinateStart + (distance/crossSectionDistance)*(uCoordinateEnd - uCoordinateStart)};
                     distance += Vector3.Distance(crossSectionList[i].Position, crossSectionList[i + 1].Position);
                 }
-                crossSectionList[crossSectionList.Count - 1].U = uCoordinateEnd;
+                crossSectionList[crossSectionList.Count - 1] = new PositionWithU {Position = crossSectionList[crossSectionList.Count - 1].Position, U = uCoordinateEnd};
             }
 
             //------------- normal
@@ -357,7 +363,7 @@ namespace BansheeGz.BGSpline.Components
         //===============================================================================================
         //                                                    Private classes
         //===============================================================================================
-        private class PositionWithU
+        private struct PositionWithU
         {
             public Vector3 Position;
             public float U;

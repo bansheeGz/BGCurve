@@ -170,6 +170,8 @@ namespace BansheeGz.BGSpline.Editor
                     + "\r\n3) Hold control over existing point or selection to access Scene View menu"
                     + "\r\n"
                     + "\r\n4) Hold shift + drag to use rectangular selection in Scene View"
+                    + "\r\n"
+                    + "\r\n5) Ctrl + LeftClick over existing spline to insert a point"
                     , MessageType.Info);
 
 
