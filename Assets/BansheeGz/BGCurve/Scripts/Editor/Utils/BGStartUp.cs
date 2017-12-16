@@ -63,7 +63,7 @@ namespace BansheeGz.BGSpline.Editor
                         ? CurveWarningIcon
                         : CurveIcon;
 
-            GUI.Label(new Rect(selectionRect) {x = selectionRect.width - IconSize, width = IconSize}, icon);
+            GUI.Label(new Rect(selectionRect) {x = selectionRect.xMax - IconSize, width = IconSize}, icon);
         }
     }
 }

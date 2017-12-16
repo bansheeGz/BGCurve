@@ -47,6 +47,7 @@ namespace BansheeGz.BGSpline.Components
         //                                                    Fields (persistent)
         //===============================================================================================
 
+        [SerializeField] [Tooltip("Cursor will be moved in FixedUpdate instead of Update")] private bool useFixedUpdate;
 
         [SerializeField] [Tooltip("Constant movement speed along the curve (Speed * Time.deltaTime)." +
                                   "You can override this value for each point with speedField")] private float speed = 5;
@@ -165,6 +166,19 @@ namespace BansheeGz.BGSpline.Components
 
         // Update is called once per frame
         private void Update()
+        {
+            if (useFixedUpdate) return;
+            Step();
+        }
+
+        // fixed update may be called several times per frame or once per several frames 
+        private void FixedUpdate()
+        {
+            if (!useFixedUpdate) return;
+            Step();
+        }
+
+        private void Step()
         {
             if (Stopped || (speedField == null && Mathf.Abs(speed) < SpeedThreshold)) return;
 

@@ -78,7 +78,7 @@ namespace BansheeGz.BGSpline.Components
             return Math.CalcByDistance(BGCurveBaseMath.Field.Tangent, distance);
         }
 
-        /// <summary>Calculates position by current distance </summary>
+        /// <summary>Calculates world position by current distance </summary>
         public Vector3 CalculatePosition()
         {
             return Math.CalcByDistance(BGCurveBaseMath.Field.Position, distance);

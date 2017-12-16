@@ -140,7 +140,7 @@ namespace BansheeGz.BGSpline.Editor
             var rect = GUILayoutUtility.GetRect(24, 24, 24, 24, new GUIStyle {fixedWidth = 24, fixedHeight = 24, stretchWidth = false, stretchHeight = false});
             if (currentEvent.isMouse)
             {
-                if (currentEvent.type == EventType.mouseDown)
+                if (currentEvent.type == EventType.MouseDown)
                 {
                     if (rect.Contains(currentEvent.mousePosition))
                     {
@@ -362,7 +362,7 @@ namespace BansheeGz.BGSpline.Editor
 
         public void Process(Event currentEvent)
         {
-            if (currentEvent.type == EventType.mouseDown)
+            if (currentEvent.type == EventType.MouseDown)
             {
                 if (currentEvent.button == 0)
                 {
@@ -381,7 +381,7 @@ namespace BansheeGz.BGSpline.Editor
                     GUIUtility.hotControl = GUIUtility.GetControlID(FocusType.Passive);
                 }
             }
-            else if (currentEvent.type == EventType.mouseUp)
+            else if (currentEvent.type == EventType.MouseUp)
             {
                 SceneView.RepaintAll();
                 selectionRectangle.Off();

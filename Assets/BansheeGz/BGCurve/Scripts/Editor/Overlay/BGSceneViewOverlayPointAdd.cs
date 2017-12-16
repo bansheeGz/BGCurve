@@ -110,7 +110,7 @@ namespace BansheeGz.BGSpline.Editor
             Plane plane;
 
 
-            if (currentEvent.type == EventType.mouseDown && currentEvent.control && currentEvent.button == 0)
+            if (currentEvent.type == EventType.MouseDown && currentEvent.control && currentEvent.button == 0)
             {
                 //Mouse down for some action
                 var curve = overlay.Editor.Curve;

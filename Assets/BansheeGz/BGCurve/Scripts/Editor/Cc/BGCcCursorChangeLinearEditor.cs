@@ -22,6 +22,9 @@ namespace BansheeGz.BGSpline.Editor
             BGEditorUtility.Assign(ref speedFieldContent, () => new GUIContent("Speed Field", "Speed field to take a speed from. Each point will have it's own speed. Should be a float field."));
             BGEditorUtility.Assign(ref delayFieldContent, () => new GUIContent("Delay Field", "Delay field to take a delay from. Each point will have it's own delay. Should be a float field."));
 
+            //use fixedupdate
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("useFixedUpdate"));
+            
             //speed
             BGEditorUtility.VerticalBox(() =>
             {

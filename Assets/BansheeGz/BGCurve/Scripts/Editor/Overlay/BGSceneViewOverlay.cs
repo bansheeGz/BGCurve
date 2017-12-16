@@ -67,7 +67,7 @@ namespace BansheeGz.BGSpline.Editor
 
             if (On && !currentEvent.control) On = false;
 
-            if (currentEvent.type == EventType.mouseUp) BGEditorUtility.Release(ref EventCanceller);
+            if (currentEvent.type == EventType.MouseUp) BGEditorUtility.Release(ref EventCanceller);
 
             if (currentEvent.shift && !currentEvent.control) return;
 

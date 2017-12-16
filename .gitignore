@@ -17,3 +17,12 @@
 /BGCurve.csproj
 /Package/uploadtool_BansheeGz_BGCurve.unitypackage
 /.vs/BGCurve/v14/.suo
+/Assets/Plugins
+/.idea
+/obj
+/Assembly-CSharp-Editor-firstpass.csproj
+/Assembly-CSharp.csproj
+/Assembly-CSharp-Editor.csproj
+/Assets/BansheeGzSupport
+/Assets/BansheeGzSupport.meta
+/Assets/Plugins.meta

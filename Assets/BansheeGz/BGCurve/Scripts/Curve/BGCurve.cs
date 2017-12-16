@@ -20,7 +20,7 @@ namespace BansheeGz.BGSpline.Curve
         //===============================================================================================
 
         //Package version
-        public const float Version = 1.23f;
+        public const float Version = 1.24f;
         //Epsilon value (very small value, that can be ignored). Assuming 1=1 meter (Unity's recommendation), it equals to (1*10^-5)=10 micrometers 
         public const float Epsilon = 0.00001f;
 
