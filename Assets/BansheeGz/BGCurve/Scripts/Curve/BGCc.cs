@@ -47,6 +47,11 @@ namespace BansheeGz.BGSpline.Curve
 
         [SerializeField] private bool hidden;
 
+        public bool ShowHandles
+        {
+            get { return showHandles; }
+        }
+
         public bool Hidden
         {
             get { return hidden; }

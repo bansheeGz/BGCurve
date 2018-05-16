@@ -761,11 +761,13 @@ namespace BansheeGz.BGSpline.Editor
 
             if (!handlesSettings.RemoveZ) position = AxisHandle(position, rotation, axisSize, Handles.zAxisColor, "zAxis", Vector3.forward, zSnap, handlesSettings.Alpha);
 
-            if (!handlesSettings.RemoveXZ) position = PlanarHandle("xz" + number, position, rotation, handleSize*.3f*handlesSettings.PlanesScale, Vector3.right, Vector3.forward, Handles.yAxisColor);
+            var planarSize = handleSize*.3f*handlesSettings.PlanesScale;
+            
+            if (!handlesSettings.RemoveXZ) position = PlanarHandle("xz" + number, position, rotation, planarSize, Vector3.right, Vector3.forward, Handles.yAxisColor);
 
-            if (!handlesSettings.RemoveYZ) position = PlanarHandle("yz" + number, position, rotation, handleSize*.3f*handlesSettings.PlanesScale, Vector3.up, Vector3.forward, Handles.xAxisColor);
+            if (!handlesSettings.RemoveYZ) position = PlanarHandle("yz" + number, position, rotation, planarSize, Vector3.up, Vector3.forward, Handles.xAxisColor);
 
-            if (!handlesSettings.RemoveXY) position = PlanarHandle("xy" + number, position, rotation, handleSize*.3f*handlesSettings.PlanesScale, Vector3.up, Vector3.right, Handles.zAxisColor);
+            if (!handlesSettings.RemoveXY) position = PlanarHandle("xy" + number, position, rotation, planarSize, Vector3.up, Vector3.right, Handles.zAxisColor);
 
             Handles.color = color;
             return position;

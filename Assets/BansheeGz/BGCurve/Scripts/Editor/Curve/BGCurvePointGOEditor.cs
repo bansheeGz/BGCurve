@@ -71,10 +71,11 @@ namespace BansheeGz.BGSpline.Editor
 //            SceneView.RepaintAll();
         }
 
+
         [DrawGizmo(GizmoType.Selected)]
-        public static void DrawGizmos(BGCurve curve, GizmoType gizmoType)
+        public static void DrawGizmos(BGCurvePointGO point, GizmoType gizmoType)
         {
-            BGCurveEditor.DrawGizmos(curve, gizmoType);
+            BGCurveEditor.DrawGizmos(point.Curve, gizmoType);
         }
     }
 }

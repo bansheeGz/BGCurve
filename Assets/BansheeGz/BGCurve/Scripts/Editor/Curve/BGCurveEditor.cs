@@ -122,7 +122,7 @@ namespace BansheeGz.BGSpline.Editor
             Undo.undoRedoPerformed += InternalOnUndoRedo;
         }
 
-        private static BGCurveBaseMath NewMath(BGCurve curve, BGCurveSettings settings)
+        public static BGCurveBaseMath NewMath(BGCurve curve, BGCurveSettings settings)
         {
             return new BGCurveBaseMath(curve, NewConfig(settings));
         }
@@ -469,11 +469,28 @@ namespace BansheeGz.BGSpline.Editor
             Selection.activeGameObject = curveObject;
         }
 
-        [DrawGizmo(GizmoType.NotInSelectionHierarchy | GizmoType.Selected | GizmoType.InSelectionHierarchy)]
+//         We decided to remove this method (with settings.ShowCurveMode setting) cause it negatively affects overall SceneView navigation 
+//         [DrawGizmo(GizmoType.NotInSelectionHierarchy | GizmoType.Selected | GizmoType.InSelectionHierarchy)]
+        [DrawGizmo(GizmoType.Selected)]
         public static void DrawGizmos(BGCurve curve, GizmoType gizmoType)
         {
-            var playMode = EditorApplication.isPlaying;
+            if (curve.PointsCount == 0) return;
 
+            var settings = curve.Settings;
+            if (!settings.ShowCurve || settings.VRay) return;
+
+/*
+            var settingsShowCurveMode = settings.ShowCurveMode;
+//            if (true) return;
+            if (settingsShowCurveMode == BGCurveSettings.ShowCurveModeEnum.CurveOrParentSelected && (gizmoType & GizmoType.InSelectionHierarchy) == 0) return;
+            if (settingsShowCurveMode == BGCurveSettings.ShowCurveModeEnum.CurveSelected && (gizmoType & GizmoType.Selected) == 0) return;
+
+            if (BGCurvePointGOEditor.PointSelected) return;
+
+            if (Selection.Contains(curve.gameObject) && settings.VRay) return;
+*/
+
+            var playMode = EditorApplication.isPlaying;
             if (lastPlayMode != playMode)
             {
                 lastPlayMode = playMode;
@@ -481,9 +498,6 @@ namespace BansheeGz.BGSpline.Editor
                 foreach (var painterGizmo in curve2Painter) painterGizmo.Value.Dispose();
                 curve2Painter.Clear();
             }
-
-            var settings = BGPrivateField.GetSettings(curve);
-            if (!ComplyForDrawGizmos(curve, gizmoType, settings)) return;
 
             if (CurrentCurve != null && curve.GetInstanceID() == CurrentCurve.GetInstanceID())
             {
@@ -497,25 +511,6 @@ namespace BansheeGz.BGSpline.Editor
                 if (curve.ForceChangedEventMode != BGCurve.ForceChangedEventModeEnum.Off && !Application.isPlaying) painter.Math.Recalculate();
                 painter.DrawCurve();
             }
-        }
-
-        public static bool ComplyForDrawGizmos(BGCurve curve, GizmoType gizmoType, BGCurveSettings settings)
-        {
-            if (curve.PointsCount == 0) return false;
-
-            if (!settings.ShowCurve) return false;
-            if (Selection.Contains(curve.gameObject) && settings.VRay) return false;
-            if (settings.ShowCurveMode == BGCurveSettings.ShowCurveModeEnum.CurveSelected && !Comply(gizmoType, GizmoType.Selected)) return false;
-
-            if (BGCurvePointGOEditor.PointSelected) return true;
-
-            if (settings.ShowCurveMode == BGCurveSettings.ShowCurveModeEnum.CurveOrParentSelected && !Comply(gizmoType, GizmoType.InSelectionHierarchy)) return false;
-            return true;
-        }
-
-        public static bool Comply(GizmoType gizmoType, GizmoType toCompare)
-        {
-            return (gizmoType & toCompare) != 0;
         }
     }
 }

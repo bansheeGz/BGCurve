@@ -35,6 +35,7 @@ namespace BansheeGz.BGSpline.Curve
 
         [SerializeField] [Tooltip("Show curve in the scene or not. If not, all handles are disabled as well")] private bool showCurve = true;
 
+        [Obsolete]
         [SerializeField] [Tooltip("Show curve mode")] private ShowCurveModeEnum showCurveMode = ShowCurveModeEnum.CurveOrParentSelected;
 
         [SerializeField] [Range(1, 50)] [Tooltip("Number of sections between two curves points.\r\n It's used for displaying in editor only")] private int sections = 20;
@@ -164,6 +165,7 @@ namespace BansheeGz.BGSpline.Curve
             set { showCurve = value; }
         }
 
+        [Obsolete]
         public ShowCurveModeEnum ShowCurveMode
         {
             get { return showCurveMode; }

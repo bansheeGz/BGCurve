@@ -31,7 +31,6 @@ namespace BansheeGz.BGSpline.Components
         [SerializeField] [Tooltip("UV offset for back side")] private Vector2 offsetBackUV = new Vector2(0, 0);
         [SerializeField] [Tooltip("Update mesh every frame, even if curve's not changed. This can be useful, if UVs are animated.")] private bool updateEveryFrame;
 
-
         //the number of frame, last triangulation was build
         private int updateAtFrame;
 
@@ -85,7 +84,6 @@ namespace BansheeGz.BGSpline.Components
         public override bool UseLocal
         {
             get { return true; }
-            set { }
         }
 
         //===============================================================================================
@@ -170,7 +168,7 @@ namespace BansheeGz.BGSpline.Components
                 RemoveListeners();
                 return;
             }
-            var mesh = meshFilter.sharedMesh;
+            var mesh = meshFilter.mesh;
             if (mesh == null)
             {
                 mesh = new Mesh();

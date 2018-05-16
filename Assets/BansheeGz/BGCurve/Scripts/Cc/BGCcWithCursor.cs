@@ -21,6 +21,12 @@ namespace BansheeGz.BGSpline.Components
                 if (cursor == null) cursor = GetParent<BGCcCursor>();
                 return cursor;
             }
+            set
+            {
+                if (value == null) return;
+                cursor = value;
+                SetParent(value);
+            }
         }
 
         //===============================================================================================

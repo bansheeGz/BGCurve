@@ -20,6 +20,12 @@ namespace BansheeGz.BGSpline.Components
                 if (math == null) math = GetComponent<BGCcMath>();
                 return math;
             }
+            set
+            {
+                if (value == null) return;
+                math = value;
+                SetParent(value);
+            }
         }
 
         //===============================================================================================

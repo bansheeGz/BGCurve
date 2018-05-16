@@ -180,6 +180,10 @@ namespace BansheeGz.BGSpline.Curve
         // ============================================== !!! This is editor ONLY field
 #pragma warning disable 0414
         [SerializeField] private BGCurveSettings settings = new BGCurveSettings();
+        public BGCurveSettings Settings
+        {
+            get { return settings; }
+        }
 #pragma warning restore 0414
 #endif
 

@@ -279,7 +279,7 @@ namespace BansheeGz.BGSpline.Editor
 
             var curveRotation = GetRotation(Curve.transform);
 
-            if (Curve.PointsCount != 0 && settings.VRay)
+            if (settings.VRay && settings.ShowCurve && Curve.PointsCount != 0)
             {
                 painter = painter ?? new BGCurvePainterHandles(Editor.Math);
                 painter.DrawCurve();

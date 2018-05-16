@@ -16,7 +16,8 @@ namespace BansheeGz.BGSpline.Editor
 
         public static BGCurveSettings GetSettings(BGCurve curve)
         {
-            return Get<BGCurveSettings>(curve, "settings");
+            return curve.Settings;
+//            return Get<BGCurveSettings>(curve, "settings");
         }
 
         //--------------------------------------- Fields
@@ -63,7 +64,8 @@ namespace BansheeGz.BGSpline.Editor
         //--------------------------------------- Cc
         public static bool GetShowHandles(BGCc cc)
         {
-            return Get<bool>(cc, "showHandles");
+            return cc.ShowHandles;
+//            return Get<bool>(cc, "showHandles");
         }
 
         // == utility

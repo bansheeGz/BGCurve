@@ -534,7 +534,7 @@ namespace BansheeGz.BGSpline.Editor
                             var field = fields[j];
                             if (!FieldWithHandlesPredicate(field) || !FieldWithLabelPredicate(field)) continue;
 
-                            text += BGEditorUtility.ColorIt(curve.IndexOf(field) + " : " + point.GetField(field.FieldName, BGCurvePoint.FieldTypes.GetType(field.Type)),
+                            text += BGEditorUtility.ColorIt(field.FieldName + " : " + point.GetField(field.FieldName, BGCurvePoint.FieldTypes.GetType(field.Type)),
                                         BGEditorUtility.ToHex(BGPrivateField.GetHandlesColor(field))) + "\r\n";
                         }
                     }

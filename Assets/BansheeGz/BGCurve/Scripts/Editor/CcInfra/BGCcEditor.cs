@@ -139,7 +139,7 @@ namespace BansheeGz.BGSpline.Editor
 
         public virtual void OnSceneGUI()
         {
-            if (!cc.SupportHandles || !BGPrivateField.GetShowHandles(cc)) return;
+            if (!cc.ShowHandles || !cc.SupportHandles) return;
             InternalOnSceneGUI();
         }
 
