@@ -20,12 +20,14 @@ namespace BansheeGz.BGSpline.Curve
         //===============================================================================================
 
         //Package version
-        public const float Version = 1.24f;
+        public const float Version = 1.25f;
+
         //Epsilon value (very small value, that can be ignored). Assuming 1=1 meter (Unity's recommendation), it equals to (1*10^-5)=10 micrometers 
         public const float Epsilon = 0.00001f;
 
         //min snapping distance
         public const float MinSnapDistance = 0.1f;
+
         //max snapping distance
         public const float MaxSnapDistance = 100;
 
@@ -46,6 +48,7 @@ namespace BansheeGz.BGSpline.Curve
         public const string EventSnapTrigger = "snapTriggerInteraction is changed";
         public const string EventSnapBackfaces = "snapToBackFaces is changed";
         public const string EventSnapLayerMask = "snapLayerMask is changed";
+        public const string EventSnapMonitoring = "snapMonitoring is changed";
         public const string EventAddField = "add a field";
         public const string EventDeleteField = "delete a field";
         public const string EventFieldName = "field name is changed";
@@ -73,10 +76,13 @@ namespace BansheeGz.BGSpline.Curve
 
         //static reusable array for snapping double sided
         private static readonly RaycastHit[] raycastHitArray = new RaycastHit[50];
+
         //static reusable array for deleting points
         private static readonly BGCurvePointI[] pointArray = new BGCurvePointI[1];
+
         //static reusable list for storing Unity objects
         private static readonly List<BGCurvePointI> pointsList = new List<BGCurvePointI>();
+
         //static reusable list for storing points index
         private static readonly List<int> pointsIndexesList = new List<int>();
 
@@ -204,10 +210,13 @@ namespace BansheeGz.BGSpline.Curve
 
         // 2D mode
         [Tooltip("2d Mode for a curve. In 2d mode, only 2 coordinates matter, the third will always be 0 (including controls). " +
-                 "Handles in Editor will also be switched to 2d mode")] [SerializeField] private Mode2DEnum mode2D = Mode2DEnum.Off;
+                 "Handles in Editor will also be switched to 2d mode")]
+        [SerializeField]
+        private Mode2DEnum mode2D = Mode2DEnum.Off;
 
         //if curve is closed (e.g. if last and first point are connected)
-        [Tooltip("If curve is closed")] [SerializeField] private bool closed;
+        [Tooltip("If curve is closed")] [SerializeField]
+        private bool closed;
 
 
         //points inlined
@@ -228,35 +237,50 @@ namespace BansheeGz.BGSpline.Curve
                  "\r\n 2) Points - only curve's points will be snapped." +
                  "\r\n 3) Curve - both curve's points and split points will be snapped. " +
                  "With 'Curve' mode Base Math type gives better results, than Adaptive Math, cause snapping occurs after approximation." +
-                 "Also, 'Curve' mode can add a huge overhead if you are changing curve's points at runtime.")] [SerializeField] private SnapTypeEnum snapType = SnapTypeEnum.Off;
+                 "Also, 'Curve' mode can add a huge overhead if you are changing curve's points at runtime.")]
+        [SerializeField]
+        private SnapTypeEnum snapType = SnapTypeEnum.Off;
 
         //snapping axis
-        [Tooltip("Axis for snapping points")] [SerializeField] private SnapAxisEnum snapAxis = SnapAxisEnum.Y;
+        [Tooltip("Axis for snapping points")] [SerializeField]
+        private SnapAxisEnum snapAxis = SnapAxisEnum.Y;
 
         //snapping distance
-        [Tooltip("Snapping distance.")] [SerializeField] [Range(MinSnapDistance, MaxSnapDistance)] private float snapDistance = 10;
+        [Tooltip("Snapping distance.")] [SerializeField] [Range(MinSnapDistance, MaxSnapDistance)]
+        private float snapDistance = 10;
 
         //snapping layer mask
-        [Tooltip("Layer mask for snapping")] [SerializeField] private LayerMask snapLayerMask = -1;
+        [Tooltip("Layer mask for snapping")] [SerializeField]
+        private LayerMask snapLayerMask = -1;
 
         //should snapping take triggers into account
-        [Tooltip("Should snapping takes triggers into account")] [SerializeField] private QueryTriggerInteraction snapTriggerInteraction = QueryTriggerInteraction.UseGlobal;
+        [Tooltip("Should snapping takes triggers into account")] [SerializeField]
+        private QueryTriggerInteraction snapTriggerInteraction = QueryTriggerInteraction.UseGlobal;
 
         //should snapping take triggers into account
-        [Tooltip("Should snapping takes backfaces of colliders into account")] [SerializeField] private bool snapToBackFaces;
+        [Tooltip("Should snapping takes backfaces of colliders into account")] [SerializeField]
+        private bool snapToBackFaces;
+
+        //should curve monitor surrounding environment
+        [Tooltip("Should curve monitor surrounding environment every frame. This is super costly in terms of performance (especially for Curve snap mode)")] [SerializeField]
+        private bool snapMonitoring;
 
         //events mode
-        [Tooltip("Event mode for runtime")] [SerializeField] private EventModeEnum eventMode = EventModeEnum.Update;
+        [Tooltip("Event mode for runtime")] [SerializeField]
+        private EventModeEnum eventMode = EventModeEnum.Update;
 
         //points mode
         [Tooltip("Points mode, how points are stored. " +
                  "\r\n 1) Inline - points stored inlined with the curve's component." +
                  "\r\n 2) Component - points are stored as MonoBehaviour scripts attached to the curve's GameObject." +
-                 "\r\n 3) GameObject - points are stored as MonoBehaviour scripts attached to separate GameObject for each point.")] [SerializeField] private PointsModeEnum pointsMode =
+                 "\r\n 3) GameObject - points are stored as MonoBehaviour scripts attached to separate GameObject for each point.")]
+        [SerializeField]
+        private PointsModeEnum pointsMode =
             PointsModeEnum.Inlined;
 
         //force firing Update event 
-        [Tooltip("Force firing of Changed event. This can be useful if you use Unity's Animation. Do not use it unless you really need it.")] [SerializeField] private ForceChangedEventModeEnum
+        [Tooltip("Force firing of Changed event. This can be useful if you use Unity's Animation. Do not use it unless you really need it.")] [SerializeField]
+        private ForceChangedEventModeEnum
             forceChangedEventMode;
 
 
@@ -444,6 +468,20 @@ namespace BansheeGz.BGSpline.Curve
             }
         }
 
+        /// <summary>Should curve monitor surrounding environment every frame. This is super costly in terms of performance</summary>
+        public bool SnapMonitoring
+        {
+            get { return snapMonitoring; }
+            set
+            {
+                if (snapMonitoring == value) return;
+
+                FireBeforeChange(EventSnapMonitoring);
+                snapMonitoring = value;
+                FireChange(BGCurveChangedArgs.GetInstance(this, BGCurveChangedArgs.ChangeTypeEnum.Snap, EventSnapMonitoring));
+            }
+        }
+
         /// <summary>Force firing of Changed event. This can be useful if you use Unity's Animation. Do not use it unless you really need it. </summary>
         public ForceChangedEventModeEnum ForceChangedEventMode
         {
@@ -580,15 +618,20 @@ namespace BansheeGz.BGSpline.Curve
                     points = new BGCurvePoint[0];
                     break;
                 case PointsModeEnum.Components:
-                    if (pointsCount > 0) for (var i = pointsCount - 1; i >= 0; i--) DestroyIt(pointsComponents[i]);
+                    if (pointsCount > 0)
+                        for (var i = pointsCount - 1; i >= 0; i--)
+                            DestroyIt(pointsComponents[i]);
                     pointsComponents = new BGCurvePointComponent[0];
                     break;
                 case PointsModeEnum.GameObjectsNoTransform:
                 case PointsModeEnum.GameObjectsTransform:
-                    if (pointsCount > 0) for (var i = pointsCount - 1; i >= 0; i--) DestroyIt(pointsGameObjects[i].gameObject);
+                    if (pointsCount > 0)
+                        for (var i = pointsCount - 1; i >= 0; i--)
+                            DestroyIt(pointsGameObjects[i].gameObject);
                     pointsGameObjects = new BGCurvePointGO[0];
                     break;
             }
+
             FireChange(BGCurveChangedArgs.GetInstance(this, BGCurveChangedArgs.ChangeTypeEnum.Points, EventClearAllPoints));
         }
 
@@ -703,7 +746,7 @@ namespace BansheeGz.BGSpline.Curve
                 if (hasFields) SetFieldsValues(point1, pointsMode, fields2);
             }
 
-            if (pointsCount%2 != 0)
+            if (pointsCount % 2 != 0)
             {
                 //point at the center- we need to swap controls
                 var point = points[mid];
@@ -781,7 +824,9 @@ namespace BansheeGz.BGSpline.Curve
         public bool HasField(string name)
         {
             if (FieldsCount == 0) return false;
-            foreach (var field in fields) if (String.Equals(name, field.FieldName)) return true;
+            foreach (var field in fields)
+                if (String.Equals(name, field.FieldName))
+                    return true;
             return false;
         }
 
@@ -842,27 +887,32 @@ namespace BansheeGz.BGSpline.Curve
                 case Mode2DEnum.YZ:
                     return new Vector3(0, point.y, point.z);
             }
+
             return point;
         }
 
         // ============================================== Snapping.
         /// <summary>apply snapping to all points</summary>
-        public void ApplySnapping()
+        public bool ApplySnapping()
         {
-            if (snapType == SnapTypeEnum.Off) return;
+            if (snapType == SnapTypeEnum.Off) return false;
 
             var points = Points;
             var length = points.Length;
-            for (var i = 0; i < length; i++) ApplySnapping(points[i]);
+            var result = false;
+            for (var i = 0; i < length; i++) result = result | ApplySnapping(points[i]);
+            return result;
         }
 
         /// <summary>apply snapping to one single point</summary>
-        public void ApplySnapping(BGCurvePointI point)
+        public bool ApplySnapping(BGCurvePointI point)
         {
-            if (snapType == SnapTypeEnum.Off) return;
+            if (snapType == SnapTypeEnum.Off) return false;
             var pos = point.PositionWorld;
 
-            if (ApplySnapping(ref pos)) point.PositionWorld = pos;
+            var result = ApplySnapping(ref pos);
+            if (result) point.PositionWorld = pos;
+            return result;
         }
 
         /// <summary>apply snapping to one position and returns true if position was changed</summary>
@@ -908,8 +958,8 @@ namespace BansheeGz.BGSpline.Curve
                 for (var j = 0; j < 2; j++)
                 {
                     var count = Physics.RaycastNonAlloc(j == 0
-                            ? new Ray(new Vector3(pos.x + direction.x*snapDistance, pos.y + direction.y*snapDistance, pos.z + direction.z*snapDistance), -direction)
-                            : new Ray(new Vector3(pos.x - direction.x*snapDistance, pos.y - direction.y*snapDistance, pos.z - direction.z*snapDistance), direction),
+                            ? new Ray(new Vector3(pos.x + direction.x * snapDistance, pos.y + direction.y * snapDistance, pos.z + direction.z * snapDistance), -direction)
+                            : new Ray(new Vector3(pos.x - direction.x * snapDistance, pos.y - direction.y * snapDistance, pos.z - direction.z * snapDistance), direction),
                         raycastHitArray, snapDistance, snapLayerMask, snapTriggerInteraction);
                     if (count == 0) continue;
 
@@ -934,6 +984,30 @@ namespace BansheeGz.BGSpline.Curve
             return true;
         }
 
+        // unconditional snapping
+        private void SnapIt()
+        {
+            switch (snapType)
+            {
+                case SnapTypeEnum.Off:
+                    break;
+                case SnapTypeEnum.Points:
+                    ApplySnapping();
+                    break;
+                case SnapTypeEnum.Curve:
+                    if (!ApplySnapping())
+                    {
+                        //we need to force math recalculate
+                        if (immediateChangeEvents && forceChangedEventMode != ForceChangedEventModeEnum.EditorAndRuntime)
+                            FireChange(UseEventsArgs ? BGCurveChangedArgs.GetInstance(this, lastEventType, lastEventMessage) : null, true);
+                        else changed = true;
+                    }
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
 
         // ============================================== batch handling (to avoid event firing for every operation).
         /// <summary>
@@ -998,6 +1072,7 @@ namespace BansheeGz.BGSpline.Curve
                     lastEventType = change.ChangeType;
                     lastEventMessage = change.Message;
                 }
+
                 if (UseEventsArgs && !ChangeList.Contains(change)) ChangeList.Add((BGCurveChangedArgs) change.Clone());
                 return;
             }
@@ -1012,18 +1087,22 @@ namespace BansheeGz.BGSpline.Curve
         }
 
         // Unity's Update callback
-        protected virtual void Update()
+        protected void Update()
         {
             // is transform.hasChanged is true by default?
             if (Time.frameCount == 1) transform.hasChanged = false;
-            if (eventMode != EventModeEnum.Update || Changed == null) return;
+            if (eventMode != EventModeEnum.Update) return;
+            if (snapMonitoring && snapType != SnapTypeEnum.Off) SnapIt();
+            if (Changed == null) return;
             FireFinalEvent();
         }
 
         // Unity's LateUpdate callback
-        protected virtual void LateUpdate()
+        protected void LateUpdate()
         {
-            if (eventMode != EventModeEnum.LateUpdate || Changed == null) return;
+            if (eventMode != EventModeEnum.LateUpdate) return;
+            if (snapMonitoring && snapType != SnapTypeEnum.Off) SnapIt();
+            if (Changed == null) return;
             FireFinalEvent();
         }
 
@@ -1241,6 +1320,7 @@ namespace BansheeGz.BGSpline.Curve
                 default:
                     throw new ArgumentOutOfRangeException("pointsMode");
             }
+
             return fieldValues;
         }
 
@@ -1296,6 +1376,7 @@ namespace BansheeGz.BGSpline.Curve
                             break;
                         }
                     }
+
                     addedPoints = points;
                     break;
                 case PointsModeEnum.Components:
@@ -1307,6 +1388,7 @@ namespace BansheeGz.BGSpline.Curve
                         hasPointTransform = hasPointTransform || point.PointTransform != null;
                         toAdd[i] = (BGCurvePointComponent) Convert(point, PointsModeEnum.Inlined, pointsMode, provider);
                     }
+
                     pointsComponents = Insert(pointsComponents, index, toAdd);
 
                     addedPoints = points;
@@ -1321,6 +1403,7 @@ namespace BansheeGz.BGSpline.Curve
                         hasPointTransform = hasPointTransform || point.PointTransform != null;
                         pointsToAdd[i] = (BGCurvePointGO) Convert(point, PointsModeEnum.Inlined, pointsMode, provider);
                     }
+
                     pointsGameObjects = Insert(pointsGameObjects, index, pointsToAdd);
 
                     SetPointsNames();
@@ -1362,6 +1445,7 @@ namespace BansheeGz.BGSpline.Curve
                 default:
                     throw new ArgumentOutOfRangeException("pointsMode");
             }
+
             Delete(pointArray, destroyer);
         }
 
@@ -1434,6 +1518,7 @@ namespace BansheeGz.BGSpline.Curve
                         break;
                 }
             }
+
             if (cursor < oldPoints.Length) Array.Copy(oldPoints, cursor, newPoints, cursor - count, oldPoints.Length - cursor);
 
 
@@ -1531,8 +1616,10 @@ namespace BansheeGz.BGSpline.Curve
                             }
                                 break;
                         }
+
                         points = new BGCurvePoint[0];
                     }
+
                     break;
                 case PointsModeEnum.Components:
                 case PointsModeEnum.GameObjectsNoTransform:
@@ -1667,6 +1754,7 @@ namespace BansheeGz.BGSpline.Curve
                         default:
                             throw new ArgumentOutOfRangeException("to", to, null);
                     }
+
                     break;
                 case PointsModeEnum.Components:
                     //------------------------------------------ From Component
@@ -1687,6 +1775,7 @@ namespace BansheeGz.BGSpline.Curve
                         default:
                             throw new ArgumentOutOfRangeException("to", to, null);
                     }
+
                     break;
                 case PointsModeEnum.GameObjectsNoTransform:
                 case PointsModeEnum.GameObjectsTransform:
@@ -1716,6 +1805,7 @@ namespace BansheeGz.BGSpline.Curve
                         default:
                             throw new ArgumentOutOfRangeException("to", to, null);
                     }
+
                     break;
                 default:
                     throw new ArgumentOutOfRangeException("from", @from, null);

@@ -18,7 +18,7 @@ namespace BansheeGz.BGSpline.Components
         //                                                    Fields
         //===============================================================================================
 
-        [SerializeField] [Tooltip("Distance from start of the curve.")] private float distance;
+        [SerializeField] [Tooltip("Distance from start of the curve.")] protected float distance;
 
         /// <summary>Distance from the start </summary>
         public float Distance
@@ -52,7 +52,6 @@ namespace BansheeGz.BGSpline.Components
             get { return true; }
         }
 
-#if UNITY_EDITOR
         [Range(.5f, 1.5f)] [SerializeField] private float handlesScale = 1;
         [SerializeField] private Color handlesColor = Color.white;
 
@@ -67,7 +66,6 @@ namespace BansheeGz.BGSpline.Components
             get { return handlesColor; }
             set { handlesColor = value; }
         }
-#endif
 
         //===============================================================================================
         //                                                    Public functions

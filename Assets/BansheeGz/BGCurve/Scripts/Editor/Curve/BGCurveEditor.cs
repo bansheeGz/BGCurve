@@ -265,8 +265,11 @@ namespace BansheeGz.BGSpline.Editor
         {
             if (editors != null) foreach (var editor in editors) if (editor != null) editor.OnDestroy();
 
-            Curve.BeforeChange -= BeforeCurveChange;
-            Curve.Changed -= CurveChanged;
+            if (Curve != null)
+            {
+                Curve.BeforeChange -= BeforeCurveChange;
+                Curve.Changed -= CurveChanged;
+            }
 
             Dispose();
 
@@ -299,8 +302,7 @@ namespace BansheeGz.BGSpline.Editor
             });
 
             //warning
-            BGEditorUtility.HelpBox("You can not chose another objects in the scene, except points.", MessageType.Warning,
-                BGCurveSettingsForEditor.LockView, () => GUILayout.Space(8));
+            BGEditorUtility.HelpBox("You can not chose another objects in the scene, except points.", MessageType.Warning, BGCurveSettingsForEditor.LockView, () => GUILayout.Space(8));
 
             // =========== Tabs
             var currentTab = BGCurveSettingsForEditor.CurrentTab;

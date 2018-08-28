@@ -10,8 +10,8 @@ namespace BansheeGz.BGSpline.Example
     {
         [Header("Light")] public Light Light;
 
-        [Header("Logo parts")] public BGCcCursorObjectTranslate B;
-        public BGCcCursorObjectTranslate G;
+        [Header("Logo parts")] public GameObject B;
+        public GameObject G;
         public BGCcMath Curve;
 
         [Header("Projectiles")] public GameObject ProjectileFolder;
@@ -52,8 +52,8 @@ namespace BansheeGz.BGSpline.Example
             effects.Add(new EffectScale(gameObject, ScalePeriodMin, ScalePeriodMax, FromScale, ToScale));
 
             // scale parts 
-            effects.Add(new EffectScale(B.gameObject, ScalePeriodMin, ScalePeriodMax, FromScale, ToScale));
-            effects.Add(new EffectScale(G.gameObject, ScalePeriodMin, ScalePeriodMax, FromScale, ToScale));
+            effects.Add(new EffectScale(B, ScalePeriodMin, ScalePeriodMax, FromScale, ToScale));
+            effects.Add(new EffectScale(G, ScalePeriodMin, ScalePeriodMax, FromScale, ToScale));
             effects.Add(new EffectScale(Curve.gameObject, ScalePeriodMin, ScalePeriodMax, FromScale, ToScale));
 
             //rotate letters

@@ -112,6 +112,13 @@ namespace BansheeGz.BGSpline.Components
             set { ParamChanged(ref delayField, value); }
         }
 
+        /// <summary>Cursor will be moved in FixedUpdate instead of Update</summary>
+        public bool UseFixedUpdate
+        {
+            get { return useFixedUpdate; }
+            set { ParamChanged(ref useFixedUpdate, value); }
+        }
+
         //===============================================================================================
         //                                                    Fields (Not persistent)
         //===============================================================================================

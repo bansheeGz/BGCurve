@@ -29,6 +29,7 @@ namespace BansheeGz.BGSpline.Editor
         private readonly SerializedProperty snapAxisProperty;
         private readonly SerializedProperty snapTriggerInteractionProperty;
         private readonly SerializedProperty snapToBackFacesProperty;
+        private readonly SerializedProperty snapMonitoringProperty;
         private readonly SerializedProperty eventModeProperty;
         private readonly SerializedProperty forceChangedEventModeProperty;
 
@@ -73,7 +74,8 @@ namespace BansheeGz.BGSpline.Editor
             snapDistanceProperty = serializedObject.FindProperty("snapDistance");
             snapTriggerInteractionProperty = serializedObject.FindProperty("snapTriggerInteraction");
             snapToBackFacesProperty = serializedObject.FindProperty("snapToBackFaces");
-
+            snapMonitoringProperty = serializedObject.FindProperty("snapMonitoring");
+                
             //force update
             forceChangedEventModeProperty = serializedObject.FindProperty("forceChangedEventMode");
 
@@ -245,6 +247,12 @@ namespace BansheeGz.BGSpline.Editor
                             Curve.ApplySnapping();
                             Curve.FireChange(BGCurveChangedArgs.GetInstance(Curve, BGCurveChangedArgs.ChangeTypeEnum.Snap, BGCurve.EventSnapTrigger));
                         });
+                        
+                        EditorGUILayout.PropertyField(snapMonitoringProperty);
+                        if (Curve.SnapMonitoring && Curve.SnapType!=BGCurve.SnapTypeEnum.Off)
+                        {
+                            EditorGUILayout.HelpBox("You enabled snap monitoring, which monitor environment every frame and snap to it. Be aware, this is a very costly function", MessageType.Warning);
+                        }
                     });
 
                     //event mode
@@ -435,6 +443,8 @@ namespace BansheeGz.BGSpline.Editor
             if ((int) curve.SnapTriggerInteraction != snapTriggerInteractionProperty.enumValueIndex) SnappingChanged(BGCurve.EventSnapTrigger);
 
             if (curve.SnapToBackFaces != snapToBackFacesProperty.boolValue) SnappingChanged(BGCurve.EventSnapBackfaces);
+            
+            if (curve.SnapMonitoring != snapMonitoringProperty.boolValue) SnappingChanged(BGCurve.EventSnapMonitoring);
 
             // ==============================================    Event mode
             if ((int) curve.EventMode != eventModeProperty.enumValueIndex) serializedObject.ApplyModifiedProperties();

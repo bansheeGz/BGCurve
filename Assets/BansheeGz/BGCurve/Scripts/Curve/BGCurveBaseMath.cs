@@ -588,6 +588,8 @@ namespace BansheeGz.BGSpline.Curve
         {
             if (ChangeRequested != null) ChangeRequested(this, null);
 
+            force = force || Curve.SnapType == BGCurve.SnapTypeEnum.Curve; 
+            
             if (!force && config.ShouldUpdate != null && !config.ShouldUpdate()) return;
 
             var currentSectionsCount = cachedSectionInfos.Count;
@@ -600,11 +602,12 @@ namespace BansheeGz.BGSpline.Curve
             }
 
             //we should at least warn about non-optimal usage of Recalculate (with more than 1 update per frame)
-            if (recalculatedAtFrame != Time.frameCount || Time.frameCount == createdAtFrame) recalculatedAtFrame = Time.frameCount;
-            else
+            var frameCount = Time.frameCount;
+            if (recalculatedAtFrame == frameCount && frameCount != createdAtFrame) 
                 Warning("We noticed you are updating math more than once per frame. This is not optimal. " +
                         "If you use curve.ImmediateChangeEvents by some reason, try to use curve.Transaction to wrap all the changes to one single event.");
-
+            
+            recalculatedAtFrame = frameCount;
 
             var pointsCount = curve.PointsCount;
             var sectionsCount = curve.Closed ? pointsCount : pointsCount - 1;
@@ -688,7 +691,7 @@ namespace BansheeGz.BGSpline.Curve
             var pointsCount = straightAndOptimized ? 2 : config.Parts + 1;
 
             // do we need to recalc points?
-            if (Reset(section, @from, to, pointsCount))
+            if (Reset(section, @from, to, pointsCount) || Curve.SnapType == BGCurve.SnapTypeEnum.Curve)
             {
                 if (straightAndOptimized)
                 {

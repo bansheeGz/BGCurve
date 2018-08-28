@@ -1,4 +1,4 @@
-BG Curve v.1.2.4 by BancheeGz (05/2018)
+BG Curve v.1.2.5 by BancheeGz (09/2018)
 Bezier spline editor for Unity
 License: MIT License
 
