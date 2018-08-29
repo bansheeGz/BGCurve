@@ -288,9 +288,6 @@ namespace BansheeGz.BGSpline.Curve
         //using useLocal is significantly slower. See interface for more comments
         public virtual Vector3 CalcByDistance(float distance, out Vector3 tangent, bool useLocal = false)
         {
-            if (distance < 0f) distance = 0f;
-            else if (distance > cachedLength) distance = cachedLength;
-
             Vector3 position;
             BinarySearchByDistance(distance, out position, out tangent, true, true);
 
@@ -312,18 +309,6 @@ namespace BansheeGz.BGSpline.Curve
         //using useLocal is significantly slower. See interface for more comments
         public virtual Vector3 CalcByDistance(Field field, float distance, bool useLocal = false)
         {
-            var pointsCount = curve.PointsCount;
-            switch (pointsCount)
-            {
-                case 0:
-                    return Vector3.zero;
-                case 1:
-                    return field == Field.Position ? curve[0].PositionWorld : Vector3.zero;
-            }
-
-            if (distance < 0f) distance = 0f;
-            else if (distance > cachedLength) distance = cachedLength;
-
             var calcPosition = field == Field.Position;
             Vector3 position, tangent;
             BinarySearchByDistance(distance, out position, out tangent, calcPosition, !calcPosition);
@@ -1239,13 +1224,28 @@ namespace BansheeGz.BGSpline.Curve
         // * for example (1000 sections with 100 points each, so 100 000 points) with 10000 Random searches ~7ms
         protected virtual void BinarySearchByDistance(float distance, out Vector3 position, out Vector3 tangent, bool calculatePosition, bool calculateTangent)
         {
-            var pointsCount = Curve.PointsCount;
-            if (pointsCount < 2 || cachedSectionInfos.Count == 0)
+            switch (curve.PointsCount)
+            {
+                case 0:
+                    position = Vector3.zero;
+                    tangent = Vector3.zero;
+                    return;
+                case 1:
+                    position = curve[0].PositionWorld;
+                    tangent = Vector3.zero;
+                    return;
+            }
+
+            if (cachedSectionInfos.Count == 0)
             {
                 position = Vector3.zero;
                 tangent = Vector3.zero;
-                if (pointsCount == 1 && calculatePosition) position = Curve[0].PositionWorld;
+                return;
             }
+            
+            if (distance < 0f) distance = 0f;
+            else if (distance > cachedLength) distance = cachedLength;
+
 
             // field was not set in the constructor, so it was not calculated and can not be accessed. 
             // Example, use new BGCurveBaseMath(new BGCurveBaseMath.Params(GetComponent<BGCurve>(), BGCurveBaseMath.Fields.PositionAndTangent)) 

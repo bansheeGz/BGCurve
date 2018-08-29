@@ -167,7 +167,7 @@ namespace BansheeGz.BGSpline.Editor
             var selectedTexture = selected ? tickYesTexture : tickNoTexture;
             var labelStyle = selected ? new GUIStyle("Label") {normal = new GUIStyleState {textColor = settings.LabelColorSelected}} : EditorStyles.label;
             EditorGUI.LabelField(rect, new GUIContent(selectedTexture, "Click to (de)select a point, or click and drag to (de)select multiple points. " +
-                                                                       "Hold shift to use rectangular selection"), labelStyle);
+                                                                       "Hold shift+drag to use rectangular selection"), labelStyle);
         }
 
         //OnInspectorGui for selection
