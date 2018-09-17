@@ -118,6 +118,7 @@ namespace BansheeGz.BGSpline.Editor
                 BGEditorUtility.FadeGroup(showCurveProp, () =>
                 {
 //                    EditorGUILayout.PropertyField(Find("showCurveMode"));
+                    EditorGUILayout.PropertyField(Find("showCurveOption"));
                     EditorGUILayout.PropertyField(Find("sections"));
                     EditorGUILayout.PropertyField(Find("vRay"));
                     EditorGUILayout.PropertyField(Find("lineColor"));

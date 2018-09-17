@@ -15,11 +15,14 @@ namespace BansheeGz.BGSpline.Editor
 
         //static
         private static readonly Color32 LockViewActiveColor = new Color32(255, 252, 58, 255);
+
         internal static BGOverlayMessage OverlayMessage;
+
         //for curves, which are not selected in hierarchy
         private static readonly Dictionary<BGCurve, BGCurvePainterGizmo> curve2Painter = new Dictionary<BGCurve, BGCurvePainterGizmo>();
         private static BGCurvePainterGizmo CurrentGizmoPainter;
         private static BGCurve CurrentCurve;
+        private static BGCurve[] AllCurves;
         private static Texture2D headerTexture;
 
         // non-static
@@ -70,7 +73,7 @@ namespace BansheeGz.BGSpline.Editor
 
             Math = NewMath(Curve, settings);
             CurrentGizmoPainter = new BGCurvePainterGizmo(Math);
-
+            AllCurves = FindObjectsOfType<BGCurve>();
 
             //overlay
             BGEditorUtility.Assign(ref OverlayMessage, () => new BGOverlayMessage());
@@ -150,7 +153,9 @@ namespace BansheeGz.BGSpline.Editor
             undoGroup = -1;
             EditorUtility.SetDirty(Curve);
 
-            if (Curve.FieldsCount > 0) foreach (var field in Curve.Fields) EditorUtility.SetDirty(field);
+            if (Curve.FieldsCount > 0)
+                foreach (var field in Curve.Fields)
+                    EditorUtility.SetDirty(field);
 
             var pointsMode = Curve.PointsMode;
             if (Curve.PointsCount > 0 && pointsMode != BGCurve.PointsModeEnum.Inlined)
@@ -168,6 +173,7 @@ namespace BansheeGz.BGSpline.Editor
                             EditorUtility.SetDirty(curvePointGo);
                             EditorUtility.SetDirty(curvePointGo.gameObject);
                         }
+
                         break;
                 }
             }
@@ -187,13 +193,17 @@ namespace BansheeGz.BGSpline.Editor
             Undo.RecordObject(Curve, operation);
 
 
-            if (Curve.FieldsCount > 0) foreach (var field in Curve.Fields) Undo.RecordObject(field, operation);
+            if (Curve.FieldsCount > 0)
+                foreach (var field in Curve.Fields)
+                    Undo.RecordObject(field, operation);
 
             var pointsMode = Curve.PointsMode;
             if (Curve.PointsCount > 0)
             {
                 var points = Curve.Points;
-                foreach (var point in points) if (point.PointTransform != null) Undo.RecordObject(point.PointTransform, operation);
+                foreach (var point in points)
+                    if (point.PointTransform != null)
+                        Undo.RecordObject(point.PointTransform, operation);
 
                 if (pointsMode != BGCurve.PointsModeEnum.Inlined)
                 {
@@ -210,6 +220,7 @@ namespace BansheeGz.BGSpline.Editor
                                 Undo.RecordObject(pointGo, operation);
                                 if (pointsMode == BGCurve.PointsModeEnum.GameObjectsTransform) Undo.RecordObject(pointGo.transform, operation);
                             }
+
                             break;
                     }
                 }
@@ -227,7 +238,10 @@ namespace BansheeGz.BGSpline.Editor
                 return;
             }
 
-            if (editors != null) foreach (var editor in editors) if (editor != null) editor.OnDisable();
+            if (editors != null)
+                foreach (var editor in editors)
+                    if (editor != null)
+                        editor.OnDisable();
 
             if (transformMonitor != null) transformMonitor.Release();
 
@@ -239,6 +253,7 @@ namespace BansheeGz.BGSpline.Editor
         {
             CurrentCurve = null;
             CurrentGizmoPainter = null;
+            AllCurves = null;
             Undo.undoRedoPerformed -= InternalOnUndoRedo;
 
             if (Math != null) Math.Dispose();
@@ -263,7 +278,10 @@ namespace BansheeGz.BGSpline.Editor
 
         public void OnDestroy()
         {
-            if (editors != null) foreach (var editor in editors) if (editor != null) editor.OnDestroy();
+            if (editors != null)
+                foreach (var editor in editors)
+                    if (editor != null)
+                        editor.OnDestroy();
 
             if (Curve != null)
             {
@@ -327,7 +345,7 @@ namespace BansheeGz.BGSpline.Editor
             if (Event.current.type == EventType.Repaint) toolBarRect = GUILayoutUtility.GetLastRect();
 
             const int height = 18;
-            var oneTabWidth = toolBarRect.width/editors.Length;
+            var oneTabWidth = toolBarRect.width / editors.Length;
 
             for (var i = 0; i < editors.Length; i++)
             {
@@ -339,7 +357,7 @@ namespace BansheeGz.BGSpline.Editor
                 //show sticker
                 var width = stickerStyle.CalcSize(new GUIContent(message)).x;
 
-                var rect = new Rect(toolBarRect.x + oneTabWidth*(i + 1) - width, toolBarRect.y + 1, width, height);
+                var rect = new Rect(toolBarRect.x + oneTabWidth * (i + 1) - width, toolBarRect.y + 1, width, height);
 
                 GUI.DrawTexture(rect, GetStickerTexture(error, i));
                 GUI.Label(rect, message, stickerStyle);
@@ -366,8 +384,8 @@ namespace BansheeGz.BGSpline.Editor
         protected static void DrawLogo(Texture2D logo)
         {
             var rect = GUILayoutUtility.GetRect(0, 0);
-            rect.width = logo.width*.5f;
-            rect.height = logo.height*.5f;
+            rect.width = logo.width * .5f;
+            rect.height = logo.height * .5f;
             rect.y += 1;
             GUILayout.Space(rect.height + 1);
             GUI.DrawTexture(rect, logo);
@@ -441,6 +459,7 @@ namespace BansheeGz.BGSpline.Editor
                     };
                     break;
             }
+
             return provider;
         }
 
@@ -458,6 +477,7 @@ namespace BansheeGz.BGSpline.Editor
                     destroyer = point => Undo.DestroyObjectImmediate(((MonoBehaviour) point).gameObject);
                     break;
             }
+
             return destroyer;
         }
 
@@ -471,27 +491,20 @@ namespace BansheeGz.BGSpline.Editor
             Selection.activeGameObject = curveObject;
         }
 
-//         We decided to remove this method (with settings.ShowCurveMode setting) cause it negatively affects overall SceneView navigation 
-//         [DrawGizmo(GizmoType.NotInSelectionHierarchy | GizmoType.Selected | GizmoType.InSelectionHierarchy)]
         [DrawGizmo(GizmoType.Selected)]
         public static void DrawGizmos(BGCurve curve, GizmoType gizmoType)
         {
-            if (curve.PointsCount == 0) return;
+            //draw current spline
+            if (curve.PointsCount != 0)
+            {
+                var settings = curve.Settings;
+                if (settings.ShowCurve && !settings.VRay)
+                {
+                    if (CurrentGizmoPainter != null) CurrentGizmoPainter.DrawCurve();
+                }
+            }
 
-            var settings = curve.Settings;
-            if (!settings.ShowCurve || settings.VRay) return;
-
-/*
-            var settingsShowCurveMode = settings.ShowCurveMode;
-//            if (true) return;
-            if (settingsShowCurveMode == BGCurveSettings.ShowCurveModeEnum.CurveOrParentSelected && (gizmoType & GizmoType.InSelectionHierarchy) == 0) return;
-            if (settingsShowCurveMode == BGCurveSettings.ShowCurveModeEnum.CurveSelected && (gizmoType & GizmoType.Selected) == 0) return;
-
-            if (BGCurvePointGOEditor.PointSelected) return;
-
-            if (Selection.Contains(curve.gameObject) && settings.VRay) return;
-*/
-
+            //why we do it?
             var playMode = EditorApplication.isPlaying;
             if (lastPlayMode != playMode)
             {
@@ -501,17 +514,21 @@ namespace BansheeGz.BGSpline.Editor
                 curve2Painter.Clear();
             }
 
-            if (CurrentCurve != null && curve.GetInstanceID() == CurrentCurve.GetInstanceID())
+            //draw other splines with showCurveOption==AnyCurveSelected
+            if (AllCurves != null)
             {
-                if (CurrentGizmoPainter != null) CurrentGizmoPainter.DrawCurve();
-            }
-            else
-            {
-                //curve is not selected in hierarchy
-                var painter = BGEditorUtility.Ensure(curve2Painter, curve, () => new BGCurvePainterGizmo(NewMath(curve, settings), true));
-                AdjustMath(settings, painter.Math);
-                if (curve.ForceChangedEventMode != BGCurve.ForceChangedEventModeEnum.Off && !Application.isPlaying) painter.Math.Recalculate();
-                painter.DrawCurve();
+                for (var i = 0; i < AllCurves.Length; i++)
+                {
+                    var allCurve = AllCurves[i];
+
+                    var settings = allCurve.Settings;
+                    if (settings.ShowCurveOption != BGCurveSettings.ShowCurveOptionsEnum.AnyCurveSelected || allCurve.Equals(curve)) continue;
+
+                    var painter = BGEditorUtility.Ensure(curve2Painter, allCurve, () => new BGCurvePainterGizmo(NewMath(allCurve, settings), true));
+                    AdjustMath(settings, painter.Math);
+                    if (allCurve.ForceChangedEventMode != BGCurve.ForceChangedEventModeEnum.Off && !Application.isPlaying) painter.Math.Recalculate();
+                    painter.DrawCurve();
+                }
             }
         }
     }

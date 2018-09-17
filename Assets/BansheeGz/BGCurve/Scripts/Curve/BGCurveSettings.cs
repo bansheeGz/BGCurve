@@ -27,6 +27,12 @@ namespace BansheeGz.BGSpline.Curve
             Always
         }
 
+        public enum ShowCurveOptionsEnum
+        {
+            ThisCurveSelected,
+            AnyCurveSelected,
+        }
+
 
         //===============================================================  Curve itself
         [SerializeField] [Tooltip("Hide Game Object's handles")] private bool hideHandles;
@@ -37,6 +43,9 @@ namespace BansheeGz.BGSpline.Curve
 
         [Obsolete]
         [SerializeField] [Tooltip("Show curve mode")] private ShowCurveModeEnum showCurveMode = ShowCurveModeEnum.CurveOrParentSelected;
+        
+        [SerializeField] [Tooltip("Show curve mode")] private ShowCurveOptionsEnum showCurveOption = ShowCurveOptionsEnum.ThisCurveSelected;
+        
 
         [SerializeField] [Range(1, 50)] [Tooltip("Number of sections between two curves points.\r\n It's used for displaying in editor only")] private int sections = 20;
 
@@ -170,6 +179,12 @@ namespace BansheeGz.BGSpline.Curve
         {
             get { return showCurveMode; }
             set { showCurveMode = value; }
+        }
+
+        public ShowCurveOptionsEnum ShowCurveOption
+        {
+            get { return showCurveOption; }
+            set { showCurveOption = value; }
         }
 
         public bool ShowHandles
