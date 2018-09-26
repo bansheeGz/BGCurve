@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BansheeGz.BGSpline.Curve
@@ -35,98 +36,140 @@ namespace BansheeGz.BGSpline.Curve
 
 
         //===============================================================  Curve itself
-        [SerializeField] [Tooltip("Hide Game Object's handles")] private bool hideHandles;
+        [SerializeField] [Tooltip("Hide Game Object's handles")]
+        private bool hideHandles;
 
-        [SerializeField] [Tooltip("Distance from the camera, at which new points are created")] private float newPointDistance = 2;
+        [SerializeField] [Tooltip("Distance from the camera, at which new points are created")]
+        private float newPointDistance = 2;
 
-        [SerializeField] [Tooltip("Show curve in the scene or not. If not, all handles are disabled as well")] private bool showCurve = true;
+        [SerializeField] [Tooltip("Show curve in the scene or not. If not, all handles are disabled as well")]
+        private bool showCurve = true;
 
-        [Obsolete]
-        [SerializeField] [Tooltip("Show curve mode")] private ShowCurveModeEnum showCurveMode = ShowCurveModeEnum.CurveOrParentSelected;
-        
-        [SerializeField] [Tooltip("Show curve mode")] private ShowCurveOptionsEnum showCurveOption = ShowCurveOptionsEnum.ThisCurveSelected;
-        
+        [Obsolete] [SerializeField] [Tooltip("Show curve mode")]
+        private ShowCurveModeEnum showCurveMode = ShowCurveModeEnum.CurveOrParentSelected;
 
-        [SerializeField] [Range(1, 50)] [Tooltip("Number of sections between two curves points.\r\n It's used for displaying in editor only")] private int sections = 20;
+        [SerializeField] [Tooltip("Show curve mode")]
+        private ShowCurveOptionsEnum showCurveOption = ShowCurveOptionsEnum.ThisCurveSelected;
 
 
-        [SerializeField] [Tooltip("Show Points Menu buttons in the editor (for Points tab)")] private bool showPointMenu = true;
+        [SerializeField] [Range(1, 50)] [Tooltip("Number of sections between two curves points.\r\n It's used for displaying in editor only")]
+        private int sections = 20;
+
+
+        [SerializeField] [Tooltip("Show Points Menu buttons in the editor (for Points tab)")]
+        private bool showPointMenu = true;
 
         //tangents
-        [SerializeField] [Tooltip("Show points tangents in the scene")] private bool showTangents;
-        [SerializeField] [Tooltip("Point tangent arrow size in the scene")] [Range(.3f, 2)] private float tangentsSize = .7f;
-        [SerializeField] [Tooltip("Point tangent color in the scene")] private Color tangentsColor = Color.white;
-        [SerializeField] [Range(1, 3)] [Tooltip("Number of tangents for every section")] private int tangentsPerSection = 1;
+        [SerializeField] [Tooltip("Show points tangents in the scene")]
+        private bool showTangents;
+
+        [SerializeField] [Tooltip("Point tangent arrow size in the scene")] [Range(.3f, 2)]
+        private float tangentsSize = .7f;
+
+        [SerializeField] [Tooltip("Point tangent color in the scene")]
+        private Color tangentsColor = Color.white;
+
+        [SerializeField] [Range(1, 3)] [Tooltip("Number of tangents for every section")]
+        private int tangentsPerSection = 1;
 
         // control type for new points
-        [SerializeField] [Tooltip("Control type for new points")] private BGCurvePoint.ControlTypeEnum controlType;
+        [SerializeField] [Tooltip("Control type for new points")]
+        private BGCurvePoint.ControlTypeEnum controlType;
 
-        [SerializeField] [Tooltip("Curve is drawn on top of objects")] private bool vRay;
+        [SerializeField] [Tooltip("Curve is drawn on top of objects")]
+        private bool vRay;
 
-        [SerializeField] [Tooltip("Curve's color in the scene")] private Color lineColor = Color.red;
+        [SerializeField] [Tooltip("Curve's color in the scene")]
+        private Color lineColor = Color.red;
 
+        //restrict gizmoz
+        [SerializeField] [Tooltip("Show gizmoz for selected points only. Format: 1-2,5,8 (Use comma to separate values, use hyphen to define a range)")]
+        private string restrictGizmoz;
 
         //===============================================================  Control Type field
 
-        [SerializeField] [Tooltip("Show points control types in the editor (for Points tab)")] private bool showPointControlType = true;
+        [SerializeField] [Tooltip("Show points control types in the editor (for Points tab)")]
+        private bool showPointControlType = true;
 
         //===============================================================  Position field
 
-        [SerializeField] [Tooltip("Show points positions in the editor (for Points tab)")] private bool showPointPosition = true;
+        [SerializeField] [Tooltip("Show points positions in the editor (for Points tab)")]
+        private bool showPointPosition = true;
 
-        [SerializeField] [Tooltip("Show points handles in the scene")] private bool showHandles = true;
+        [SerializeField] [Tooltip("Show points handles in the scene")]
+        private bool showHandles = true;
 
 
-        [SerializeField] [Tooltip("Points handles type" +
-                                  "\r\n 1)FreeMove- standard Unity freemove handles" +
-                                  "\r\n 2)Standard-standard handles" +
-                                  "\r\n 3)Configurable- configurable handles")] private HandlesTypeEnum handlesType = HandlesTypeEnum.Configurable;
+        [SerializeField]
+        [Tooltip("Points handles type" +
+                 "\r\n 1)FreeMove- standard Unity freemove handles" +
+                 "\r\n 2)Standard-standard handles" +
+                 "\r\n 3)Configurable- configurable handles")]
+        private HandlesTypeEnum handlesType = HandlesTypeEnum.Configurable;
 
 
         [SerializeField] private SettingsForHandles handlesSettings = new SettingsForHandles();
 
-        [SerializeField] [Tooltip("Show points positions labels in the scene ")] private bool showLabels = true;
+        [SerializeField] [Tooltip("Show points positions labels in the scene ")]
+        private bool showLabels = true;
 
-        [SerializeField] [Tooltip("Point's labels color in the scene")] private Color labelColor = Color.white;
+        [SerializeField] [Tooltip("Point's labels color in the scene")]
+        private Color labelColor = Color.white;
 
 
-        [SerializeField] [Tooltip("Show points positions in the scene")] private bool showPositions;
+        [SerializeField] [Tooltip("Show points positions in the scene")]
+        private bool showPositions;
 
-        [SerializeField] [Tooltip("Point's labels color when selected in the scene")] private Color labelColorSelected = Color.green;
+        [SerializeField] [Tooltip("Point's labels color when selected in the scene")]
+        private Color labelColorSelected = Color.green;
 
-        [SerializeField] [Tooltip("Show spheres at points locations in the scene")] private bool showSpheres = true;
+        [SerializeField] [Tooltip("Show spheres at points locations in the scene")]
+        private bool showSpheres = true;
 
-        [SerializeField] [Range(.01f, 1)] [Tooltip("Point's sphere radius in the scene")] private float sphereRadius = .1f;
+        [SerializeField] [Range(.01f, 1)] [Tooltip("Point's sphere radius in the scene")]
+        private float sphereRadius = .1f;
 
-        [SerializeField] [Tooltip("Point's sphere color in the scene")] private Color sphereColor = Color.red;
+        [SerializeField] [Tooltip("Point's sphere color in the scene")]
+        private Color sphereColor = Color.red;
 
 
         //===============================================================  Controls fields
 
-        [SerializeField] [Tooltip("Show points controls positions in the editor (for Points tab)")] private bool showPointControlPositions = true;
+        [SerializeField] [Tooltip("Show points controls positions in the editor (for Points tab)")]
+        private bool showPointControlPositions = true;
 
-        [SerializeField] [Tooltip("Show points control handles in the scene")] private bool showControlHandles = true;
+        [SerializeField] [Tooltip("Show points control handles in the scene")]
+        private bool showControlHandles = true;
 
-        [SerializeField] [Tooltip("Points control handles type\r\n 1)FreeMove- standard Unity freemove handles\r\n " +
-                                  "2)Standard-standard handles\r\n 3)Configurable- configurable handles")] private HandlesTypeEnum controlHandlesType = HandlesTypeEnum.Configurable;
+        [SerializeField]
+        [Tooltip("Points control handles type\r\n 1)FreeMove- standard Unity freemove handles\r\n " +
+                 "2)Standard-standard handles\r\n 3)Configurable- configurable handles")]
+        private HandlesTypeEnum controlHandlesType = HandlesTypeEnum.Configurable;
 
         [SerializeField] private SettingsForHandles controlHandlesSettings = new SettingsForHandles {AxisScale = .7f, PlanesScale = .7f, Alpha = .7f};
 
-        [SerializeField] [Tooltip("Points control handles color")] private Color controlHandlesColor = Color.cyan;
+        [SerializeField] [Tooltip("Points control handles color")]
+        private Color controlHandlesColor = Color.cyan;
 
-        [SerializeField] [Tooltip("Show points control labels in the scene ")] private bool showControlLabels = true;
+        [SerializeField] [Tooltip("Show points control labels in the scene ")]
+        private bool showControlLabels = true;
 
-        [SerializeField] [Tooltip("Show points control positions in the scene")] private bool showControlPositions;
+        [SerializeField] [Tooltip("Show points control positions in the scene")]
+        private bool showControlPositions;
 
-        [SerializeField] [Tooltip("Control point's labels color in the scene")] private Color labelControlColor = Color.yellow;
+        [SerializeField] [Tooltip("Control point's labels color in the scene")]
+        private Color labelControlColor = Color.yellow;
 
         //===============================================================  Transform field
 
-        [SerializeField] [Tooltip("Show points transform field in the editor (for Points tab)")] private bool showTransformField;
+        [SerializeField] [Tooltip("Show points transform field in the editor (for Points tab)")]
+        private bool showTransformField;
 
         //===============================================================  Misc
 
         [SerializeField] private bool existing;
+
+        private RestrictGizmozSetting restrictGizmozSettings = new RestrictGizmozSetting(null);
 
         #endregion
 
@@ -172,6 +215,17 @@ namespace BansheeGz.BGSpline.Curve
         {
             get { return showCurve; }
             set { showCurve = value; }
+        }
+
+        public string RestrictGizmoz
+        {
+            get { return restrictGizmoz; }
+            set { restrictGizmoz = value; }
+        }
+
+        public RestrictGizmozSetting RestrictGizmozSettings
+        {
+            get { return restrictGizmozSettings = restrictGizmozSettings.Comply(restrictGizmoz); }
         }
 
         [Obsolete]
@@ -374,6 +428,91 @@ namespace BansheeGz.BGSpline.Curve
             public bool Disabled
             {
                 get { return RemoveX && RemoveY && RemoveZ && RemoveXY && RemoveXZ && RemoveYZ; }
+            }
+        }
+
+        public class RestrictGizmozSetting
+        {
+            private readonly List<KeyValuePair<int, int>> fromToList = new List<KeyValuePair<int, int>>();
+            private readonly HashSet<int> numbersList = new HashSet<int>();
+
+            private readonly string value;
+            private bool valid;
+
+            public bool HasValue
+            {
+                get { return !string.IsNullOrEmpty(value); }
+            }
+
+            public bool Valid
+            {
+                get { return valid; }
+            }
+
+            public RestrictGizmozSetting(string value)
+            {
+                this.value = value;
+                try
+                {
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        var tokens = value.Split(',');
+                        foreach (var token in tokens)
+                        {
+                            if (string.IsNullOrEmpty(token)) continue;
+                            var range = token.Split('-');
+                            switch (range.Length)
+                            {
+                                case 1:
+                                {
+                                    numbersList.Add(int.Parse(range[0]));
+                                    break;
+                                }
+                                case 2:
+                                {
+                                    var token1 = range[0];
+                                    var token2 = range[1];
+                                    if (string.IsNullOrEmpty(token1) && string.IsNullOrEmpty(token2)) continue;
+
+                                    if (string.IsNullOrEmpty(token1)) numbersList.Add(int.Parse(token2));
+                                    else if (string.IsNullOrEmpty(token2)) numbersList.Add(int.Parse(token1));
+                                    else fromToList.Add(new KeyValuePair<int, int>(int.Parse(token1), int.Parse(token2)));
+
+                                    break;
+                                }
+                                default:
+                                {
+                                    throw new Exception();
+                                }
+                            }
+                        }
+
+                        valid = true;
+                    }
+                }
+                catch
+                {
+                    //ignore
+                }
+            }
+
+            public bool IsShowing(int point)
+            {
+                if (!valid) return true;
+                if (numbersList.Contains(point)) return true;
+
+                for (var i = 0; i < fromToList.Count; i++)
+                {
+                    var pair = fromToList[i];
+                    if (pair.Key <= point && pair.Value >= point) return true;
+                }
+
+                return false;
+            }
+
+            public RestrictGizmozSetting Comply(string value)
+            {
+                return string.Equals(this.value, value) ? this : new RestrictGizmozSetting(value);
             }
         }
 

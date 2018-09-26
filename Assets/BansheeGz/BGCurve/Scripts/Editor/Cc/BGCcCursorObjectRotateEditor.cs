@@ -12,6 +12,7 @@ namespace BansheeGz.BGSpline.Editor
         private GUIContent rotationFieldContent;
         private GUIContent revolutionsFieldContent;
         private GUIContent clockwiseFieldContent;
+//        private GUIContent customUpFieldContent;
 
         private BGCcCursorObjectRotate ObjectRotate
         {
@@ -35,6 +36,8 @@ namespace BansheeGz.BGSpline.Editor
                 () => new GUIContent("Revolutions Field", "Field to store additional revolutions around tangent. It should be an int field."));
             BGEditorUtility.Assign(ref clockwiseFieldContent,
                 () => new GUIContent("Revolutions Clockwise Field", "Field to store if the rotation around tangent should be clockwise. It should be a bool field."));
+//            BGEditorUtility.Assign(ref customUpFieldContent,
+//                () => new GUIContent("Custom up Vector", "Field to store custom up vector. It should be a Vector3 field."));
 
 
             //type of the rotation 1) tangent (without field) 2) by field's values
@@ -73,6 +76,9 @@ namespace BansheeGz.BGSpline.Editor
                             case BGCcCursorObjectRotate.RotationUpEnum.TargetParentUpCustom:
                                 EditorGUILayout.PropertyField(serializedObject.FindProperty("upCustom"));
                                 break;
+//                            case BGCcCursorObjectRotate.RotationUpEnum.CustomField:
+//                                EditorGUILayout.PropertyField(serializedObject.FindProperty("upCustomField"));
+//                                break;
                         }
                     });
                 }

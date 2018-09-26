@@ -306,6 +306,7 @@ namespace BansheeGz.BGSpline.Editor
 
                     for (var i = 0; i < sectionsCount; i++)
                     {
+                        if(!settings.RestrictGizmozSettings.IsShowing(i)) continue;
                         var section = sections[i];
                         var points = section.Points;
                         ShowTangent(points[0].Position, points[0].Tangent, settings.TangentsSize);

@@ -42,6 +42,8 @@ namespace BansheeGz.BGSpline.Components
 
             TargetParentUp = 4,
             TargetParentUpCustom = 5,
+            
+//            CustomField = 6,
         }
 
         //===============================================================================================
@@ -77,6 +79,12 @@ namespace BansheeGz.BGSpline.Components
 
         [SerializeField] [Tooltip("Custom Up vector for tangent Quaternion.LookRotation. It's used only if rotationField is not assigned.")] private Vector3 upCustom = Vector3.up;
 
+//        [SerializeField] [Tooltip("Custom Up vector field for tangent Quaternion.LookRotation. It should be Vector3 field. It's used only if rotationField is not assigned.")] 
+//        private BGCurvePointField upCustomField;
+        
+//        [SerializeField] [Tooltip("Custom Up vector angle offset field for tangent Quaternion.LookRotation. It should be float field. It's used only if rotationField is not assigned.")] 
+//        private BGCurvePointField upOffsetField;
+        
         //============================================= By field rotation
         [SerializeField] [Tooltip("Field to store the rotation between each point. It should be a Quaternion field.")] private BGCurvePointField rotationField;
 
@@ -180,6 +188,8 @@ namespace BansheeGz.BGSpline.Components
                 return ChoseMessage(base.Error,
                     () =>
                     {
+//                        if(upMode==RotationUpEnum.CustomField && upCustomField==null) return "upMode is set to customField but upCustomField is null.";
+                        
                         if (!Cursor.Math.IsCalculated(BGCurveBaseMath.Field.Tangent))
                         {
                             if (rotationField == null) return "Math should calculate tangents if rotation field is null.";
@@ -300,7 +310,8 @@ namespace BansheeGz.BGSpline.Components
                         case RotationUpEnum.LocalCustom:
                             upwards = transform.InverseTransformDirection(upCustom);
                             break;
-                        default:
+                        case RotationUpEnum.TargetParentUp:
+                        case RotationUpEnum.TargetParentUpCustom:
                             //TargetParentUp or TargetParentUpCustom
                             var targetTransform = ObjectToManipulate;
                             if (targetTransform.parent != null)
@@ -312,7 +323,22 @@ namespace BansheeGz.BGSpline.Components
                                 upwards = upMode == RotationUpEnum.TargetParentUp ? Vector3.up : upCustom;
                             }
                             break;
+/*
+                        case RotationUpEnum.CustomField:
+                            if (upCustomField == null)
+                            {
+                                result = Quaternion.identity;
+                                return false;
+                            }
+                            upwards = Cursor.LerpVector(upCustomField.FieldName);
+                            break;
+*/
+                        default:
+                        {
+                            throw new Exception("Unsupported upMode:" + upMode);
+                        }
                     }
+                    
                     result = Quaternion.LookRotation(tangent, upwards);
                 }
             }
@@ -329,7 +355,7 @@ namespace BansheeGz.BGSpline.Components
 
                         //we need currentSection only if field is present
                         var currentSection = revolutionsAroundTangentField != null || revolutionsClockwiseField != null ? cursor.CalculateSectionIndex() : -1;
-                        //rotaion without revolutoins
+                        //rotation without revolutions
                         result = LerpQuaternion(rotationField.FieldName, currentSection);
 
                         //do we have revolutions?

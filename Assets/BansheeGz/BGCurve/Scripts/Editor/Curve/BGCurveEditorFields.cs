@@ -349,7 +349,7 @@ namespace BansheeGz.BGSpline.Editor
                     //not a label
                     curve.ForEach((point, i, length) =>
                     {
-                        if (!visiblePoints[i]) return;
+                        if (!visiblePoints[i] || !settings.RestrictGizmozSettings.IsShowing(i)) return;
 
                         var pos = point.PositionWorld;
 

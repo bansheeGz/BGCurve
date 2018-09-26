@@ -110,6 +110,11 @@ namespace BansheeGz.BGSpline.Editor
 
                     EditorGUILayout.PropertyField(Find("newPointDistance"));
                     EditorGUILayout.PropertyField(Find("showPointMenu"));
+                    EditorGUILayout.PropertyField(Find("restrictGizmoz"));
+                    if (settingsObj.RestrictGizmozSettings.Valid && settingsObj.RestrictGizmozSettings.HasValue)
+                    {
+                        EditorGUILayout.HelpBox("Gizmos are shown for specified points only", MessageType.Warning);
+                    }
                 });
 
                 var tangentProp = Find("showTangents");

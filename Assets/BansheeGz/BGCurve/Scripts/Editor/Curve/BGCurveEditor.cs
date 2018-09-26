@@ -21,7 +21,7 @@ namespace BansheeGz.BGSpline.Editor
         //for curves, which are not selected in hierarchy
         private static readonly Dictionary<BGCurve, BGCurvePainterGizmo> curve2Painter = new Dictionary<BGCurve, BGCurvePainterGizmo>();
         private static BGCurvePainterGizmo CurrentGizmoPainter;
-        private static BGCurve CurrentCurve;
+//        private static BGCurve CurrentCurve;
         private static BGCurve[] AllCurves;
         private static Texture2D headerTexture;
 
@@ -57,7 +57,7 @@ namespace BansheeGz.BGSpline.Editor
             //wth
             if (Curve == null) return;
 
-            CurrentCurve = Curve;
+//            CurrentCurve = Curve;
             transformMonitor = BGTransformMonitor.GetMonitor(Curve);
 
 
@@ -251,7 +251,7 @@ namespace BansheeGz.BGSpline.Editor
 
         private void Dispose()
         {
-            CurrentCurve = null;
+//            CurrentCurve = null;
             CurrentGizmoPainter = null;
             AllCurves = null;
             Undo.undoRedoPerformed -= InternalOnUndoRedo;
