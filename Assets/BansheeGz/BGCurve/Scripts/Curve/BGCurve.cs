@@ -820,6 +820,18 @@ namespace BansheeGz.BGSpline.Curve
             return IndexOf(fields, field);
         }
 
+        /// <summary>Get field by name</summary>
+        public BGCurvePointField GetField(string name)
+        {
+            for (var i = 0; i < fields.Length; i++)
+            {
+                var field = fields[i];
+                if (string.Equals(field.FieldName, name)) return field;
+            }
+            return null;
+        }
+
+        
         /// <summary>is curve has a field with provided name</summary>
         public bool HasField(string name)
         {

@@ -26,7 +26,11 @@ namespace BansheeGz.BGSpline.Editor
 
             var distanceRatio = Cursor.DistanceRatio;
             var newValue = EditorGUILayout.Slider("Distance Ratio", distanceRatio, 0, 1);
-            if (BGEditorUtility.AnyChange(distanceRatio, newValue)) Cursor.DistanceRatio = newValue;
+            if (BGEditorUtility.AnyChange(distanceRatio, newValue))
+            {
+                Cursor.DistanceRatio = newValue;
+                serializedObject.FindProperty("distance").floatValue = Cursor.Distance;
+            }
         }
 
         protected override void InternalOnSceneGUI()
