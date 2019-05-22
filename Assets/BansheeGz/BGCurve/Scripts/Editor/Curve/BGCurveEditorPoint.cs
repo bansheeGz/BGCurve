@@ -9,13 +9,6 @@ namespace BansheeGz.BGSpline.Editor
     //one single point's GUI
     public class BGCurveEditorPoint
     {
-        private readonly Texture2D deleteTexture;
-        private readonly Texture2D addBeforeTexture;
-        private readonly Texture2D moveUpTexture;
-        private readonly Texture2D moveDownTexture;
-        private readonly Texture2D copyTexture;
-        private readonly Texture2D pasteTexture;
-
         private readonly BGCurveEditorPointsSelection editorSelection;
         private readonly Func<BGCurveBaseMath> mathProvider;
 
@@ -25,14 +18,6 @@ namespace BansheeGz.BGSpline.Editor
         {
             this.mathProvider = mathProvider;
             this.editorSelection = editorSelection;
-
-            //textures
-            deleteTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGDelete123);
-            addBeforeTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGAdd123);
-            moveUpTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGMoveUp123);
-            moveDownTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGMoveDown123);
-            copyTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGCopy123);
-            pasteTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGPaste123);
         }
 
         internal void OnInspectorGui(BGCurvePointI point, int index, BGCurveSettings settings)
@@ -360,30 +345,30 @@ namespace BansheeGz.BGSpline.Editor
             var curve = point.Curve;
 
             //================== Copy
-            if (BGEditorUtility.ButtonWithIcon(copyTexture, PointCopyPaste.Instance.CopyTooltip)) PointCopyPaste.Instance.Copy(point);
+            if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGCopy123, PointCopyPaste.Instance.CopyTooltip)) PointCopyPaste.Instance.Copy(point);
             GUILayout.Space(2);
 
             //================== Paste
-            if (BGEditorUtility.ButtonWithIcon(pasteTexture, PointCopyPaste.Instance.PasteTooltip)) PointCopyPaste.Instance.Paste(point);
+            if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGPaste123, PointCopyPaste.Instance.PasteTooltip)) PointCopyPaste.Instance.Paste(point);
             GUILayout.Space(2);
 
             //================== Add before
-            if (BGEditorUtility.ButtonWithIcon(addBeforeTexture, "Insert a point before this point"))
+            if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGAdd123, "Insert a point before this point"))
                 BGCurveEditor.AddPoint(curve, BGNewPointPositionManager.InsertBefore(curve, index, settings.ControlType, settings.Sections), index);
             GUILayout.Space(2);
 
 
             //=========================== Move Up
-            if (index > 0 && BGEditorUtility.ButtonWithIcon(moveUpTexture, "Move the point up")) curve.Swap(index - 1, index);
+            if (index > 0 && BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGMoveUp123, "Move the point up")) curve.Swap(index - 1, index);
             GUILayout.Space(2);
 
             //=========================== Move Down
-            if (index < curve.PointsCount - 1 && BGEditorUtility.ButtonWithIcon(moveDownTexture, "Move the point down")) curve.Swap(index, index + 1);
+            if (index < curve.PointsCount - 1 && BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGMoveDown123, "Move the point down")) curve.Swap(index, index + 1);
             GUILayout.Space(2);
 
 
             //=========================== Delete
-            if (BGEditorUtility.ButtonWithIcon(deleteTexture, "Delete the point"))
+            if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGDelete123, "Delete the point"))
             {
                 BGCurveEditor.DeletePoint(curve, index);
                 if (editorSelection != null) editorSelection.Remove(point);

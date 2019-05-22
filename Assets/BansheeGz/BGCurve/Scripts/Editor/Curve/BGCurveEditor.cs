@@ -23,7 +23,6 @@ namespace BansheeGz.BGSpline.Editor
         private static BGCurvePainterGizmo CurrentGizmoPainter;
 //        private static BGCurve CurrentCurve;
         private static BGCurve[] AllCurves;
-        private static Texture2D headerTexture;
 
         // non-static
         private BGCurveEditorTab[] editors;
@@ -35,7 +34,6 @@ namespace BansheeGz.BGSpline.Editor
         private Texture2D stickerTextureActive;
         private Texture2D stickerTextureWarning;
         private Texture2D stickerTextureError;
-        private Texture2D settingsTexture;
 
         private GUIStyle stickerStyle;
 
@@ -98,7 +96,6 @@ namespace BansheeGz.BGSpline.Editor
             }
 
             //load textures
-            BGEditorUtility.Assign(ref headerTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGCurveLogo123));
             stickerTextureOk = BGEditorUtility.Texture1X1(new Color32(46, 143, 168, 255));
             stickerTextureError = BGEditorUtility.Texture1X1(new Color32(255, 0, 0, 255));
             stickerTextureWarning = BGEditorUtility.Texture1X1(new Color32(255, 206, 92, 255));
@@ -301,7 +298,6 @@ namespace BansheeGz.BGSpline.Editor
 
             //styles
             BGEditorUtility.Assign(ref stickerStyle, () => new GUIStyle("Label") {fontSize = 18, alignment = TextAnchor.MiddleCenter, normal = new GUIStyleState {textColor = Color.white}});
-            BGEditorUtility.Assign(ref settingsTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGSettingsIcon123));
 
             serializedObject.Update();
 
@@ -316,7 +312,7 @@ namespace BansheeGz.BGSpline.Editor
                     new GUIContent("Turn Off", "Click to turn this mode off"),
                     new GUIContent("Turn On", "Click to turn this mode on"));
 
-                if (GUILayout.Button(settingsTexture, GUILayout.MaxWidth(24), GUILayout.MaxHeight(24))) BGCurveSettingsForEditorWindow.Open(BGCurveSettingsForEditor.I);
+                if (GUILayout.Button(BGBinaryResources.BGSettingsIcon123, GUILayout.MaxWidth(24), GUILayout.MaxHeight(24))) BGCurveSettingsForEditorWindow.Open(BGCurveSettingsForEditor.I);
             });
 
             //warning
@@ -377,7 +373,7 @@ namespace BansheeGz.BGSpline.Editor
 
         protected virtual void DrawLogo()
         {
-            DrawLogo(headerTexture);
+            DrawLogo(BGBinaryResources.BGCurveLogo123);
         }
 
 

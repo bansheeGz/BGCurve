@@ -10,7 +10,7 @@ namespace BansheeGz.BGSpline.Components
         CcDescriptor(
             Description = "Identify location on the curve by distance.",
             Name = "Cursor",
-            Image = "Assets/BansheeGz/BGCurve/Icons/Components/BGCcCursor123.png")
+            Icon = "BGCcCursor123")
     ]
     [AddComponentMenu("BansheeGz/BGCurve/Components/BGCcCursor")]
     public class BGCcCursor : BGCcWithMath

@@ -12,15 +12,6 @@ namespace BansheeGz.BGSpline.Editor
     {
         private static readonly Color SelectedBackgroundColor = new Color32(157, 246, 246, 40);
 
-
-        private readonly Texture2D tickNoTexture;
-        private readonly Texture2D tickYesTexture;
-        private readonly Texture2D deleteTexture;
-        private readonly Texture2D selectAllTexture;
-        private readonly Texture2D deselectAllTexture;
-        private readonly Texture2D convertAllTexture;
-
-
         private readonly List<BGCurvePointI> points = new List<BGCurvePointI>();
 
         private bool groupSelectionStarted;
@@ -51,12 +42,6 @@ namespace BansheeGz.BGSpline.Editor
             this.curve = curve;
             selectionRectangle = new BGRectangularSelection(editor, this);
 
-            tickNoTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGTickNo123);
-            tickYesTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGTickYes123);
-            deleteTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGDelete123);
-            selectAllTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGSelectAll123);
-            deselectAllTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGDeSelectAll123);
-            convertAllTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGConvertAll123);
             pointsContainer = new PointsContainer(this);
         }
 
@@ -164,7 +149,7 @@ namespace BansheeGz.BGSpline.Editor
             }
 
             var selected = Contains(point);
-            var selectedTexture = selected ? tickYesTexture : tickNoTexture;
+            var selectedTexture = selected ? BGBinaryResources.BGTickYes123: BGBinaryResources.BGTickNo123;
             var labelStyle = selected ? new GUIStyle("Label") {normal = new GUIStyleState {textColor = settings.LabelColorSelected}} : EditorStyles.label;
             EditorGUI.LabelField(rect, new GUIContent(selectedTexture, "Click to (de)select a point, or click and drag to (de)select multiple points. " +
                                                                        "Hold shift+drag to use rectangular selection"), labelStyle);
@@ -180,10 +165,10 @@ namespace BansheeGz.BGSpline.Editor
                 {
                     BGEditorUtility.SwapLabelWidth(80, () => EditorGUILayout.LabelField("Selected (" + points.Count + ")"));
 
-                    if (BGEditorUtility.ButtonWithIcon(deleteTexture, "Delete selected points")) if (!DeleteSelected()) return;
+                    if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGDelete123, "Delete selected points")) if (!DeleteSelected()) return;
 
                     GUILayout.Space(4);
-                    if (BGEditorUtility.ButtonWithIcon(selectAllTexture, "Select all points", 35))
+                    if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGSelectAll123, "Select all points", 35))
                     {
                         Changed = Changed || points.Count != curve.PointsCount;
 
@@ -194,7 +179,7 @@ namespace BansheeGz.BGSpline.Editor
 
                     GUILayout.Space(4);
 
-                    if (BGEditorUtility.ButtonWithIcon(deselectAllTexture, "Deselect all points", 35)) Clear();
+                    if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGDeSelectAll123, "Deselect all points", 35)) Clear();
                 });
 
 
@@ -215,7 +200,7 @@ namespace BansheeGz.BGSpline.Editor
                             BGEditorUtility.Horizontal(() =>
                             {
                                 controlType = (BGCurvePoint.ControlTypeEnum) EditorGUILayout.EnumPopup("Controls", controlType);
-                                if (!BGEditorUtility.ButtonWithIcon(convertAllTexture, "Set control type for all selected points", 44)) return;
+                                if (!BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGConvertAll123, "Set control type for all selected points", 44)) return;
 
                                 SetControlTypeForSelected(controlType);
                             });

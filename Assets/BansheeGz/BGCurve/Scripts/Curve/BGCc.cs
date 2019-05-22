@@ -280,6 +280,9 @@ namespace BansheeGz.BGSpline.Curve
 
             /// <summary>Component's icon</summary>
             public string Image { get; set; }
+            
+            /// <summary>icon, referencing BGEditorIcon from BGBinaryResources</summary>
+            public string Icon { get; set; }
         }
 
         /// <summary>Component will be excluded from Cc menu and Inspector menu</summary>

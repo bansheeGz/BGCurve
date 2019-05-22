@@ -13,7 +13,7 @@ namespace BansheeGz.BGSpline.Components
         CcDescriptor(
             Description = "Calculates points positions for polyline along the curve. It does not change or modify anything. Use Positions field to access points.",
             Name = "Splitter Polyline",
-            Image = "Assets/BansheeGz/BGCurve/Icons/Components/BGCcSplitterPolyline123.png")
+            Icon = "BGCcSplitterPolyline123")
     ]
     [AddComponentMenu("BansheeGz/BGCurve/Components/BGCcSplitterPolyline")]
     public class BGCcSplitterPolyline : BGCcWithMath

@@ -78,5 +78,12 @@ namespace BansheeGz.BGSpline.Editor
                 }
             });
         }
+
+        protected override void ChangedParams(object sender, EventArgs e)
+        {
+            base.ChangedParams(sender, e);
+            if (Application.isPlaying) return;
+            Trs.Trs();
+        }
     }
 }

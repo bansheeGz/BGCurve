@@ -10,24 +10,18 @@ namespace BansheeGz.BGSpline.Editor
         public readonly SerializedObject SerializedObject;
         public readonly BGCurve Curve;
 
-        private readonly Texture2D header2D;
-
-        public Texture2D Header2D
-        {
-            get { return header2D; }
-        }
+        public abstract Texture2D Header2D { get; }
 
         public BGCurveSettings Settings
         {
             get { return BGPrivateField.GetSettings(Curve); }
         }
 
-        protected BGCurveEditorTab(BGCurveEditor editor, SerializedObject serializedObject, Texture2D header2D)
+        protected BGCurveEditorTab(BGCurveEditor editor, SerializedObject serializedObject)
         {
             Editor = editor;
             Curve = editor.Curve;
             SerializedObject = serializedObject;
-            this.header2D = header2D;
         }
 
 

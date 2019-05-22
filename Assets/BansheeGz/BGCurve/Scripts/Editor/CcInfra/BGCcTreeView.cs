@@ -18,19 +18,15 @@ namespace BansheeGz.BGSpline.Editor
 
         public Type DependsOnType { get; private set; }
 
-        private static Texture2D noImage;
 
         private readonly Action<string> messageAction;
 
         public BGCcTreeView(BGCurve curve, Type dependsOnType, bool ignoreExcludeFromMenuAttribute, Action<string> messageAction, Action<Type> typeWasChosenAction)
-            : base(new Config(0, (int) (IconSize*.9f), (int) (IconSize*.5f), 2, 16))
+            : base(new Config(0, (int) (IconSize * .9f), (int) (IconSize * .5f), 2, 16))
         {
             Curve = curve;
             DependsOnType = dependsOnType;
             this.messageAction = messageAction;
-
-            noImage = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGCcNoImage123);
-
 
             //-------------  load all BGCc subclasses
             var typesList = GetAllSubTypes(typeof(BGCc), ignoreExcludeFromMenuAttribute ? null : typeof(BGCc.CcExcludeFromMenu));
@@ -48,10 +44,13 @@ namespace BansheeGz.BGSpline.Editor
                     Debug.LogException(e);
                     continue;
                 }
+
                 type2Node[node.CcData.Type] = node;
             }
 
-            foreach (var node in type2Node.Values) if (!node.Processed) node.ProcessStructure();
+            foreach (var node in type2Node.Values)
+                if (!node.Processed)
+                    node.ProcessStructure();
         }
 
         public CcNode this[Type type]
@@ -127,7 +126,7 @@ namespace BansheeGz.BGSpline.Editor
                 const int offset = 2;
 
                 if (singleAndAdded) GUI.enabled = false;
-                if (GUILayout.Button("", GUILayout.Height(IconSize + offset*2))) typeWasChosenAction(ccData.Type);
+                if (GUILayout.Button("", GUILayout.Height(IconSize + offset * 2))) typeWasChosenAction(ccData.Type);
 
                 if (singleAndAdded) GUI.enabled = true;
 
@@ -151,7 +150,7 @@ namespace BansheeGz.BGSpline.Editor
                         {
                             fontSize = 14,
                             fontStyle = FontStyle.Bold,
-                            normal = { textColor = Color.red, background = BGEditorUtility.Texture1X1(new Color(1, 0, 0, .2f)) }
+                            normal = {textColor = Color.red, background = BGEditorUtility.Texture1X1(new Color(1, 0, 0, .2f))}
                         });
                         var content = new GUIContent("added");
                         var labelSize = addedStyle.CalcSize(content);
@@ -163,12 +162,12 @@ namespace BansheeGz.BGSpline.Editor
 
 
                 //name
-                var nameStartX = iconRect.xMax + offset*12;
-                var nameRect = new Rect(nameStartX, iconRect.y, buttonRect.width - nameStartX, IconSize/3f);
+                var nameStartX = iconRect.xMax + offset * 12;
+                var nameRect = new Rect(nameStartX, iconRect.y, buttonRect.width - nameStartX, IconSize / 3f);
                 EditorGUI.LabelField(nameRect, (string) ccData.Name, BGEditorUtility.Assign(ref nameStyle, () => new GUIStyle("Label") {fontStyle = FontStyle.Bold}));
 
                 //description
-                var descriptionRect = new Rect(nameStartX, nameRect.yMax + offset, nameRect.width, IconSize*2/3f);
+                var descriptionRect = new Rect(nameStartX, nameRect.yMax + offset, nameRect.width, IconSize * 2 / 3f);
                 EditorGUI.LabelField(descriptionRect, (string) ccData.Description, BGEditorUtility.Assign(ref descriptionStyle, () => new GUIStyle("Label") {wordWrap = true}));
             }
 
@@ -201,7 +200,15 @@ namespace BansheeGz.BGSpline.Editor
                 : this(type, single, ccDescriptor.Name)
             {
                 Description = ccDescriptor.Description;
-                if (!String.IsNullOrEmpty(ccDescriptor.Image)) Icon = BGEditorUtility.LoadCcTexture2D(ccDescriptor.Image) ?? noImage;
+                if (!string.IsNullOrEmpty(ccDescriptor.Icon))
+                {
+                    var texture = BGPrivateField.Get<BGEditorIcon>(typeof(BGBinaryResources), ccDescriptor.Icon);
+                    if (texture != null) Icon = texture;
+                }
+                else if (!string.IsNullOrEmpty(ccDescriptor.Image))
+                {
+                    Icon = BGEditorUtility.LoadCcTexture2D(ccDescriptor.Image);
+                }
             }
 
             public CcData(Type type, bool single, string name)
@@ -209,7 +216,7 @@ namespace BansheeGz.BGSpline.Editor
                 Type = type;
 
                 Name = name;
-                Icon = noImage;
+                Icon = BGBinaryResources.BGCcNoImage123;
                 Single = single;
 
                 if (String.IsNullOrEmpty(Name)) Name = Type.Name;

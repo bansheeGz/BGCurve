@@ -17,22 +17,17 @@ namespace BansheeGz.BGSpline.Editor
 
         private static bool customEditorsOn = true;
 
-
-        private Texture2D collapseTexture;
-        private Texture2D expandTexture;
-        private Texture2D addTexture;
-        private Texture2D deleteTexture;
         private Texture2D whiteTexture;
-        private Texture2D onTexture;
-        private Texture2D offTexture;
-        private Texture2D handlesOnTexture;
-        private Texture2D handlesOffTexture;
 
         private readonly Tree tree;
         private BGCc[] components;
 
-        public BGCurveEditorComponents(BGCurveEditor editor, SerializedObject curveObject)
-            : base(editor, curveObject, BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGComponents123))
+        public override Texture2D Header2D
+        {
+            get { return BGBinaryResources.BGComponents123; }
+        }
+
+        public BGCurveEditorComponents(BGCurveEditor editor, SerializedObject curveObject) : base(editor, curveObject)
         {
             tree = new Tree(Curve);
         }
@@ -52,15 +47,6 @@ namespace BansheeGz.BGSpline.Editor
         public override void OnInspectorGui()
         {
             BGEditorUtility.Assign(ref whiteTexture, () => BGEditorUtility.Texture1X1(Color.white));
-            BGEditorUtility.Assign(ref collapseTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGCollapseAll123));
-            BGEditorUtility.Assign(ref expandTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGExpandAll123));
-            BGEditorUtility.Assign(ref addTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGAdd123));
-            BGEditorUtility.Assign(ref deleteTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGDelete123));
-            BGEditorUtility.Assign(ref onTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGOn123));
-            BGEditorUtility.Assign(ref offTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGOff123));
-            BGEditorUtility.Assign(ref handlesOnTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHandlesOn123));
-            BGEditorUtility.Assign(ref handlesOffTexture, () => BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHandlesOff123));
-
 
             components = Curve.GetComponents<BGCc>();
             var length = components.Length;
@@ -88,8 +74,8 @@ namespace BansheeGz.BGSpline.Editor
                 var handlesOff = BGCurveSettingsForEditor.CcInspectorHandlesOff;
                 if (BGEditorUtility.ButtonWithIcon(
                     handlesOff
-                        ? handlesOffTexture
-                        : handlesOnTexture,
+                        ? BGBinaryResources.BGHandlesOff123
+                        : BGBinaryResources.BGHandlesOn123,
                     "Turn on/off handles settings in Inspector"))
                 {
                     BGCurveSettingsForEditor.CcInspectorHandlesOff = !BGCurveSettingsForEditor.CcInspectorHandlesOff;
@@ -97,7 +83,7 @@ namespace BansheeGz.BGSpline.Editor
                 EditorGUILayout.Separator();
 
                 // turn on/off colored tree
-                if (BGEditorUtility.ButtonWithIcon(customEditorsOn ? onTexture : offTexture, "Use custom UI for components (colored tree) and hide standard unity editors for components"))
+                if (BGEditorUtility.ButtonWithIcon(customEditorsOn ? BGBinaryResources.BGOn123: BGBinaryResources.BGOff123, "Use custom UI for components (colored tree) and hide standard unity editors for components"))
                 {
                     customEditorsOn = !customEditorsOn;
                     tree.Refresh(null, true);
@@ -107,20 +93,20 @@ namespace BansheeGz.BGSpline.Editor
                 if (length > 0)
                 {
                     // collapse/expand
-                    if (BGEditorUtility.ButtonWithIcon(collapseTexture, "Collapse all components")) tree.ExpandCollapseAll(true);
+                    if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGCollapseAll123, "Collapse all components")) tree.ExpandCollapseAll(true);
                     EditorGUILayout.Separator();
-                    if (BGEditorUtility.ButtonWithIcon(expandTexture, "Expand all components")) tree.ExpandCollapseAll(false);
+                    if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGExpandAll123, "Expand all components")) tree.ExpandCollapseAll(false);
                     EditorGUILayout.Separator();
 
 
                     // delete all Ccs
-                    if (BGEditorUtility.ButtonWithIcon(deleteTexture, "Delete all components")
+                    if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGDelete123, "Delete all components")
                         && BGEditorUtility.Confirm("Delete", "Are you sure you want to delete " + length + " component(s)?", "Delete")) tree.Delete();
                     EditorGUILayout.Separator();
                 }
 
                 //add new Cc
-                if (BGEditorUtility.ButtonWithIcon(addTexture, "Add new component")) BGCcAddWindow.Open(Curve, type => AddComponent(Curve, type));
+                if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGAdd123, "Add new component")) BGCcAddWindow.Open(Curve, type => AddComponent(Curve, type));
             });
 
 
@@ -407,20 +393,10 @@ namespace BansheeGz.BGSpline.Editor
                 public readonly BGCc Cc;
                 private readonly BGCc.CcDescriptor descriptor;
 
-                private readonly Texture2D enabledTexture;
-                private readonly Texture2D disabledTexture;
-                private readonly Texture2D helpTexture;
-                private readonly Texture2D deleteTexture;
-                private readonly Texture2D addTexture;
-                private readonly Texture2D changeNameTexture;
-                private readonly Texture2D hiddenOnTexture;
-                private readonly Texture2D hiddenOffTexture;
-
                 private GUIStyle headerFoldoutStyle;
                 private GUIStyle headerFoldoutStyleDisabled;
                 private GUIStyle okStyle;
                 private GUIStyle errorStyle;
-                private GUIStyle coloredBoxStyle;
 
 
                 private readonly BGCcEditor ccEditor;
@@ -449,15 +425,6 @@ namespace BansheeGz.BGSpline.Editor
 //                    UnityEditor.Editor.CreateCachedEditor(cc, null, ref ccEditor);
 
                     onSceneGuiMethod = ccEditor.GetType().GetMethod("OnSceneGUI", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-
-                    enabledTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGTickYes123);
-                    disabledTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGTickNo123);
-                    helpTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHelp123);
-                    deleteTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGDelete123);
-                    addTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGAdd123);
-                    changeNameTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGCcEditName123);
-                    hiddenOnTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHiddenOn123);
-                    hiddenOffTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHiddenOff123);
 
                     parentType = cc.GetParentClass();
                 }
@@ -498,13 +465,16 @@ namespace BansheeGz.BGSpline.Editor
                     color.a = ConnectorLineAlpha;
 
                     //colored box
-                    BGEditorUtility.SwapGuiColor(color, () => EditorGUILayout.BeginVertical(BGEditorUtility.Assign(ref coloredBoxStyle, () => new GUIStyle("Box")
+                    BGEditorUtility.SwapGuiColor(color, () => EditorGUILayout.BeginVertical(new GUIStyle("Box")
                     {
                         padding = new RectOffset(),
                         margin = new RectOffset(),
                         border = new RectOffset(4, 4, 4, 4),
-                        normal = {background = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGBoxWhite123)}
-                    })));
+                        normal =
+                        {
+                            background = BGBinaryResources.BGBoxWhite123
+                        }
+                    }));
 
                     //header
                     HeaderUi(level, !String.IsNullOrEmpty(Cc.Error));
@@ -557,20 +527,20 @@ namespace BansheeGz.BGSpline.Editor
                             //help url
                             if (!String.IsNullOrEmpty(Cc.HelpURL))
                             {
-                                if (BGEditorUtility.ButtonWithIcon(helpTexture, "Open help in the browser")) Application.OpenURL(Cc.HelpURL);
+                                if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGHelp123, "Open help in the browser")) Application.OpenURL(Cc.HelpURL);
                                 EditorGUILayout.Separator();
                             }
 
                             //change visibility
-                            if (BGEditorUtility.ButtonWithIcon(Cc.Hidden ? hiddenOnTexture : hiddenOffTexture, "Hide/Show properties")) Cc.Hidden = !Cc.Hidden;
+                            if (BGEditorUtility.ButtonWithIcon(Cc.Hidden ? BGBinaryResources.BGHiddenOn123 : BGBinaryResources.BGHiddenOff123, "Hide/Show properties")) Cc.Hidden = !Cc.Hidden;
                             EditorGUILayout.Separator();
 
                             //change name
-                            if (BGEditorUtility.ButtonWithIcon(changeNameTexture, "Change the name")) BGCcChangeNameWindow.Open(Cc);
+                            if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGCcEditName123, "Change the name")) BGCcChangeNameWindow.Open(Cc);
                             EditorGUILayout.Separator();
 
                             //add a child
-                            if (BGEditorUtility.ButtonWithIcon(addTexture, "Add a component, which is dependant on this component"))
+                            if (BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGAdd123, "Add a component, which is dependant on this component"))
                                 BGCcAddWindow.Open(MyTree.Curve, type =>
                                 {
                                     //cache some data
@@ -610,11 +580,11 @@ namespace BansheeGz.BGSpline.Editor
 
 
                             //enable/disable
-                            if (BGEditorUtility.ButtonWithIcon(Cc.enabled ? enabledTexture : disabledTexture, "Enable/disable a component")) Enable(!Cc.enabled);
+                            if (BGEditorUtility.ButtonWithIcon(Cc.enabled ? BGBinaryResources.BGTickYes123 : BGBinaryResources.BGTickNo123, "Enable/disable a component")) Enable(!Cc.enabled);
                             EditorGUILayout.Separator();
 
                             //delete
-                            if (!BGEditorUtility.ButtonWithIcon(deleteTexture, "Remove this component")) return;
+                            if (!BGEditorUtility.ButtonWithIcon(BGBinaryResources.BGDelete123, "Remove this component")) return;
 
 
                             //remove

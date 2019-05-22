@@ -16,7 +16,6 @@ namespace BansheeGz.BGSpline.Editor
 
         private BGCurveEditor curveEditor;
         private BGTransition.SwayTransition pointIndicatorTransition;
-        private Texture2D pointSelectedTexture;
 
         protected virtual BGCurvePointI Point
         {
@@ -32,8 +31,6 @@ namespace BansheeGz.BGSpline.Editor
             if (curveEditor != null) curveEditor.OnDestroy();
 
             curveEditor = (BGCurveEditor) CreateEditor(point.Curve);
-
-            pointSelectedTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGPointSelected123);
 
             PointSelected = true;
         }
@@ -62,7 +59,7 @@ namespace BansheeGz.BGSpline.Editor
         {
             BGEditorUtility.Assign(ref pointIndicatorTransition, () => new BGTransition.SwayTransition(30, 30, 1));
 
-            BGSceneViewOverlay.DrawHandlesGuiTexture(BGEditorUtility.GetSceneViewPosition(point.PositionWorld), pointIndicatorTransition, pointSelectedTexture);
+            BGSceneViewOverlay.DrawHandlesGuiTexture(BGEditorUtility.GetSceneViewPosition(point.PositionWorld), pointIndicatorTransition, BGBinaryResources.BGPointSelected123);
 
 
             curveEditor.OnSceneGUI();

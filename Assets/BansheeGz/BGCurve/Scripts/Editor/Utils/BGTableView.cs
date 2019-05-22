@@ -13,9 +13,6 @@ namespace BansheeGz.BGSpline.Editor
         private readonly int[] sizes; //column sizes percentages
         private readonly float height; //line height
 
-        private readonly GUIStyle headerStyle;
-        private readonly GUIStyle cellStyle;
-        private readonly GUIStyle titleStyle;
         private readonly GUIStyle centeredLabelStyle;
 
         private readonly string title;
@@ -32,7 +29,7 @@ namespace BansheeGz.BGSpline.Editor
 
         public float Height
         {
-            get { return rows*height + Offset; }
+            get { return rows * height + Offset; }
         }
 
         public int[] Sizes
@@ -52,14 +49,9 @@ namespace BansheeGz.BGSpline.Editor
             this.title = title;
             this.onGuiAction = onGuiAction;
 
-            headerStyle = new GUIStyle(GetStyle(BGEditorUtility.Image.BGBoxWithBorder123));
             centeredLabelStyle = new GUIStyle("Label") {alignment = TextAnchor.MiddleCenter};
 
-            cellStyle = GetStyle(BGEditorUtility.Image.BGTableCell123);
-            titleStyle = GetStyle(BGEditorUtility.Image.BGTableTitle123);
-            titleStyle.border = titleStyle.padding = new RectOffset(TitleOffset, TitleOffset, 2, 2);
-
-            height = cellStyle.CalcSize(new GUIContent("Test")).y;
+            height = GetStyle(BGBinaryResources.BGTableCell123).CalcSize(new GUIContent("Test")).y;
         }
 
         private void Init()
@@ -72,7 +64,8 @@ namespace BansheeGz.BGSpline.Editor
             currentColumn = 0;
 
             //---------------------------------- title
-            EditorGUI.LabelField(new Rect(cursor.x, cursor.y, titleStyle.CalcSize(new GUIContent(title)).x + TitleOffset*2, height), title, titleStyle);
+            var titleStyle = GetTitleStyle();
+            EditorGUI.LabelField(new Rect(cursor.x, cursor.y, titleStyle.CalcSize(new GUIContent(title)).x + TitleOffset * 2, height), title, titleStyle);
             NextRow();
         }
 
@@ -83,10 +76,18 @@ namespace BansheeGz.BGSpline.Editor
             {
                 NextColumn(rect => EditorGUI.LabelField(rect, headers[i]), sizes[i], true);
             }
+
             NextRow();
         }
 
-        private static GUIStyle GetStyle(BGEditorUtility.Image background)
+        private static GUIStyle GetTitleStyle()
+        {
+            var style = GetStyle(BGBinaryResources.BGTableTitle123);
+            style.border = style.padding = new RectOffset(TitleOffset, TitleOffset, 2, 2);
+            return style;
+        }
+
+        private static GUIStyle GetStyle(Texture2D background)
         {
             return new GUIStyle("Label")
             {
@@ -94,17 +95,17 @@ namespace BansheeGz.BGSpline.Editor
                 border = new RectOffset(2, 2, 2, 2),
                 normal = new GUIStyleState
                 {
-                    background = BGEditorUtility.LoadTexture2D(background)
+                    background = background
                 }
             };
         }
 
         public void NextColumn(string label, Action<Rect> action, int widthInPercent = 0, GUIStyle labelStyle = null, bool header = false)
         {
-            var columnWidth = Width*(widthInPercent > 0 ? widthInPercent : sizes[currentColumn])/100f;
+            var columnWidth = Width * (widthInPercent > 0 ? widthInPercent : sizes[currentColumn]) / 100f;
 
             var rect = new Rect(cursor.x, cursor.y, columnWidth, height);
-            EditorGUI.LabelField(rect, "", header ? headerStyle : cellStyle);
+            EditorGUI.LabelField(rect, "", header ? GetStyle(BGBinaryResources.BGTableHeader123) : GetStyle(BGBinaryResources.BGTableCell123));
 
             if (label != null)
             {
@@ -139,7 +140,7 @@ namespace BansheeGz.BGSpline.Editor
 
         public void NextRow(string message)
         {
-            EditorGUI.LabelField(new Rect(cursor.x, cursor.y, Width, height), message, cellStyle);
+            EditorGUI.LabelField(new Rect(cursor.x, cursor.y, Width, height), message, GetStyle(BGBinaryResources.BGTableCell123));
             NextRow();
         }
 
@@ -147,13 +148,12 @@ namespace BansheeGz.BGSpline.Editor
         {
             Init();
 
-            if(drawHeader) DrawHeaders();
+            if (drawHeader) DrawHeaders();
 
             onGuiAction();
 
             //inform layout manager
             GUILayoutUtility.GetRect(Width, Height);
-
         }
     }
 }

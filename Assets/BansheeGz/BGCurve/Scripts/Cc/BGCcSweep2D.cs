@@ -12,7 +12,7 @@ namespace BansheeGz.BGSpline.Components
         CcDescriptor(
             Description = "Sweep a line or 2d spline along another 2d spline.",
             Name = "Sweep 2D",
-            Image = "Assets/BansheeGz/BGCurve/Icons/Components/BGCcSweep2d123.png")
+            Icon = "BGCcSweep2d123")
     ]
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     [AddComponentMenu("BansheeGz/BGCurve/Components/BGCcSweep2D")]

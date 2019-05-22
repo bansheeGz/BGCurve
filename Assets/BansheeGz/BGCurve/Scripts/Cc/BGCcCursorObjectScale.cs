@@ -10,7 +10,7 @@ namespace BansheeGz.BGSpline.Components
         CcDescriptor(
             Description = "Scale the object, according to cursor position. Scale values are taken from curve's field values.",
             Name = "Scale Object By Cursor",
-            Image = "Assets/BansheeGz/BGCurve/Icons/Components/BGCcCursorObjectScale123.png")
+            Icon = "BGCcCursorObjectScale123")
     ]
     [AddComponentMenu("BansheeGz/BGCurve/Components/BGCcScaleObject")]
     [ExecuteInEditMode]

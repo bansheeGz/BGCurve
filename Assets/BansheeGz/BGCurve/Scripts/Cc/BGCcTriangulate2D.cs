@@ -12,7 +12,7 @@ namespace BansheeGz.BGSpline.Components
         CcDescriptor(
             Description = "Triangulate 2D spline. Currently only simple polygons are supported.",
             Name = "Triangulate 2D",
-            Image = "Assets/BansheeGz/BGCurve/Icons/Components/BGCcTriangulate2D123.png")
+            Icon = "BGCcTriangulate2D123")
     ]
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     [AddComponentMenu("BansheeGz/BGCurve/Components/BGCcTriangulate2D")]

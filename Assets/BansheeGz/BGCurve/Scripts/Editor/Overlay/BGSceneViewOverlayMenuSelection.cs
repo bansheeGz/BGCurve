@@ -35,7 +35,7 @@ namespace BansheeGz.BGSpline.Editor
 
             //check if all points share the same control type
             BGCurvePoint.ControlTypeEnum singleType = BGCurvePoint.ControlTypeEnum.Absent;
-            bool first = true, single=true;
+            bool first = true, single = true;
             menu.EditorSelection.ForEach(point =>
             {
                 if (first)
@@ -56,7 +56,7 @@ namespace BansheeGz.BGSpline.Editor
             {
                 menu.Get(0).Current = singleType == BGCurvePoint.ControlTypeEnum.Absent;
                 menu.Get(1).Current = singleType == BGCurvePoint.ControlTypeEnum.BezierSymmetrical;
-                menu.Get(2).Current = singleType == BGCurvePoint.ControlTypeEnum.BezierIndependant; 
+                menu.Get(2).Current = singleType == BGCurvePoint.ControlTypeEnum.BezierIndependant;
             }
             else menu.Get(0).Current = menu.Get(1).Current = menu.Get(2).Current = false;
 
@@ -90,16 +90,13 @@ namespace BansheeGz.BGSpline.Editor
             protected override void AdditionalMenuItems()
             {
                 Add(new MenuSeparator());
-                Add(new MenuItemButton(BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGSelectionRemove123), "Remove this point from selection",
+                Add(new MenuItemButton(() => BGBinaryResources.BGSelectionRemove123, "Remove this point from selection",
                     () =>
                     {
                         EditorSelection.Clear();
                         EditorUtility.SetDirty(Overlay.Editor.Curve);
                     }));
             }
-
-
         }
-
     }
 }

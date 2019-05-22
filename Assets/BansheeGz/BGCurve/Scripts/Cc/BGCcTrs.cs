@@ -11,9 +11,8 @@ namespace BansheeGz.BGSpline.Components
             Description = "Translate + rotate + scale an object with one single component. " +
                           "It's 5 components in one (Cursor+CursorChangeLinear+MoveByCursor+RotateByCursor+ScaleByCursor) with basic functionality",
             Name = "TRS",
-            Image = "Assets/BansheeGz/BGCurve/Icons/Components/BGCcTrs123.png")
+            Icon = "BGCcTrs123")
     ]
-    [ExecuteInEditMode]
     [AddComponentMenu("BansheeGz/BGCurve/Components/BGCcTrs")]
     public class BGCcTrs : BGCcCursor
     {
@@ -350,6 +349,12 @@ namespace BansheeGz.BGSpline.Components
                 }
             }
 
+            // action!
+            Trs(sectionIndex);
+        }
+
+        public void Trs(int sectionIndex = -1)
+        {
             //move
             if (moveObject) objectToManipulate.position = Math.CalcPositionByDistance(distance);
 
@@ -382,7 +387,7 @@ namespace BansheeGz.BGSpline.Components
             }
 
             //scale
-            if (scaleObject) ObjectToManipulate.localScale = LerpVector3(ref sectionIndex, scaleField.FieldName);
+            if (scaleObject && scaleField!=null) ObjectToManipulate.localScale = LerpVector3(ref sectionIndex, scaleField.FieldName);
         }
 
         private Vector3 LerpVector3(ref int sectionIndex, string fieldName)
@@ -411,6 +416,15 @@ namespace BansheeGz.BGSpline.Components
             toPoint = sectionIndex == Curve.PointsCount - 1 ? Curve[0] : Curve[sectionIndex + 1];
             var sectionInfo = Math[sectionIndex];
             ratio = (Distance - sectionInfo.DistanceFromStartToOrigin) / (sectionInfo.DistanceFromEndToOrigin - sectionInfo.DistanceFromStartToOrigin);
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            if (Application.isPlaying) return;
+            if (objectToManipulate == null) return;
+            
+            Trs();
+            
         }
     }
 }

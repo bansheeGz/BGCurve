@@ -14,7 +14,7 @@ namespace BansheeGz.BGSpline.Components
         CcDescriptor(
             Description = "Align the object's rotation with curve's tangent or 'rotation' field values at the point, the Cursor provides.",
             Name = "Rotate Object By Cursor",
-            Image = "Assets/BansheeGz/BGCurve/Icons/Components/BGCcCursorObjectRotate123.png")
+            Icon = "BGCcCursorObjectRotate123")
     ]
     [AddComponentMenu("BansheeGz/BGCurve/Components/BGCcRotateObject")]
     [ExecuteInEditMode]

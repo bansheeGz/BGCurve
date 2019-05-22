@@ -9,8 +9,6 @@ namespace BansheeGz.BGSpline.Editor
     {
         protected const float DistanceTolerance = 100;
 
-        private readonly Texture2D pointSelectedTexture;
-
         protected T menu;
         protected BGCurveEditorPointsSelection editorSelection;
 
@@ -20,7 +18,6 @@ namespace BansheeGz.BGSpline.Editor
             : base(overlay)
         {
             this.editorSelection = editorSelection;
-            pointSelectedTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGPointSelected123);
         }
 
         internal override bool Seize(Event currentEvent, ref Vector3 position, ref string message)
@@ -30,7 +27,7 @@ namespace BansheeGz.BGSpline.Editor
                 menu.OnGui(currentEvent);
 
                 BGEditorUtility.Assign(ref pointIndicatorTransition, () => new BGTransition.SwayTransition(20, 30, .4f));
-                BGSceneViewOverlay.DrawHandlesGuiTexture(menu.Point2DPosition, pointIndicatorTransition, pointSelectedTexture);
+                BGSceneViewOverlay.DrawHandlesGuiTexture(menu.Point2DPosition, pointIndicatorTransition, BGBinaryResources.BGPointSelected123);
 
                 var okMessage = menu.ActiveItem != null && menu.ActiveItem.Description != null
                     ? "Release Ctrl to " + menu.ActiveItem.Description
@@ -56,7 +53,6 @@ namespace BansheeGz.BGSpline.Editor
         protected abstract bool Process(Event @event, BGCurveBaseMath math, float sceneViewHeight, ref Vector3 position, ref string message);
 
 
-
         protected static string SuccessMessage(string message)
         {
             return BGSceneViewOverlay.ToOk("Hover over an option and release Ctrl.\r\n") + message;
@@ -77,13 +73,13 @@ namespace BansheeGz.BGSpline.Editor
                 EditorSelection = editorSelection;
                 Overlay = overlay;
 
-                Add(new MenuItemButton(BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGControlAbsent123), "Convert point control to Absent",
+                Add(new MenuItemButton(() => BGBinaryResources.BGControlAbsent123, "Convert point control to Absent",
                     () => { SetControl(BGCurvePoint.ControlTypeEnum.Absent); }));
 
-                Add(new MenuItemButton(BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGControlBezierSymmetrical123), "Convert point control to Bezier Symmetrical",
+                Add(new MenuItemButton(() => BGBinaryResources.BGControlBezierSymmetrical123, "Convert point control to Bezier Symmetrical",
                     () => { SetControl(BGCurvePoint.ControlTypeEnum.BezierSymmetrical); }));
 
-                Add(new MenuItemButton(BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGControlBezierIndependent123), "Convert point control to Bezier Independent",
+                Add(new MenuItemButton(() => BGBinaryResources.BGControlBezierIndependent123, "Convert point control to Bezier Independent",
                     () => { SetControl(BGCurvePoint.ControlTypeEnum.BezierIndependant); }));
 
 
@@ -98,7 +94,7 @@ namespace BansheeGz.BGSpline.Editor
 
                 Add(new MenuSeparator());
 
-                Add(new MenuItemButton(BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGPointDelete123), "Delete a point", Delete));
+                Add(new MenuItemButton(() => BGBinaryResources.BGPointDelete123, "Delete a point", Delete));
             }
 
             protected virtual void AdditionalMenuItems()
@@ -124,7 +120,7 @@ namespace BansheeGz.BGSpline.Editor
 
             public override Texture2D Icon
             {
-                get { return BGEditorUtility.LoadTexture2D(BGCurveSettingsForEditor.LockView ? BGEditorUtility.Image.BGLockOn123 : BGEditorUtility.Image.BGLockOff123); }
+                get { return BGCurveSettingsForEditor.LockView ? BGBinaryResources.BGLockOn123 : BGBinaryResources.BGLockOff123; }
             }
         }
     }

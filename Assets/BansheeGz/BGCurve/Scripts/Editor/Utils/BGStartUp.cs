@@ -9,30 +9,16 @@ namespace BansheeGz.BGSpline.Editor
     {
         private const int IconSize = 20;
 
-        // Not selected
-        private static readonly Texture2D CurveIcon;
-        private static readonly Texture2D CurveWarningIcon;
-        private static readonly Texture2D CurveErrorIcon;
+        private static readonly GUIStyle curveStyle = new GUIStyle {fontStyle = FontStyle.Bold, normal = {textColor = new Color32(0, 144, 182, 255)}};
+        private static readonly GUIStyle curveWarningStyle = new GUIStyle {fontStyle = FontStyle.Bold, normal = {textColor = Color.yellow}};
+        private static readonly GUIStyle curveErrorStyle = new GUIStyle {fontStyle = FontStyle.Bold, normal = {textColor = Color.red}};
 
-        // Selected
-        private static readonly Texture2D CurveSelectedIcon;
-        private static readonly Texture2D CurveWarningSelectedIcon;
-        private static readonly Texture2D CurveErrorSelectedIcon;
+        private static readonly GUIStyle selectedCurveStyle = new GUIStyle {fontStyle = FontStyle.Bold, normal = {textColor = new Color(1, 1, 1, 1)}};
 
 
         static BGStartUp()
         {
-            CurveIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyIcon123, critical:false);
-            if (CurveIcon!=null)
-            {
-                CurveWarningIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyWarningIcon123);
-                CurveErrorIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyErrorIcon123);
-
-                CurveSelectedIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchySelectedIcon123);
-                CurveWarningSelectedIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyWarningSelectedIcon123);
-                CurveErrorSelectedIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGHierarchyErrorSelectedIcon123);
-                EditorApplication.hierarchyWindowItemOnGUI += ShowIcon;
-            }
+            EditorApplication.hierarchyWindowItemOnGUI += ShowIcon;
         }
 
         //thanks to laurentlavigne
@@ -44,26 +30,29 @@ namespace BansheeGz.BGSpline.Editor
             var curve = go.GetComponent<BGCurve>();
             if (curve == null) return;
 
-            var selected = Selection.Contains(instanceId);
             bool hasError = false, hasWarning = false;
             BGCurveEditorComponents.ComponentsStatus(curve, ref hasError, ref hasWarning);
 
-            var icon = selected
-                //selected
-                ? hasError
-                    ? CurveErrorSelectedIcon
-                    : hasWarning
-                        ? CurveWarningSelectedIcon
-                        : CurveSelectedIcon
+            string text;
+            GUIStyle style;
+            if (hasError)
+            {
+                text = "C!";
+                style = curveErrorStyle;
+            }
+            else if (hasWarning)
+            {
+                text = "C!";
+                style = curveWarningStyle;
+            }
+            else
+            {
+                text = "C";
+                var selected = Selection.Contains(instanceId);
+                style = selected ? selectedCurveStyle : curveStyle;
+            }
 
-                // Not selected
-                : hasError
-                    ? CurveErrorIcon
-                    : hasWarning
-                        ? CurveWarningIcon
-                        : CurveIcon;
-
-            GUI.Label(new Rect(selectionRect) {x = selectionRect.xMax - IconSize, width = IconSize}, icon);
+            GUI.Label(new Rect(selectionRect) {x = selectionRect.xMax - IconSize, width = IconSize}, text, style);
         }
     }
 }

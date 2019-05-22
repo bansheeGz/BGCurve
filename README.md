@@ -1,5 +1,5 @@
 # BGCurve
-Bezier curve editor for Unity 5.3
+Bezier curve editor for Unity game engine
 
 Unity Asset store: https://www.assetstore.unity3d.com/en/#!/content/59043
 

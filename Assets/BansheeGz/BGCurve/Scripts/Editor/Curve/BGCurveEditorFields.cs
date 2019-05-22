@@ -13,9 +13,6 @@ namespace BansheeGz.BGSpline.Editor
         private const int LabelWidth = 30;
 
         // ====================================== Fields
-        private readonly Texture2D deleteIcon;
-        private readonly Texture2D addIcon;
-
 
         private BGTableView systemUi;
         private BGTableView customUi;
@@ -26,13 +23,14 @@ namespace BansheeGz.BGSpline.Editor
         private BGCurvePointField.TypeEnum newFieldType;
         private readonly BGCurveEditorPointsSelection editorSelection;
 
-        public BGCurveEditorFields(BGCurveEditor editor, SerializedObject curveObject, BGCurveEditorPointsSelection editorSelection)
-            : base(editor, curveObject, BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGFields123))
+        public override Texture2D Header2D
+        {
+            get { return BGBinaryResources.BGFields123; }
+        }
+
+        public BGCurveEditorFields(BGCurveEditor editor, SerializedObject curveObject, BGCurveEditorPointsSelection editorSelection) : base(editor, curveObject)
         {
             this.editorSelection = editorSelection;
-
-            addIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGAdd123);
-            deleteIcon = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGDelete123);
         }
 
 
@@ -53,7 +51,7 @@ namespace BansheeGz.BGSpline.Editor
                 customUi.NextColumn(rect => BGEditorUtility.PopupField(rect, newFieldType, @enum => newFieldType = (BGCurvePointField.TypeEnum)@enum), 50);
                 customUi.NextColumn(rect =>
                 {
-                    if (!GUI.Button(rect, addIcon)) return;
+                    if (!GUI.Button(rect, BGBinaryResources.BGAdd123)) return;
 
                     if (NameHasError(Curve, newFieldName)) return;
 
@@ -112,7 +110,7 @@ namespace BansheeGz.BGSpline.Editor
             {
                 customFields = new PointField[fields.Length];
 
-                for (var i = 0; i < fields.Length; i++) customFields[i] = new PointField(fields[i], i, deleteIcon);
+                for (var i = 0; i < fields.Length; i++) customFields[i] = new PointField(fields[i], i, BGBinaryResources.BGDelete123);
             }
 
 

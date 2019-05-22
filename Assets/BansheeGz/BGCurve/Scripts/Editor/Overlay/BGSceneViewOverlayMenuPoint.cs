@@ -82,7 +82,7 @@ namespace BansheeGz.BGSpline.Editor
                 Add(new MenuSeparator());
 
                 //add before
-                Add(new MenuItemButton(BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGPointInsertBefore123), "Insert a point before this point",
+                Add(new MenuItemButton(() => BGBinaryResources.BGPointInsertBefore123, "Insert a point before this point",
                     () =>
                     {
                         var curve = point.Curve;
@@ -93,7 +93,7 @@ namespace BansheeGz.BGSpline.Editor
                     }));
 
                 //add after
-                Add(new MenuItemButton(BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGPointInsertAfter123), "Insert a point after this point",
+                Add(new MenuItemButton(() => BGBinaryResources.BGPointInsertAfter123, "Insert a point after this point",
                     () =>
                     {
                         var curve = point.Curve;
@@ -104,10 +104,10 @@ namespace BansheeGz.BGSpline.Editor
 
 
                 //add remove to selection
-                addToSelectionItem = new MenuItemButton(BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGSelectionAdd123), "Add this point to selection",
+                addToSelectionItem = new MenuItemButton(() => BGBinaryResources.BGSelectionAdd123, "Add this point to selection",
                     () => EditorSelection.Add(point));
 
-                removeFromSelectionItem = new MenuItemButton(BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGSelectionRemove123), "Remove this point from selection",
+                removeFromSelectionItem = new MenuItemButton(() => BGBinaryResources.BGSelectionRemove123, "Remove this point from selection",
                     () => EditorSelection.Remove(point));
 
                 Add(addToSelectionItem);

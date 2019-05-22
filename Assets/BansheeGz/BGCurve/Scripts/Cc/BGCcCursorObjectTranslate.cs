@@ -9,7 +9,7 @@ namespace BansheeGz.BGSpline.Components
         CcDescriptor(
             Description = "Translate an object to the position, the cursor provides.",
             Name = "Translate Object By Cursor",
-            Image = "Assets/BansheeGz/BGCurve/Icons/Components/BGCcCursorObjectTranslate123.png")
+            Icon = "BGCcCursorObjectTranslate123")
     ]
     [AddComponentMenu("BansheeGz/BGCurve/Components/BGCcTranslateObject")]
     [ExecuteInEditMode]

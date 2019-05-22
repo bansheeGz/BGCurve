@@ -12,67 +12,6 @@ namespace BansheeGz.BGSpline.Editor
     {
         private const string DefaultIconPath = "Assets/BansheeGz/BGCurve/Icons/";
 
-        //exact names for icons
-        public enum Image
-        {
-            BGCurveLogo123,
-            BGDelete123,
-            BGAdd123,
-            BGMoveUp123,
-            BGMoveDown123,
-            BGPoints123,
-            BGConvertAll123,
-            BGTickNo123,
-            BGTickYes123,
-            BGSelectAll123,
-            BGDeSelectAll123,
-            BGSettings123,
-            BGComponents123,
-            BGFields123,
-            BGTableHeader123,
-            BGTableCell123,
-            BGTableTitle123,
-            BGBoxWithBorder123,
-            BGPointSelected123,
-            BGPointMenu123,
-            BGControlAbsent123,
-            BGControlBezierSymmetrical123,
-            BGControlBezierIndependent123,
-            BGPointDelete123,
-            BGLockOff123,
-            BGLockOn123,
-            BGCcNoImage123,
-            BGCurveComponents123,
-            BGHelp123,
-            BGBoxRed123,
-            BGBoxWhite123,
-            BGCollapseAll123,
-            BGExpandAll123,
-            BGHierarchyIcon123,
-            BGHierarchySelectedIcon123,
-            BGHierarchyErrorIcon123,
-            BGHierarchyErrorSelectedIcon123,
-            BGOn123,
-            BGOff123,
-            BGHierarchyWarningSelectedIcon123,
-            BGHierarchyWarningIcon123,
-            BGMenuItemBackground123,
-            BGPointInsertAfter123,
-            BGPointInsertBefore123,
-            BGSelectionAdd123,
-            BGSelectionRemove123,
-            BGExpanded123,
-            BGCollapsed123,
-            BGSettingsIcon123,
-            BGCcEditName123,
-            BGHandlesOn123,
-            BGHandlesOff123,
-            BGCopy123,
-            BGPaste123,
-            BGHiddenOn123,
-            BGHiddenOff123
-        }
-
         private static readonly DragSession dragSession = new DragSession();
         private static Texture2D whiteTexture1x1;
 
@@ -540,11 +479,13 @@ namespace BansheeGz.BGSpline.Editor
 
 
         // ==============================================  Textures
+/*
         public static Texture2D LoadTexture2D(Image image, string path = DefaultIconPath, string ext = ".png", bool critical = true)
         {
             return LoadTexture2D(image.ToString(), path, ext, critical);
 
         }
+*/
 
         //loads a texture2d
         public static Texture2D LoadTexture2D(string image, string path = DefaultIconPath, string ext = ".png", bool critical = true)
@@ -555,7 +496,7 @@ namespace BansheeGz.BGSpline.Editor
             if (icon != null) return icon;
 
             //try to find in assets
-            var newPath = FindByName(Image.BGDelete123.ToString());
+            var newPath = FindByName("BGDelete123");
             if (newPath == null)
             {
                 if (critical)

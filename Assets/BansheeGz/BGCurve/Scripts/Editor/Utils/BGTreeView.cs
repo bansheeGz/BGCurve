@@ -12,17 +12,15 @@ namespace BansheeGz.BGSpline.Editor
         public Config Configuration { get; private set; }
 
         private Texture2D linkTexture;
-        private Texture2D expandedIconTexture;
-        private Texture2D collapsedIconTexture;
 
         public Texture2D ExpandedIconTexture
         {
-            get { return expandedIconTexture ?? (expandedIconTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGExpanded123)); }
+            get { return BGBinaryResources.BGExpanded123; }
         }
 
         public Texture2D CollapsedIconTexture
         {
-            get { return collapsedIconTexture ?? (collapsedIconTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGCollapsed123)); }
+            get { return BGBinaryResources.BGCollapsed123; }
         }
 
         public BGTreeView(Config config)

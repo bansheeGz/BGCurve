@@ -12,7 +12,6 @@ namespace BansheeGz.BGSpline.Editor
         private const int HeaderHeight = 16;
 
 
-        private readonly Texture2D menuItemBackgroundTexture;
         private readonly Texture2D backTexture;
         private readonly Texture2D selectedTexture;
         private readonly Texture2D currentTexture;
@@ -31,12 +30,27 @@ namespace BansheeGz.BGSpline.Editor
         private BGTransition.SimpleTransition onTransition;
 
         private readonly List<MenuItem> items = new List<MenuItem>();
-        private GUIStyle titleStyle;
+
+        private GUIStyle TitleStyle
+        {
+            get
+            {
+                return new GUIStyle("Label")
+                {
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleCenter,
+                    normal =
+                    {
+                        textColor = Color.white,
+                        background = BGBinaryResources.BGBoxWithBorder123
+                    },
+                };
+            }
+        }
 
         public BGPopupMenu(string title)
         {
             this.title = title;
-            menuItemBackgroundTexture = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGMenuItemBackground123);
             backTexture = BGEditorUtility.Texture1X1(new Color32(46, 144, 168, 80));
             selectedTexture = BGEditorUtility.Texture1X1(new Color32(0, 255, 0, 100));
             currentTexture = BGEditorUtility.Texture1X1(new Color32(200, 200, 200, 200));
@@ -66,15 +80,16 @@ namespace BansheeGz.BGSpline.Editor
             height = width = 0;
             foreach (var size in items.Where(item => !item.Disabled).Select(item => item.Size))
             {
-                if (height < size.y*2) height = size.y*2;
+                if (height < size.y * 2) height = size.y * 2;
                 width += size.x;
             }
+
             targetRect.size = new Vector2(width, height + HeaderHeight);
 
 
             //target position (go second)
-            targetRect.x = Point2DPosition.x - targetRect.size.x*.5f;
-            targetRect.y = Point2DPosition.y - targetRect.size.y*.75f;
+            targetRect.x = Point2DPosition.x - targetRect.size.x * .5f;
+            targetRect.y = Point2DPosition.y - targetRect.size.y * .75f;
         }
 
         public void OnGui(Event currentEvent)
@@ -90,23 +105,12 @@ namespace BansheeGz.BGSpline.Editor
                 return;
             }
 
-            BGEditorUtility.Assign(ref titleStyle, () => new GUIStyle("Label")
-            {
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter,
-                normal =
-                {
-                    textColor = Color.white,
-                    background = BGEditorUtility.LoadTexture2D(BGEditorUtility.Image.BGBoxWithBorder123)
-                },
-            });
-
             BGEditorUtility.HandlesGui(() =>
             {
                 if (onTransition != null && !onTransition.Tick())
                 {
                     //animating transition
-                    GUI.DrawTexture(new Rect(Vector2.Lerp(Point2DPosition, targetRect.position, onTransition.Ratio), targetRect.size*onTransition.Ratio), backTexture, ScaleMode.StretchToFill);
+                    GUI.DrawTexture(new Rect(Vector2.Lerp(Point2DPosition, targetRect.position, onTransition.Ratio), targetRect.size * onTransition.Ratio), backTexture, ScaleMode.StretchToFill);
                 }
                 else
                 {
@@ -114,7 +118,7 @@ namespace BansheeGz.BGSpline.Editor
                     onTransition = null;
 
                     GUI.DrawTexture(targetRect, backTexture, ScaleMode.StretchToFill);
-                    GUI.Label(new Rect(targetRect) {height = HeaderHeight}, title, titleStyle);
+                    GUI.Label(new Rect(targetRect) {height = HeaderHeight}, title, TitleStyle);
 
                     ActiveItem = null;
                     var cursor = targetRect.x;
@@ -135,7 +139,7 @@ namespace BansheeGz.BGSpline.Editor
                         //icon
                         if (item.Icon != null)
                         {
-                            GUI.DrawTexture(itemRect, menuItemBackgroundTexture, ScaleMode.StretchToFill);
+                            GUI.DrawTexture(itemRect, BGBinaryResources.BGMenuItemBackground123, ScaleMode.StretchToFill);
 
                             if (selected) GUI.DrawTexture(itemRect, selectedTexture, ScaleMode.StretchToFill);
 
@@ -194,7 +198,7 @@ namespace BansheeGz.BGSpline.Editor
         {
             public readonly Action Action;
 
-            private readonly Texture2D iconTexture;
+            private readonly Func<Texture2D> iconTexture;
             private readonly string description;
             private readonly Vector2 size = new Vector2(32, 32);
 
@@ -206,7 +210,7 @@ namespace BansheeGz.BGSpline.Editor
 
             public override Texture2D Icon
             {
-                get { return iconTexture; }
+                get { return iconTexture(); }
             }
 
             public override Vector2 Size
@@ -214,7 +218,7 @@ namespace BansheeGz.BGSpline.Editor
                 get { return size; }
             }
 
-            public MenuItemButton(Texture2D iconTexture, string description, Action action)
+            public MenuItemButton(Func<Texture2D> iconTexture, string description, Action action)
             {
                 this.iconTexture = iconTexture;
                 this.description = description;
