@@ -355,6 +355,8 @@ namespace BansheeGz.BGSpline.Components
 
         public void Trs(int sectionIndex = -1)
         {
+            if (objectToManipulate == null) return;
+            
             //move
             if (moveObject) objectToManipulate.position = Math.CalcPositionByDistance(distance);
 
