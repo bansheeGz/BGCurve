@@ -70,6 +70,7 @@ namespace BansheeGz.BGSpline.Editor
             }
 
             Math = NewMath(Curve, settings);
+            Math.SuppressWarning = true;
             CurrentGizmoPainter = new BGCurvePainterGizmo(Math);
             AllCurves = FindObjectsOfType<BGCurve>();
 

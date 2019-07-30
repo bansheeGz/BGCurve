@@ -746,7 +746,7 @@ namespace BansheeGz.BGSpline.Editor
             }
 
             public SystemFieldPosition(BGCurveSettings settings)
-                : base(settings, new GUIContent("Positions", "Point's positions"))
+                : base(settings, new GUIContent("#1. Positions", "Point's positions"))
             {
             }
 
@@ -821,7 +821,7 @@ namespace BansheeGz.BGSpline.Editor
 
 
             public SystemFieldControls(BGCurveSettings settings)
-                : base(settings, new GUIContent("Controls", "Point's Bezier control positions"))
+                : base(settings, new GUIContent("#2. Controls", "Point's Bezier control positions"))
             {
             }
 
@@ -844,7 +844,7 @@ namespace BansheeGz.BGSpline.Editor
             }
 
             public SystemFieldControlsType(BGCurveSettings settings)
-                : base(settings, new GUIContent("Control Type", "Point's control type (Absent, Bezier)"))
+                : base(settings, new GUIContent("#3. Control Type", "Point's control type (Absent, Bezier)"))
             {
             }
         }
@@ -859,7 +859,7 @@ namespace BansheeGz.BGSpline.Editor
             }
 
             public SystemFieldTransform(BGCurveSettings settings)
-                : base(settings, new GUIContent("Transform", "Transform to use as point's position"))
+                : base(settings, new GUIContent("#4. Transform", "Transform to use as point's position"))
             {
             }
         }

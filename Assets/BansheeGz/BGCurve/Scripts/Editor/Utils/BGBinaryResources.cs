@@ -65,10 +65,13 @@ namespace BansheeGz.BGSpline.Editor
 		public static readonly BGEditorIcon BGSelectionRemove123 = new BGEditorIcon(661152,4096,32,32);
 		public static readonly BGEditorIcon BGSettings123 = new BGEditorIcon(665248,1720,43,10);
 		public static readonly BGEditorIcon BGSettingsIcon123 = new BGEditorIcon(666968,4096,32,32);
-		public static readonly BGEditorIcon BGTableCell123 = new BGEditorIcon(671064,4096,32,32);
-		public static readonly BGEditorIcon BGTableHeader123 = new BGEditorIcon(675160,4096,32,32);
-		public static readonly BGEditorIcon BGTableTitle123 = new BGEditorIcon(679256,8192,64,32);
-		public static readonly BGEditorIcon BGTickNo123 = new BGEditorIcon(687448,2304,24,24);
-		public static readonly BGEditorIcon BGTickYes123 = new BGEditorIcon(689752,2304,24,24);
+		public static readonly BGEditorIcon BGTableCellDark123 = new BGEditorIcon(671064,2312,34,17);
+		public static readonly BGEditorIcon BGTableCellLight123 = new BGEditorIcon(673376,2312,34,17);
+		public static readonly BGEditorIcon BGTableHeaderDark123 = new BGEditorIcon(675688,2312,34,17);
+		public static readonly BGEditorIcon BGTableHeaderLight123 = new BGEditorIcon(678000,2312,34,17);
+		public static readonly BGEditorIcon BGTableTitleDark123 = new BGEditorIcon(680312,2312,34,17);
+		public static readonly BGEditorIcon BGTableTitleLight123 = new BGEditorIcon(682624,2312,34,17);
+		public static readonly BGEditorIcon BGTickNo123 = new BGEditorIcon(684936,2304,24,24);
+		public static readonly BGEditorIcon BGTickYes123 = new BGEditorIcon(687240,2304,24,24);
 	}
 }

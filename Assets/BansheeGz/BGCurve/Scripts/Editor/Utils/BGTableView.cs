@@ -7,7 +7,7 @@ namespace BansheeGz.BGSpline.Editor
     internal sealed class BGTableView
     {
         private const float Offset = 10;
-        private const int TitleOffset = 10;
+        private const int TitleOffset = 16;
 
         private readonly string[] headers; //headers
         private readonly int[] sizes; //column sizes percentages
@@ -40,8 +40,34 @@ namespace BansheeGz.BGSpline.Editor
         private float rows; //not data, but ui lines 
         private Vector2 cursor;
         private int currentColumn;
-        private Action onGuiAction;
+        private readonly Action onGuiAction;
 
+        private readonly bool darkTheme;
+
+        private GUIStyle TableCellStyle
+        {
+            get
+            {
+                return GetStyle(darkTheme ? BGBinaryResources.BGTableCellDark123 : BGBinaryResources.BGTableCellLight123);
+            }
+        }
+        private GUIStyle TableHeaderStyle
+        {
+            get
+            {
+                return GetStyle(darkTheme ? BGBinaryResources.BGTableHeaderDark123 : BGBinaryResources.BGTableHeaderLight123);
+            }
+        }
+        private GUIStyle TableTitleStyle
+        {
+            get
+            {
+                var style = GetStyle(darkTheme ? BGBinaryResources.BGTableTitleDark123 : BGBinaryResources.BGTableTitleLight123);
+                style.border = style.padding = new RectOffset(TitleOffset, TitleOffset, 2, 2);
+                return style;
+            }
+        }
+        
         public BGTableView(string title, string[] headers, int[] sizes, Action onGuiAction)
         {
             this.headers = headers;
@@ -50,8 +76,10 @@ namespace BansheeGz.BGSpline.Editor
             this.onGuiAction = onGuiAction;
 
             centeredLabelStyle = new GUIStyle("Label") {alignment = TextAnchor.MiddleCenter};
+            var normalTextColor = centeredLabelStyle.normal.textColor;
+            darkTheme = normalTextColor.r > .5 && normalTextColor.g > .5 && normalTextColor.b > .5;
 
-            height = GetStyle(BGBinaryResources.BGTableCell123).CalcSize(new GUIContent("Test")).y;
+            height = TableCellStyle.CalcSize(new GUIContent("Test")).y;
         }
 
         private void Init()
@@ -64,7 +92,7 @@ namespace BansheeGz.BGSpline.Editor
             currentColumn = 0;
 
             //---------------------------------- title
-            var titleStyle = GetTitleStyle();
+            var titleStyle = TableTitleStyle;
             EditorGUI.LabelField(new Rect(cursor.x, cursor.y, titleStyle.CalcSize(new GUIContent(title)).x + TitleOffset * 2, height), title, titleStyle);
             NextRow();
         }
@@ -80,22 +108,17 @@ namespace BansheeGz.BGSpline.Editor
             NextRow();
         }
 
-        private static GUIStyle GetTitleStyle()
-        {
-            var style = GetStyle(BGBinaryResources.BGTableTitle123);
-            style.border = style.padding = new RectOffset(TitleOffset, TitleOffset, 2, 2);
-            return style;
-        }
-
         private static GUIStyle GetStyle(Texture2D background)
         {
-            return new GUIStyle("Label")
+            var baseStyle = EditorStyles.label;
+            return new GUIStyle(baseStyle)
             {
                 padding = new RectOffset(2, 2, 2, 2),
                 border = new RectOffset(2, 2, 2, 2),
                 normal = new GUIStyleState
                 {
-                    background = background
+                    background = background,
+                    textColor = baseStyle.normal.textColor,
                 }
             };
         }
@@ -105,7 +128,8 @@ namespace BansheeGz.BGSpline.Editor
             var columnWidth = Width * (widthInPercent > 0 ? widthInPercent : sizes[currentColumn]) / 100f;
 
             var rect = new Rect(cursor.x, cursor.y, columnWidth, height);
-            EditorGUI.LabelField(rect, "", header ? GetStyle(BGBinaryResources.BGTableHeader123) : GetStyle(BGBinaryResources.BGTableCell123));
+
+            EditorGUI.LabelField(rect, "", header ? TableHeaderStyle : TableCellStyle);
 
             if (label != null)
             {
@@ -140,7 +164,7 @@ namespace BansheeGz.BGSpline.Editor
 
         public void NextRow(string message)
         {
-            EditorGUI.LabelField(new Rect(cursor.x, cursor.y, Width, height), message, GetStyle(BGBinaryResources.BGTableCell123));
+            EditorGUI.LabelField(new Rect(cursor.x, cursor.y, Width, height), message, TableCellStyle);
             NextRow();
         }
 
