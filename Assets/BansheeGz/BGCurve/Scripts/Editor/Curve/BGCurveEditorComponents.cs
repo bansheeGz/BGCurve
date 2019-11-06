@@ -87,6 +87,8 @@ namespace BansheeGz.BGSpline.Editor
                 {
                     customEditorsOn = !customEditorsOn;
                     tree.Refresh(null, true);
+                    SceneView.RepaintAll();
+                    GUIUtility.ExitGUI();
                 }
                 EditorGUILayout.Separator();
 

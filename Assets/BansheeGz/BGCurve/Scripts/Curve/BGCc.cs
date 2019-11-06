@@ -315,5 +315,39 @@ namespace BansheeGz.BGSpline.Curve
             {
             }
         }
+        
+        //======================== ContextMenu overrides
+        [ContextMenu("Reset", true)]
+        [ContextMenu("Copy Component", true)]
+        [ContextMenu("Paste Component Values", true)]
+        [ContextMenu("Remove Component", true)]
+        private bool ContextMenuItems()
+        {
+            return false;
+        }
+
+        [ContextMenu("Reset")]
+        [ContextMenu("Copy Component")]
+        [ContextMenu("Paste Component Values")]
+        [ContextMenu("Remove Component")]
+        private void ContextMenuValidate()
+        {
+            ShowError("BGCurve components do not support this function");
+        }
+
+        [ContextMenu("BGCurve: Why menu items are disabled?")]
+        private void WhyDisabled()
+        {
+            ShowError("BGCurve components do not support Resetting, Copy/Pasting and Removing components from standard Unity menu. Use colored tree view to remove components");
+        }
+
+        private static void ShowError(string message)
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorUtility.DisplayDialog("Info", message, "Ok");
+#else
+            Debug.Log(message);
+#endif
+        }
     }
 }

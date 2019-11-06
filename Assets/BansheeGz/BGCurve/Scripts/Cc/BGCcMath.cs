@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 using BansheeGz.BGSpline.Curve;
@@ -23,6 +22,7 @@ namespace BansheeGz.BGSpline.Components
         //===============================================================================================
         // maximum parts for Base math sectionParts parameter
         private const int PartsMax = 100;
+
         //reusable empty vertices array
         private static readonly Vector3[] EmptyVertices = new Vector3[0];
 
@@ -65,41 +65,54 @@ namespace BansheeGz.BGSpline.Components
         //===============================================================================================
 
         //=========================================================== Fields to calculate
-        [SerializeField] [Tooltip("Which fields you want to use.")] private BGCurveBaseMath.Fields fields = BGCurveBaseMath.Fields.Position;
+        [SerializeField] [Tooltip("Which fields you want to use.")]
+        private BGCurveBaseMath.Fields fields = BGCurveBaseMath.Fields.Position;
 
 
         //=========================================================== Math type
-        [SerializeField] [Tooltip("Math type to use.\r\n" +
-                                  "Base - uses uniformely split sections;\r\n " +
-                                  "Adaptive - uses non-uniformely split sections, based on the curvature. Expiremental.")] private MathTypeEnum mathType;
+        [SerializeField]
+        [Tooltip("Math type to use.\r\n" +
+                 "Base - uses uniformely split sections;\r\n " +
+                 "Adaptive - uses non-uniformely split sections, based on the curvature. Expiremental.")]
+        private MathTypeEnum mathType;
 
 
         //=========================================================== Base
 
-        [SerializeField] [Tooltip("The number of equal parts for each section, used by Base math.")] [Range(1, PartsMax)] private int sectionParts = 30;
+        [SerializeField] [Tooltip("The number of equal parts for each section, used by Base math.")] [Range(1, PartsMax)]
+        private int sectionParts = 30;
 
-        [SerializeField] [Tooltip("Use only 2 points for straight lines. Tangents may be calculated slightly different. Used by Base math.")] private bool optimizeStraightLines;
+        [SerializeField] [Tooltip("Use only 2 points for straight lines. Tangents may be calculated slightly different. Used by Base math.")]
+        private bool optimizeStraightLines;
 
         //=========================================================== Adaptive
-        [SerializeField] [Tooltip("Tolerance, used by Adaptive Math. The bigger the tolerance- the lesser splits. " +
-                                  "Note: The final tolerance used by Math is based on this value but different.")] [Range(BGCurveAdaptiveMath.MinTolerance, BGCurveAdaptiveMath.MaxTolerance)] private
+        [SerializeField]
+        [Tooltip("Tolerance, used by Adaptive Math. The bigger the tolerance- the lesser splits. " +
+                 "Note: The final tolerance used by Math is based on this value but different.")]
+        [Range(BGCurveAdaptiveMath.MinTolerance, BGCurveAdaptiveMath.MaxTolerance)]
+        private
             float tolerance = .2f;
 
         //=========================================================== Common
-        [SerializeField] [Tooltip("Points position will be used for tangent calculation. This can gain some performance")] private bool usePositionToCalculateTangents;
+        [SerializeField] [Tooltip("Points position will be used for tangent calculation. This can gain some performance")]
+        private bool usePositionToCalculateTangents;
 
 
         //=========================================================== Update modes
-        [SerializeField] [Tooltip("Updating math takes some resources. You can fine-tune in which cases math is updated."
-                                  + "\r\n1) Always- always update"
-                                  + "\r\n2) AabbVisible- update only if AABB (Axis Aligned Bounding Box) around points and controls is visible"
-                                  + "\r\n3) RendererVisible- update only if some renderer is visible"
-                          )] private UpdateModeEnum updateMode;
+        [SerializeField]
+        [Tooltip("Updating math takes some resources. You can fine-tune in which cases math is updated."
+                 + "\r\n1) Always- always update"
+                 + "\r\n2) AabbVisible- update only if AABB (Axis Aligned Bounding Box) around points and controls is visible"
+                 + "\r\n3) RendererVisible- update only if some renderer is visible"
+        )]
+        private UpdateModeEnum updateMode;
 
-        [SerializeField] [Tooltip("Renderer to check for updating math. Math will be updated only if renderer is visible")] private Renderer rendererForUpdateCheck;
+        [SerializeField] [Tooltip("Renderer to check for updating math. Math will be updated only if renderer is visible")]
+        private Renderer rendererForUpdateCheck;
 
         //=========================================================== Persistent Event
-        [SerializeField] [Tooltip("Event is fired, then math is recalculated")] private MathChangedEvent mathChangedEvent = new MathChangedEvent();
+        [SerializeField] [Tooltip("Event is fired, then math is recalculated")]
+        private MathChangedEvent mathChangedEvent = new MathChangedEvent();
 
 
         //---------------------------------------------------------------------------------------------
@@ -205,9 +218,14 @@ namespace BansheeGz.BGSpline.Components
         }
 
 #if UNITY_EDITOR
-        [Range(.5f, 1.5f)] [Tooltip("Spheres scale")] [SerializeField] private float spheresScale = 1;
-        [SerializeField] [Tooltip("Spheres color")] private Color spheresColor = Color.white;
-        [Range(2, 100)] [Tooltip("Maximum number of spheres. This parameter only affects how much points are shown in the Editor")] [SerializeField] private int spheresCount = 100;
+        [Range(.5f, 1.5f)] [Tooltip("Spheres scale")] [SerializeField]
+        private float spheresScale = 1;
+
+        [SerializeField] [Tooltip("Spheres color")]
+        private Color spheresColor = Color.white;
+
+        [Range(2, 100)] [Tooltip("Maximum number of spheres. This parameter only affects how much points are shown in the Editor")] [SerializeField]
+        private int spheresCount = 100;
 
         public float SpheresScale
         {
@@ -239,6 +257,7 @@ namespace BansheeGz.BGSpline.Components
 
         // Mesh filter for generated mesh with 2 points for visibility check (AabbVisible mode)
         private MeshFilter meshFilter;
+
         // Reusable array for 2 points for visibility check (AabbVisible mode)
         private readonly Vector3[] vertices = new Vector3[2];
 
@@ -280,6 +299,7 @@ namespace BansheeGz.BGSpline.Components
                 math.ChangeRequested -= MathOnChangeRequested;
                 math.Dispose();
             }
+
             ChangedParams -= InitMath;
         }
 
@@ -597,6 +617,7 @@ namespace BansheeGz.BGSpline.Components
                                 if (max.y < controlWorld.y) max.y = controlWorld.y;
                                 if (max.z < controlWorld.z) max.z = controlWorld.z;
                             }
+
                             if (closed || i != lastPointIndex)
                             {
                                 var controlWorld = matrix.MultiplyPoint(point.ControlSecondLocal + posLocal);
@@ -692,5 +713,6 @@ namespace BansheeGz.BGSpline.Components
         public class MathChangedEvent : UnityEvent
         {
         }
+
     }
 }
