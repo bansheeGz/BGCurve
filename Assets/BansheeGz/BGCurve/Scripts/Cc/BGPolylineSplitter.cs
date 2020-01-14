@@ -114,7 +114,7 @@ namespace BansheeGz.BGSpline.Components
                     break;
             }
 
-            if (config.DistanceMin >= 0 || config.DistanceMax >= 0)
+            if (config.DistanceMin > 0 || config.DistanceMax > 0)
             {
                 //currently DistanceMin and DistanceMax supported by SplitModeEnum.UseMathData only
                 if (mode != BGCcSplitterPolyline.SplitModeEnum.UseMathData) throw new Exception("DistanceMin and DistanceMax supported by SplitModeEnum.UseMathData mode only");
