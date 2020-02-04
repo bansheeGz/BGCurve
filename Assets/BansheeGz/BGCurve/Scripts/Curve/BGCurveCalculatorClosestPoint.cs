@@ -152,6 +152,7 @@ namespace BansheeGz.BGSpline.Curve
                                 minSectionMaxDistance = sectionDistance;
                                 maxDistanceChanged = true;
                             }
+
                             sectionsLeft++;
                         }
                     }
@@ -171,6 +172,7 @@ namespace BansheeGz.BGSpline.Curve
                                 minSectionMaxDistance = sectionDistance;
                                 maxDistanceChanged = true;
                             }
+
                             sectionsLeft++;
                         }
                     }
@@ -179,7 +181,9 @@ namespace BansheeGz.BGSpline.Curve
 
                 //----------------------- Section Bbox Partitioning 3rd pass (since minSectionMaxDistance may be changed in 2nd pass, we need to iterate sections and filter them again)
                 if (maxDistanceChanged && sectionsLeft > 1)
-                    for (var i = 0; i < sectionsCount; i++) if (!excludedSections[i] && minSectionDistances[i] > minSectionMaxDistance) excludedSections[i] = true;
+                    for (var i = 0; i < sectionsCount; i++)
+                        if (!excludedSections[i] && minSectionDistances[i] > minSectionMaxDistance)
+                            excludedSections[i] = true;
             }
 
             //==========================================================================================================================
@@ -221,7 +225,7 @@ namespace BansheeGz.BGSpline.Curve
                         var deltaX = toPos.x - targetPoint.x;
                         var deltaY = toPos.y - targetPoint.y;
                         var deltaZ = toPos.z - targetPoint.z;
-                        var toDistance = deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ;
+                        var toDistance = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
                         var toLess = toDistance <= closestLineMaxDistance;
 
@@ -234,8 +238,10 @@ namespace BansheeGz.BGSpline.Curve
 
                 //======================================================================     Section Bbox partitioning (again)
                 //----------------------- Section Bbox Partitioning 4th pass (cause closestLineMaxDistance may be smaller than minSectionMaxDistance we used before)
-                if (sectionsOptimizationOn && closestLineMaxDistance < minSectionMaxDistance) 
-                    for (var i = 0; i < sectionsCount; i++) if (!excludedSections[i] && minSectionDistances[i] > closestLineMaxDistance) excludedSections[i] = true;
+                if (sectionsOptimizationOn && closestLineMaxDistance < minSectionMaxDistance)
+                    for (var i = 0; i < sectionsCount; i++)
+                        if (!excludedSections[i] && minSectionDistances[i] > closestLineMaxDistance)
+                            excludedSections[i] = true;
             }
 
 
@@ -310,6 +316,7 @@ namespace BansheeGz.BGSpline.Curve
                                 zSet = true;
                             }
                         }
+
                         //z shift
                         if (!zSet)
                         {
@@ -357,6 +364,7 @@ namespace BansheeGz.BGSpline.Curve
                                 zSet = true;
                             }
                         }
+
                         //z shift
                         if (!zSet)
                         {
@@ -390,7 +398,7 @@ namespace BansheeGz.BGSpline.Curve
                         var fromToZ = (double) toPos.z - (double) fromPos.z;
 
                         //sqr magnitude inlined
-                        var fromToSquaredDistance = (float) (fromToX*fromToX + fromToY*fromToY + fromToZ*fromToZ);
+                        var fromToSquaredDistance = (float) (fromToX * fromToX + fromToY * fromToY + fromToZ * fromToZ);
 
 
                         if (Math.Abs(fromToSquaredDistance) < BGCurve.Epsilon)
@@ -404,7 +412,7 @@ namespace BansheeGz.BGSpline.Curve
                         else
                         {
                             // dot inlined
-                            var dot = (float) (fromTargetX*fromToX + fromTargetY*fromToY + fromTargetZ*fromToZ);
+                            var dot = (float) (fromTargetX * fromToX + fromTargetY * fromToY + fromTargetZ * fromToZ);
 
                             if (dot < 0)
                             {
@@ -425,9 +433,9 @@ namespace BansheeGz.BGSpline.Curve
                             {
                                 var dotRatio = dot / fromToSquaredDistance;
                                 ratio = dotRatio;
-                                pointX = fromPos.x + fromToX*dotRatio;
-                                pointY = fromPos.y + fromToY*dotRatio;
-                                pointZ = fromPos.z + fromToZ*dotRatio;
+                                pointX = fromPos.x + fromToX * dotRatio;
+                                pointY = fromPos.y + fromToY * dotRatio;
+                                pointZ = fromPos.z + fromToZ * dotRatio;
                             }
                         }
 
@@ -436,7 +444,7 @@ namespace BansheeGz.BGSpline.Curve
                         var deltaX = (double) targetPoint.x - (double) pointX;
                         var deltaY = (double) targetPoint.y - (double) pointY;
                         var deltaZ = (double) targetPoint.z - (double) pointZ;
-                        var sqrMagnitude = (float) (deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ);
+                        var sqrMagnitude = (float) (deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
                         if (sqrMagnitude < minDistance)
                         {
                             minDistance = sqrMagnitude;
@@ -479,7 +487,7 @@ namespace BansheeGz.BGSpline.Curve
             //                                                                                  Final result
             //================================================================================================
             var resultSection = sections[sectionIndex];
-            if (resultLerp > 0 && resultLerp < 1 && pointIndex < resultSection.PointsCount - 1)
+            if (resultLerp >= 0 && resultLerp <= 1 && pointIndex < resultSection.PointsCount - 1)
             {
                 var lerpFrom = resultSection[pointIndex];
                 var lerpTo = resultSection[pointIndex + 1];
@@ -505,14 +513,14 @@ namespace BansheeGz.BGSpline.Curve
             var deltaX = section.OriginalFrom.x - position.x;
             var deltaY = section.OriginalFrom.y - position.y;
             var deltaZ = section.OriginalFrom.z - position.z;
-            var fromDistance = deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ;
+            var fromDistance = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
 
 //        var toDistance = Vector3.SqrMagnitude(section.OriginalTo - position);
             deltaX = section.OriginalTo.x - position.x;
             deltaY = section.OriginalTo.y - position.y;
             deltaZ = section.OriginalTo.z - position.z;
-            var toDistance = deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ;
+            var toDistance = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
 
             var fromControlAbsent = section.OriginalFromControlType == BGCurvePoint.ControlTypeEnum.Absent;
@@ -530,7 +538,7 @@ namespace BansheeGz.BGSpline.Curve
                     deltaX = section.OriginalToControl.x - position.x;
                     deltaY = section.OriginalToControl.y - position.y;
                     deltaZ = section.OriginalToControl.z - position.z;
-                    var toControlDistance = deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ;
+                    var toControlDistance = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
 
                     maxDistance = Mathf.Max(Mathf.Max(fromDistance, toDistance), toControlDistance);
@@ -541,7 +549,7 @@ namespace BansheeGz.BGSpline.Curve
                     deltaX = section.OriginalFromControl.x - position.x;
                     deltaY = section.OriginalFromControl.y - position.y;
                     deltaZ = section.OriginalFromControl.z - position.z;
-                    var fromControlDistance = deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ;
+                    var fromControlDistance = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
 
                     maxDistance = Mathf.Max(Mathf.Max(fromDistance, toDistance), fromControlDistance);
@@ -552,17 +560,18 @@ namespace BansheeGz.BGSpline.Curve
                     deltaX = section.OriginalFromControl.x - position.x;
                     deltaY = section.OriginalFromControl.y - position.y;
                     deltaZ = section.OriginalFromControl.z - position.z;
-                    var fromControlDistance = deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ;
+                    var fromControlDistance = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
                     //        var toControlDistance = Vector3.SqrMagnitude(section.OriginalToControl - position);
                     deltaX = section.OriginalToControl.x - position.x;
                     deltaY = section.OriginalToControl.y - position.y;
                     deltaZ = section.OriginalToControl.z - position.z;
-                    var toControlDistance = deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ;
+                    var toControlDistance = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
                     maxDistance = Mathf.Max(Mathf.Max(Mathf.Max(fromDistance, toDistance), fromControlDistance), toControlDistance);
                 }
             }
+
             return maxDistance;
         }
     }

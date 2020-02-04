@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using BansheeGz.BGSpline.Curve;
+using NUnit.Framework;
 using UnityEngine;
 
 namespace BansheeGz.BGSpline.Components
@@ -10,6 +11,7 @@ namespace BansheeGz.BGSpline.Components
     {
         //different providers for different modes
         private PositionsProvider positionsProvider;
+
         //reusable array, storing if section is straight. 
         private bool[] straightBits;
 
@@ -18,10 +20,12 @@ namespace BansheeGz.BGSpline.Components
         private PositionsProviderPartsPerSection providerPartsPerSection;
         private PositionsProviderTotalParts providerTotalParts;
 
-        public void Bind(List<Vector3> positions, BGCcMath math, Config config)
+        public void Bind(List<Vector3> positions, BGCcMath math, Config config, List<BGCcSplitterPolyline.PolylinePoint> points)
         {
             positions.Clear();
+            points.Clear();
 
+            var tangentCalculated = math.IsCalculated(BGCurveBaseMath.Field.Tangent);
             var baseMath = math.Math;
             var sectionsCount = baseMath.SectionsCount;
 
@@ -36,14 +40,21 @@ namespace BansheeGz.BGSpline.Components
 
 
             //recalculate points
-            InitProvider(ref positionsProvider, math, config).Build(positions, straightLinesCount, straightBits);
+            InitProvider(ref positionsProvider, math, config).Build(positions, straightLinesCount, straightBits, points);
 
             if (!config.UseLocal) return;
 
             //slow convertion (world->local)
             var matrix = config.Transform.worldToLocalMatrix;
             var count = positions.Count;
-            for (var i = 0; i < count; i++) positions[i] = matrix.MultiplyPoint(positions[i]);
+            for (var i = 0; i < count; i++)
+            {
+                var localPos = matrix.MultiplyPoint(positions[i]);
+                positions[i] = localPos;
+
+                var point = points[i];
+                points[i] = new BGCcSplitterPolyline.PolylinePoint(localPos, point.Distance, tangentCalculated ? config.Transform.InverseTransformDirection(point.Tangent) : Vector3.zero);
+            }
         }
 
         //count the number of straight lines
@@ -73,6 +84,7 @@ namespace BansheeGz.BGSpline.Components
 
                 previousControlAbsent = nextControlAbsent;
             }
+
             return straightLinesCount;
         }
 
@@ -93,6 +105,7 @@ namespace BansheeGz.BGSpline.Components
                         if (providerTotalParts == null) providerTotalParts = new PositionsProviderTotalParts();
                         positionsProvider = providerTotalParts;
                     }
+
                     providerTotalParts.Init(math, config.PartsTotal);
                     break;
                 case BGCcSplitterPolyline.SplitModeEnum.PartsPerSection:
@@ -101,6 +114,7 @@ namespace BansheeGz.BGSpline.Components
                         if (providerPartsPerSection == null) providerPartsPerSection = new PositionsProviderPartsPerSection();
                         positionsProvider = providerPartsPerSection;
                     }
+
                     providerPartsPerSection.Init(math, config.PartsPerSection);
                     break;
                 default:
@@ -110,6 +124,7 @@ namespace BansheeGz.BGSpline.Components
                         if (providerMath == null) providerMath = new PositionsProviderMath();
                         positionsProvider = providerMath;
                     }
+
                     providerMath.Init(math);
                     break;
             }
@@ -122,6 +137,7 @@ namespace BansheeGz.BGSpline.Components
                 positionsProvider.DistanceMin = config.DistanceMin;
                 positionsProvider.DistanceMax = config.DistanceMax;
             }
+
             return positionsProvider;
         }
 
@@ -159,6 +175,7 @@ namespace BansheeGz.BGSpline.Components
 
             protected bool DistanceMinConstrained;
             protected bool DistanceMaxConstrained;
+            protected bool calculatingTangents;
 
             public float DistanceMin
             {
@@ -185,13 +202,14 @@ namespace BansheeGz.BGSpline.Components
             {
                 Math = math;
                 LastPointAdded = false;
+                calculatingTangents = Math.IsCalculated(BGCurveBaseMath.Field.Tangent);
             }
 
             /// <summary>if this provider can build points for the given mode </summary>
             public abstract bool Comply(BGCcSplitterPolyline.SplitModeEnum splitMode);
 
             /// <summary>calculate points fro polyline</summary>
-            public virtual void Build(List<Vector3> positions, int straightLinesCount, bool[] straightBits)
+            public virtual void Build(List<Vector3> positions, int straightLinesCount, bool[] straightBits, List<BGCcSplitterPolyline.PolylinePoint> points)
             {
                 var math = Math.Math;
 
@@ -199,7 +217,12 @@ namespace BansheeGz.BGSpline.Components
                 var sectionsCount = sections.Count;
 
                 //first point always present
-                if (!DistanceMinConstrained) positions.Add(math[0][0].Position);
+                if (!DistanceMinConstrained)
+                {
+                    var firstPoint = math[0][0];
+                    positions.Add(firstPoint.Position);
+                    points.Add(new BGCcSplitterPolyline.PolylinePoint(firstPoint.Position, 0, firstPoint.Tangent));
+                }
 
                 //fill in points
                 for (var i = 0; i < sectionsCount; i++)
@@ -214,32 +237,33 @@ namespace BansheeGz.BGSpline.Components
                         var lastPoint = section[section.PointsCount - 1];
                         var prevPoint = section[section.PointsCount - 2];
 
-                        if (DistanceMinConstrained && positions.Count == 0) AddFirstPointIfNeeded(positions, section, lastPoint, prevPoint);
+                        if (DistanceMinConstrained && positions.Count == 0) AddFirstPointIfNeeded(positions, section, lastPoint, prevPoint, points);
                         if (DistanceMaxConstrained && !LastPointAdded && lastPoint.DistanceToSectionStart + section.DistanceFromStartToOrigin > DistanceMax
-                            && AddLastPointIfNeeded(positions, section, lastPoint, prevPoint)) break;
+                            && AddLastPointIfNeeded(positions, section, lastPoint, prevPoint, points)) break;
 
                         positions.Add(lastPoint.Position);
+                        points.Add(new BGCcSplitterPolyline.PolylinePoint(lastPoint.Position, section.DistanceFromEndToOrigin, lastPoint.Tangent));
                     }
                     // curved line
-                    else FillInSplitSection(section, positions);
+                    else FillInSplitSection(section, positions, points);
                 }
             }
 
             //if distanceMin is used, we need to add additional point
             protected void AddFirstPointIfNeeded(List<Vector3> positions, BGCurveBaseMath.SectionInfo section,
-                BGCurveBaseMath.SectionPointInfo firstPointInRange, BGCurveBaseMath.SectionPointInfo previousPoint)
+                BGCurveBaseMath.SectionPointInfo firstPointInRange, BGCurveBaseMath.SectionPointInfo previousPoint, List<BGCcSplitterPolyline.PolylinePoint> points)
             {
                 var firstPointDistance = firstPointInRange.DistanceToSectionStart + section.DistanceFromStartToOrigin;
                 var distanceToAdd = firstPointDistance - DistanceMin;
                 if (!(distanceToAdd > BGCurve.Epsilon)) return;
 
-                var ratio = 1 - distanceToAdd/(firstPointInRange.DistanceToSectionStart - previousPoint.DistanceToSectionStart);
-                positions.Add(Vector3.Lerp(previousPoint.Position, firstPointInRange.Position, ratio));
+                var ratio = 1 - distanceToAdd / (firstPointInRange.DistanceToSectionStart - previousPoint.DistanceToSectionStart);
+                Add(section, positions, points, previousPoint, firstPointInRange, ratio);
             }
 
             //if distanceMin is used, we need to add additional point
             protected bool AddLastPointIfNeeded(List<Vector3> positions, BGCurveBaseMath.SectionInfo section,
-                BGCurveBaseMath.SectionPointInfo currentPoint, BGCurveBaseMath.SectionPointInfo previousPoint)
+                BGCurveBaseMath.SectionPointInfo currentPoint, BGCurveBaseMath.SectionPointInfo previousPoint, List<BGCcSplitterPolyline.PolylinePoint> points)
             {
                 var currentPointDistance = currentPoint.DistanceToSectionStart + section.DistanceFromStartToOrigin;
                 if (!(currentPointDistance > DistanceMax)) return false;
@@ -253,33 +277,63 @@ namespace BansheeGz.BGSpline.Components
                     var distanceToAdd = currentPointDistance - DistanceMax;
                     LastPointAdded = true;
                     var ratio = distanceToAdd / (currentPoint.DistanceToSectionStart - previousPoint.DistanceToSectionStart);
-                    positions.Add(Vector3.Lerp(previousPoint.Position, currentPoint.Position, ratio));
+                    Add(section, positions, points, previousPoint, currentPoint, ratio);
+//                    positions.Add(Vector3.Lerp(previousPoint.Position, currentPoint.Position, ratio));
                 }
                 else
                 {
                     var distanceToLastPoint = Mathf.Sqrt(lastPointInTheListMagnitude);
                     var distanceToMaxPoint = currentPointDistance - DistanceMax;
                     var ratio = 1 - distanceToMaxPoint / distanceToLastPoint;
-                    positions.Add(Vector3.Lerp(positions[positions.Count - 1], currentPoint.Position, ratio));
+                    Add(section, positions, points, points[positions.Count - 1], currentPoint, ratio);
+//                    positions.Add(Vector3.Lerp(positions[positions.Count - 1], currentPoint.Position, ratio));
                 }
+
                 return true;
             }
 
-            // add points for a section by a given number of points
-            protected static void FillIn(BGCurveBaseMath.SectionInfo section, List<Vector3> result, int parts)
+            private void Add(BGCurveBaseMath.SectionInfo section, List<Vector3> positions, List<BGCcSplitterPolyline.PolylinePoint> points, BGCcSplitterPolyline.PolylinePoint previousPoint,
+                BGCurveBaseMath.SectionPointInfo nextPoint, float ratio)
             {
-                var onePartDistance = section.Distance/parts;
+                var pos = Vector3.Lerp(previousPoint.Position, nextPoint.Position, ratio);
+                positions.Add(pos);
+                points.Add(new BGCcSplitterPolyline.PolylinePoint(
+                    pos,
+                    Mathf.Lerp(previousPoint.Distance, section.DistanceFromStartToOrigin + nextPoint.DistanceToSectionStart, ratio),
+                    calculatingTangents ? Vector3.Lerp(previousPoint.Tangent, nextPoint.Tangent, ratio) : Vector3.zero
+                ));
+            }
+
+            //add position and point
+            private void Add(BGCurveBaseMath.SectionInfo section, List<Vector3> positions, List<BGCcSplitterPolyline.PolylinePoint> points, BGCurveBaseMath.SectionPointInfo previousPoint,
+                BGCurveBaseMath.SectionPointInfo nextPoint, float ratio)
+            {
+                var pos = Vector3.Lerp(previousPoint.Position, nextPoint.Position, ratio);
+                positions.Add(pos);
+                points.Add(new BGCcSplitterPolyline.PolylinePoint(
+                    pos,
+                    section.DistanceFromStartToOrigin + Mathf.Lerp(previousPoint.DistanceToSectionStart, nextPoint.DistanceToSectionStart, ratio),
+                    calculatingTangents ? Vector3.Lerp(previousPoint.Tangent, nextPoint.Tangent, ratio) : Vector3.zero
+                ));
+            }
+
+            // add points for a section by a given number of points
+            protected void FillIn(BGCurveBaseMath.SectionInfo section, List<Vector3> result, int parts, List<BGCcSplitterPolyline.PolylinePoint> points)
+            {
+                var onePartDistance = section.Distance / parts;
                 for (var j = 1; j <= parts; j++)
                 {
                     Vector3 tangent;
                     Vector3 pos;
-                    section.CalcByDistance(onePartDistance*j, out pos, out tangent, true, false);
+                    var currentDistance = onePartDistance * j;
+                    section.CalcByDistance(currentDistance, out pos, out tangent, true, calculatingTangents);
                     result.Add(pos);
+                    points.Add(new BGCcSplitterPolyline.PolylinePoint(pos, section.DistanceFromStartToOrigin + currentDistance, tangent));
                 }
             }
 
             // add points for a split section 
-            protected abstract void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result);
+            protected abstract void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result, List<BGCcSplitterPolyline.PolylinePoint> points);
         }
 
         //============================================= Provider for total parts mode
@@ -303,40 +357,82 @@ namespace BansheeGz.BGSpline.Components
                 return splitMode == BGCcSplitterPolyline.SplitModeEnum.PartsTotal;
             }
 
-            public override void Build(List<Vector3> positions, int straightLinesCount, bool[] straightBits)
+            public override void Build(List<Vector3> positions, int straightLinesCount, bool[] straightBits, List<BGCcSplitterPolyline.PolylinePoint> points)
             {
                 var curve = Math.Curve;
                 var sections = Math.Math.SectionInfos;
                 var sectionsCount = sections.Count;
 
                 //at least one section is curved (maxParts>=sectionsCount, so floatParts >=1)
-                var floatParts = (parts - straightLinesCount)/(float) (sectionsCount - straightLinesCount);
+                var floatParts = (parts - straightLinesCount) / (float) (sectionsCount - straightLinesCount);
 
-                reminderForCurved = (int) ((parts - straightLinesCount)%(float) (sectionsCount - straightLinesCount));
+                reminderForCurved = (int) ((parts - straightLinesCount) % (float) (sectionsCount - straightLinesCount));
                 partsPerSectionFloor = Mathf.FloorToInt(floatParts);
 
 
                 if (parts < sectionsCount)
                 {
+                    var distance = Math.GetDistance();
                     if (parts == 1)
                     {
                         //only one part per whole curve (one->last)
-                        positions.Add(sections[0][0].Position);
-                        positions.Add(curve.Closed ? Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, .5f) : sections[sectionsCount - 1][sections[sectionsCount - 1].PointsCount - 1].Position);
+                        var firstPoint = sections[0][0];
+                        positions.Add(firstPoint.Position);
+                        points.Add(new BGCcSplitterPolyline.PolylinePoint(firstPoint.Position, 0, firstPoint.Tangent));
+
+                        if (curve.Closed)
+                        {
+                            Vector3 tangent;
+                            var pos = Math.CalcByDistanceRatio( .5f, out tangent);
+                            positions.Add(pos);
+                            points.Add(new BGCcSplitterPolyline.PolylinePoint(pos, distance * .5f ,tangent));
+
+                        }
+                        else
+                        {
+                            var lastSection = sections[sectionsCount - 1];
+                            var lastPoint = lastSection[lastSection.PointsCount - 1];
+                            positions.Add(lastPoint.Position);
+                            points.Add(new BGCcSplitterPolyline.PolylinePoint(lastPoint.Position, lastSection.DistanceFromEndToOrigin, lastPoint.Tangent));
+                        }
+                        
+                        
                     }
                     else if (parts == 2 && curve.Closed)
                     {
-                        positions.Add(sections[0][0].Position);
-                        positions.Add(Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, .3333f));
-                        positions.Add(Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, .6667f));
+                        var firstPoint = sections[0][0];
+                        positions.Add(firstPoint.Position);
+                        points.Add(new BGCcSplitterPolyline.PolylinePoint(firstPoint.Position, 0, firstPoint.Tangent));
+
+                        Vector3 tangent2;
+                        var distanceRatio2 = 1/3f;
+                        var pos2 = Math.CalcByDistanceRatio(distanceRatio2, out tangent2);
+                        positions.Add(pos2);
+                        points.Add(new BGCcSplitterPolyline.PolylinePoint(pos2, distance * distanceRatio2, tangent2));
+                        
+                        Vector3 tangent3;
+                        var distanceRatio3 = 2/3f;
+                        var pos3 = Math.CalcByDistanceRatio(distanceRatio3, out tangent3);
+                        positions.Add(pos3);
+                        points.Add(new BGCcSplitterPolyline.PolylinePoint(pos3, distance * distanceRatio3, tangent3));
                     }
-                    else for (var i = 0; i <= parts; i++) positions.Add(Math.CalcByDistanceRatio(BGCurveBaseMath.Field.Position, i/(float) parts));
+                    else
+                    {
+                        for (var i = 0; i <= parts; i++)
+                        {
+                            var ratio = i / (float) parts;
+                            Vector3 tangent;
+                            var pos = Math.CalcByDistanceRatio(ratio, out tangent);
+                            positions.Add(pos);
+                            points.Add(new BGCcSplitterPolyline.PolylinePoint(pos, distance * ratio, tangent));
+                        }
+                    }
                 }
-                else base.Build(positions, straightLinesCount, straightBits);
+                else base.Build(positions, straightLinesCount, straightBits, points);
             }
 
             // add points for a split section 
-            protected override void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result)
+            protected override void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result, List<BGCcSplitterPolyline.PolylinePoint> points)
             {
                 //curved
                 var partsForSection = partsPerSectionFloor;
@@ -346,7 +442,7 @@ namespace BansheeGz.BGSpline.Components
                     reminderForCurved--;
                 }
 
-                FillIn(section, result, partsForSection);
+                FillIn(section, result, partsForSection, points);
             }
         }
 
@@ -369,9 +465,9 @@ namespace BansheeGz.BGSpline.Components
             }
 
             // add points for a split section 
-            protected override void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result)
+            protected override void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result, List<BGCcSplitterPolyline.PolylinePoint> points)
             {
-                FillIn(section, result, parts);
+                FillIn(section, result, parts, points);
             }
         }
 
@@ -386,7 +482,7 @@ namespace BansheeGz.BGSpline.Components
             }
 
             // add points for a split section 
-            protected override void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result)
+            protected override void FillInSplitSection(BGCurveBaseMath.SectionInfo section, List<Vector3> result, List<BGCcSplitterPolyline.PolylinePoint> points)
             {
                 if (LastPointAdded) return;
 
@@ -397,11 +493,15 @@ namespace BansheeGz.BGSpline.Components
                 {
                     var point = sectionPoints[j];
 
-                    if (DistanceMinConstrained && result.Count == 0) AddFirstPointIfNeeded(result, section, point, sectionPoints[j - 1]);
+                    if (DistanceMinConstrained && result.Count == 0) AddFirstPointIfNeeded(result, section, point, sectionPoints[j - 1], points);
 
-                    if (DistanceMaxConstrained && AddLastPointIfNeeded(result, section, point, sectionPoints[j - 1])) break;
+                    if (DistanceMaxConstrained && AddLastPointIfNeeded(result, section, point, sectionPoints[j - 1], points)) break;
 
                     result.Add(point.Position);
+                    points.Add(new BGCcSplitterPolyline.PolylinePoint(
+                        point.Position,
+                        section.DistanceFromStartToOrigin + point.DistanceToSectionStart,
+                        calculatingTangents ? point.Tangent : Vector3.zero));
                 }
             }
         }

@@ -182,6 +182,8 @@ namespace BansheeGz.BGSpline.Components
 
         //do not remove readonly. Reusable positions list, storing last calculated positions
         protected readonly List<Vector3> positions = new List<Vector3>();
+        //do not remove readonly. Reusable points list, storing last calculated points
+        protected readonly List<PolylinePoint> points = new List<PolylinePoint>();
         //if current data valid?
         protected bool dataValid;
 
@@ -208,6 +210,16 @@ namespace BansheeGz.BGSpline.Components
                 return positions;
             }
         }
+
+        public List<PolylinePoint> Points
+        {
+            get
+            {
+                if (!dataValid) UpdateData();
+                return points;
+            }
+        }
+            
 
         //===============================================================================================
         //                                                    Unity Callbacks
@@ -291,6 +303,7 @@ namespace BansheeGz.BGSpline.Components
             }
 
             positions.Clear();
+            points.Clear();
             if (noData) return;
 
             if (splitter == null) splitter = new BGPolylineSplitter();
@@ -303,7 +316,7 @@ namespace BansheeGz.BGSpline.Components
             config.UseLocal = UseLocal;
             config.Transform = myTransform;
 
-            splitter.Bind(positions, Math, config);
+            splitter.Bind(positions, Math, config, points);
         }
 
 
@@ -313,6 +326,42 @@ namespace BansheeGz.BGSpline.Components
             InvalidateData();
         }
 
+        /// <summary>
+        /// Information about the point (pos+distance+tangent)
+        /// </summary>
+        public struct PolylinePoint
+        {
+            /// <summary>
+            /// point's Position
+            /// </summary>
+            public Vector3 Position;
+            
+            /// <summary>
+            /// distance to curve's 1st point
+            /// </summary>
+            public float Distance;
+            
+            /// <summary>
+            /// point's tangent
+            /// </summary>
+            public Vector3 Tangent;
+
+            public PolylinePoint(Vector3 position, float distance) : this()
+            {
+                this.Position = position;
+                this.Distance = distance;
+            }
+
+            public PolylinePoint(Vector3 position, float distance, Vector3 tangent) : this(position, distance)
+            {
+                this.Tangent = tangent;
+            }
+
+            public override string ToString()
+            {
+                return "Pos=" + Position + "; Distance=" + Distance;
+            }
+        }
 
     }
 }
