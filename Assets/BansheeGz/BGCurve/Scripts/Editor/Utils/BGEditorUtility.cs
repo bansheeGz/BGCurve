@@ -760,7 +760,10 @@ namespace BansheeGz.BGSpline.Editor
                 dragSession.NextMin(minIndex, name);
             }
 
+            if (minIndex !=-1)
+            {
             for (var i = 0; i < verts.Length; i++) if (i != minIndex) verts[i] = Vector3.Lerp(verts[i], verts[minIndex], .5f);
+            }
 
             var center = (verts[0] + verts[1] + verts[2] + verts[3])*.25f;
 
