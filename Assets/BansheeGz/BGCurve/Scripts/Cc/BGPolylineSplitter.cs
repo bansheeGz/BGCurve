@@ -490,9 +490,9 @@ namespace BansheeGz.BGSpline.Components
 
                 if ( !DistanceMaxConstrained )
                 {
-                    if ( result.Capacity < count - 1 )
+                    if ( result.Capacity < count )
                         result.Capacity = count;
-                    if ( points.Capacity < count - 1 )
+                    if ( points.Capacity < count )
                         points.Capacity = count;
                 }
                 
