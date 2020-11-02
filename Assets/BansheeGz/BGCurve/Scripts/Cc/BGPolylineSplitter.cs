@@ -488,6 +488,14 @@ namespace BansheeGz.BGSpline.Components
                 var sectionPoints = section.Points;
                 var count = sectionPoints.Count;
 
+                if ( !DistanceMaxConstrained )
+                {
+                    if ( result.Capacity < count - 1 )
+                        result.Capacity = count;
+                    if ( points.Capacity < count - 1 )
+                        points.Capacity = count;
+                }
+                
                 for (var j = 1; j < count; j++)
                 {
                     var point = sectionPoints[j];
