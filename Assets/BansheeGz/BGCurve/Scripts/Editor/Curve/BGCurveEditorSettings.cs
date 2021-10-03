@@ -62,6 +62,7 @@ namespace BansheeGz.BGSpline.Editor
                                         {
                                             BGPrivateField.SetSettings(Curve, newSettings);
                                             EditorUtility.SetDirty(Curve);
+                                            Editor.OnSettingsLoad();
                                             lastOperation = options[selected].text + " was loaded";
                                         }
                                         else lastOperation = "Unable to load a settings " + options[selected].text;

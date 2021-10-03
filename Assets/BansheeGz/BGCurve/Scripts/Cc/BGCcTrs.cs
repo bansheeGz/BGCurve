@@ -53,6 +53,16 @@ namespace BansheeGz.BGSpline.Components
             Slerp = 2,
         }
 
+        /// <summary> Up direction for target rotation. It's used only if rotationField is not assigned.</summary>
+        public enum RotationUpEnum
+        {
+            WorldUp = 0,
+            WorldDown = 1,
+            WorldRight = 2,
+            WorldLeft = 3,
+            WorldForward = 4,
+            WorldBack = 5,
+        }
         //===============================================================================================
         //                                                    Fields (persistent)
         //===============================================================================================
@@ -99,6 +109,9 @@ namespace BansheeGz.BGSpline.Components
 
         [SerializeField] [Tooltip("Angle to add to final result.")]
         private Vector3 offsetAngle;
+
+        [SerializeField] [Tooltip("Up vector to be used with Quaternion.LookRotation to determine rotation")]
+        private RotationUpEnum upVector;
 
         [SerializeField] [Tooltip("Field to store the rotation between each point. It should be a Quaternion field.")]
         private BGCurvePointField rotationField;
@@ -223,8 +236,14 @@ namespace BansheeGz.BGSpline.Components
             get { return offsetAngle; }
             set { ParamChanged(ref offsetAngle, value); }
         }
+        /// <summary>Up vector to be used with Quaternion.LookRotation to determine rotation</summary>
+        public RotationUpEnum UpVector
+        {
+            get { return upVector; }
+            set { ParamChanged(ref upVector, value); }
+        }
 
-        /// <summary> Rotation interpolation between current rotation and target rotation </summary>
+        /// <summary>Rotation interpolation between current rotation and target rotation </summary>
         public RotationInterpolationEnum RotationInterpolation
         {
             get { return rotationInterpolation; }
@@ -363,7 +382,39 @@ namespace BansheeGz.BGSpline.Components
             //rotate
             if (rotateObject)
             {
-                var rotation = rotationField == null ? Quaternion.LookRotation(CalculateTangent(), Vector3.up) : LerpQuaternion(ref sectionIndex, rotationField.FieldName);
+                Quaternion rotation;
+                if (rotationField == null)
+                {
+                    Vector3 up;
+                    switch (upVector)
+                    {
+                        case RotationUpEnum.WorldUp:
+                            up = Vector3.up;
+                            break;
+                        case RotationUpEnum.WorldDown:
+                            up = Vector3.down;
+                            break;
+                        case RotationUpEnum.WorldRight:
+                            up = Vector3.right;
+                            break;
+                        case RotationUpEnum.WorldLeft:
+                            up = Vector3.left;
+                            break;
+                        case RotationUpEnum.WorldForward:
+                            up = Vector3.forward;
+                            break;
+                        case RotationUpEnum.WorldBack:
+                            up = Vector3.back;
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException("upVector");
+                    }
+                    rotation = Quaternion.LookRotation(CalculateTangent(), up);
+                }
+                else
+                {
+                    rotation = LerpQuaternion(ref sectionIndex, rotationField.FieldName);                    
+                }
 
                 //not sure how to handle it
                 if (!(rotation.x == 0 && rotation.y == 0 && rotation.z == 0 && rotation.w == 0))

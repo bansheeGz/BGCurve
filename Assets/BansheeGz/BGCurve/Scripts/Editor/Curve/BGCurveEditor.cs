@@ -250,7 +250,7 @@ namespace BansheeGz.BGSpline.Editor
         private void Dispose()
         {
 //            CurrentCurve = null;
-            CurrentGizmoPainter = null;
+            if(CurrentGizmoPainter!=null && CurrentGizmoPainter.Math.Curve==Curve) CurrentGizmoPainter = null;
             AllCurves = null;
             Undo.undoRedoPerformed -= InternalOnUndoRedo;
 
@@ -386,6 +386,11 @@ namespace BansheeGz.BGSpline.Editor
             rect.y += 1;
             GUILayout.Space(rect.height + 1);
             GUI.DrawTexture(rect, logo);
+        }
+
+        public void OnSettingsLoad()
+        {
+            foreach (var editor in editors) editor.OnSettingsLoad();
         }
 
         public void OnSceneGUI()

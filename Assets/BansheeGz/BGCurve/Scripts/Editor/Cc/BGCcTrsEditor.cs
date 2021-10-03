@@ -62,6 +62,8 @@ namespace BansheeGz.BGSpline.Editor
                             EditorGUILayout.PropertyField(serializedObject.FindProperty("slerpSpeed"));
                             break;
                     }
+                    
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("upVector"));
 
                     BGEditorUtility.CustomField(new GUIContent("Rotation field", "Quaternion field to get rotation value from"), cc.Curve, Trs.RotationField, BGCurvePointField.TypeEnum.Quaternion,
                         field => Trs.RotationField = field);

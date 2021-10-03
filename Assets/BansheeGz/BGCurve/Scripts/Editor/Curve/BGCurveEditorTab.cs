@@ -69,5 +69,9 @@ namespace BansheeGz.BGSpline.Editor
         public virtual void OnCurveChanged(BGCurveChangedArgs args)
         {
         }
+
+        public virtual void OnSettingsLoad()
+        {
+        }
     }
 }

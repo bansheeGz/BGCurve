@@ -144,6 +144,11 @@ namespace BansheeGz.BGSpline.Editor
             return "" + Curve.FieldsCount;
         }
 
+        public override void OnSettingsLoad()
+        {
+            systemFields = null;
+        }
+
 
         public override void OnSceneGui(Plane[] frustum)
         {
