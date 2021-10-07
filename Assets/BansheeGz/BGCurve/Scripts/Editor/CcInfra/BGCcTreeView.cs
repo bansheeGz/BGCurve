@@ -78,12 +78,19 @@ namespace BansheeGz.BGSpline.Editor
             var result = new List<Type>();
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             foreach (var assembly in assemblies)
-                result.AddRange(from type in assembly.GetTypes()
-                    where type.IsClass
-                    where !type.IsAbstract
-                    where type.IsSubclassOf(targetType)
-                    where excludeAttributeType == null || BGReflectionAdapter.GetCustomAttributes(type, excludeAttributeType, true).Length == 0
-                    select type);
+                try
+                {
+                    result.AddRange(from type in assembly.GetTypes()
+                                    where type.IsClass
+                                    where !type.IsAbstract
+                                    where type.IsSubclassOf(targetType)
+                                    where excludeAttributeType == null || BGReflectionAdapter.GetCustomAttributes(type, excludeAttributeType, true).Length == 0
+                                    select type);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"{assembly.FullName} threw ReflectionTypeLoadException\r\n{e}");
+                }
 
             return result.ToArray();
         }
