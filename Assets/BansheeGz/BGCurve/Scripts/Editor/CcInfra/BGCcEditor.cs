@@ -4,6 +4,7 @@ using BansheeGz.BGSpline.Curve;
 using UnityEditor;
 namespace BansheeGz.BGSpline.Editor
 {
+	[CustomEditor(typeof(BGCc), true)]
     public class BGCcEditor : UnityEditor.Editor
     {
         public event EventHandler ChangedParent;
@@ -159,6 +160,7 @@ namespace BansheeGz.BGSpline.Editor
 
         protected virtual void InternalOnInspectorGUI()
         {
+			DrawPropertiesExcluding(serializedObject, "m_Script", "showHandles", "hidden", "ccName", "parent");
         }
 
         protected virtual void InternalOnSceneGUI()
