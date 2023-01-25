@@ -1,3 +1,6 @@
+### Unity provides standard Spline asset https://docs.unity3d.com/Packages/com.unity.splines@2.1/manual/getting-started-with-splines.html
+### Use BGCurve only if standard Spline asset does not provide required feature
+
 # BGCurve
 Bezier curve editor for Unity game engine
 
